@@ -13,11 +13,15 @@ import {
   Sun,
   Moon,
   ShieldAlert,
-  Brain
+  Brain,
+  Users,
+  Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MarsAnalysis from './modules/production/MarsAnalysis';
 import ProductionHub from './modules/production/ProductionHub';
+import SuppliersModule from './modules/production/Suppliers';
+import CustomersModule from './modules/production/Customers';
 import SettingsModule from './modules/system/Settings';
 import GeneralAIChat from './components/GeneralAIChat';
 import { translations, type Language } from './translations';
@@ -38,6 +42,8 @@ interface AppConfig {
 const apps: AppConfig[] = [
   { id: 'mars-analysis', name: 'Mars ERP Analitika', desc: 'Finansijska i operativna analiza procesa.', icon: <Database size={24} />, category: 'production', color: 'var(--gradient-blue)', badge: 'Live', minLevel: 1 },
   { id: 'production-hub', name: 'Upravljanje Produkcijom', desc: 'Smeštaj, putovanja, transferi i paketi.', icon: <Package size={24} />, category: 'production', color: 'var(--gradient-green)', badge: 'Novo', minLevel: 1 },
+  { id: 'suppliers', name: 'Dobavljači', desc: 'Upravljanje bazom dobavljača.', icon: <Database size={24} />, category: 'production', color: 'var(--gradient-orange)', minLevel: 1 },
+  { id: 'customers', name: 'Kupci', desc: 'Baza B2C i B2B kupaca.', icon: <Users size={24} />, category: 'production', color: 'var(--gradient-purple)', minLevel: 1 },
   { id: 'price-generator', name: 'Generator Cenovnika', desc: 'Kreiranje cenovnika i import u Mars.', icon: <BarChart3 size={24} />, category: 'production', color: 'var(--gradient-green)', minLevel: 3 },
   { id: 'portfolio', name: 'Naša Ponuda', desc: 'Upravljanje bazom hotela i prevoza.', icon: <Building2 size={24} />, category: 'sales', color: 'var(--gradient-purple)', minLevel: 2 },
   { id: 'marketing-ses', name: 'Amazon SES Marketing', desc: 'Slanje newslettera subagentima.', icon: <Mail size={24} />, category: 'marketing', color: 'var(--gradient-orange)', badge: 'Novi', minLevel: 4 }
@@ -115,6 +121,12 @@ function App() {
             <div className={`nav-item ${activeTab === 'prod' ? 'active' : ''}`} onClick={() => { setActiveTab('prod'); setActiveModule('production-hub'); }}>
               <Package size={20} /> {t.production}
             </div>
+            <div className={`nav-item ${activeModule === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveModule('suppliers')}>
+              <Truck size={20} /> Dobavljači
+            </div>
+            <div className={`nav-item ${activeModule === 'customers' ? 'active' : ''}`} onClick={() => setActiveModule('customers')}>
+              <Users size={20} /> Kupci
+            </div>
           </div>
 
           <div className="nav-group" style={{ marginTop: 'auto', paddingBottom: '10px' }}>
@@ -162,6 +174,10 @@ function App() {
               <MarsAnalysis key="mars" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} onOpenChat={() => setIsChatOpen(true)} onDataUpdate={setAnalysisData} />
             ) : activeModule === 'production-hub' ? (
               <ProductionHub key="prod-hub" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} />
+            ) : activeModule === 'suppliers' ? (
+              <SuppliersModule key="suppliers" onBack={() => setActiveModule(null)} />
+            ) : activeModule === 'customers' ? (
+              <CustomersModule key="customers" onBack={() => setActiveModule(null)} />
             ) : activeModule === 'settings' ? (
               <SettingsModule key="settings" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} setUserLevel={setUserLevel} />
             ) : (
@@ -179,7 +195,7 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                       className="app-card"
-                      onClick={() => (app.id === 'mars-analysis' || app.id === 'production-hub') && setActiveModule(app.id)}
+                      onClick={() => (app.id === 'mars-analysis' || app.id === 'production-hub' || app.id === 'suppliers' || app.id === 'customers') && setActiveModule(app.id)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div className="card-icon" style={{ background: app.color }}>{app.icon}</div>

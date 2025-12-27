@@ -15,10 +15,7 @@ import {
     Briefcase,
     X,
     Settings2,
-    ListPlus,
-    Truck,
-    UserCheck,
-    Contact2
+    ListPlus
 } from 'lucide-react';
 
 interface ProductionItem {
@@ -27,7 +24,6 @@ interface ProductionItem {
     icon: React.ReactNode;
     color: string;
     options: string[];
-    category: 'services' | 'entities';
 }
 
 interface ProductionHubProps {
@@ -44,64 +40,42 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
             title: 'Smeštaj',
             icon: <Building2 size={24} />,
             color: 'var(--gradient-blue)',
-            options: ['Hotel', 'Apartman', 'Vila', 'Resort', 'Bungalov', 'Hostel'],
-            category: 'services'
+            options: ['Hotel', 'Apartman', 'Vila', 'Resort', 'Bungalov', 'Hostel']
         },
         {
             id: 'trips',
             title: 'Putovanja',
             icon: <MapPin size={24} />,
             color: 'var(--gradient-purple)',
-            options: ['Avion', 'Autobus', 'Voz', 'Brod'],
-            category: 'services'
+            options: ['Avion', 'Autobus', 'Voz', 'Brod']
         },
         {
             id: 'flights',
             title: 'Avio karte',
             icon: <Plane size={24} />,
             color: 'var(--gradient-orange)',
-            options: ['Redovne linije', 'Low cost', 'Individualni upiti', 'Čarteri'],
-            category: 'services'
+            options: ['Redovne linije', 'Low cost', 'Individualni upiti', 'Čarteri']
         },
         {
             id: 'transport',
             title: 'Prevoz',
             icon: <Bus size={24} />,
             color: 'var(--gradient-green)',
-            options: ['Sopstveni prevoz', 'Avion', 'Autobus', 'Voz', 'Brod'],
-            category: 'services'
+            options: ['Sopstveni prevoz', 'Avion', 'Autobus', 'Voz', 'Brod']
         },
         {
             id: 'transfers',
             title: 'Transferi',
             icon: <Car size={24} />,
             color: 'var(--gradient-blue)',
-            options: ['Avion', 'Mini bus', 'Autobus', 'Brod', 'Voz', 'Automobil', 'Rent-a car', 'Uber'],
-            category: 'services'
+            options: ['Avion', 'Mini bus', 'Autobus', 'Brod', 'Voz', 'Automobil', 'Rent-a car', 'Uber']
         },
         {
             id: 'extra',
             title: 'Extra usluge',
             icon: <Ticket size={24} />,
             color: 'var(--gradient-purple)',
-            options: ['Vodiči', 'Izleti', 'Ulaznice', 'Obroci', 'Osiguranje', 'SPA paketi'],
-            category: 'services'
-        },
-        {
-            id: 'suppliers',
-            title: 'Dobavljači',
-            icon: <Truck size={24} />,
-            color: 'var(--gradient-orange)',
-            options: ['Hoteli', 'Hotelske grupe', 'Organizacije', 'Touroperatori', 'Prevoznici'],
-            category: 'entities'
-        },
-        {
-            id: 'customers',
-            title: 'Kupci',
-            icon: <UserCheck size={24} />,
-            color: 'var(--gradient-green)',
-            options: ['B2C - Individualni putnici', 'B2C - Pravna lica', 'B2B - Subagenti', 'B2B - Touroperatori'],
-            category: 'entities'
+            options: ['Vodiči', 'Izleti', 'Ulaznice', 'Obroci', 'Osiguranje', 'SPA paketi']
         }
     ]);
 
@@ -171,11 +145,10 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                 </button>
                 <div>
                     <h2 style={{ fontSize: '24px', fontWeight: '700' }}>Produkcija</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Upravljanje turističkim proizvodima i partnerima</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Upravljanje turističkim proizvodima i paketima</p>
                 </div>
             </div>
 
-            {/* Main Services */}
             <div style={{ marginBottom: '40px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -184,7 +157,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                 </div>
 
                 <div className="dashboard-grid">
-                    {items.filter(i => i.category === 'services').map((item, idx) => (
+                    {items.map((item, idx) => (
                         <motion.div
                             key={item.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -215,39 +188,6 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                     </span>
                                 )}
                             </div>
-                        </motion.div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Partners & Entities */}
-            <div style={{ marginBottom: '40px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Contact2 size={20} color="var(--accent)" /> Partneri i baze
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-                    {items.filter(i => i.category === 'entities').map((item, idx) => (
-                        <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 + idx * 0.1 }}
-                            className={`app-card ${selectedItem?.id === item.id ? 'active-selection' : ''}`}
-                            onClick={() => setSelectedItem(item)}
-                            style={{ display: 'flex', gap: '20px', alignItems: 'center' }}
-                        >
-                            <div className="card-icon" style={{ background: item.color, marginBottom: 0, flexShrink: 0 }}>
-                                {item.icon}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <h3 className="card-title" style={{ marginBottom: '4px' }}>{item.title}</h3>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {item.options.map(opt => (
-                                        <span key={opt} style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>• {opt}</span>
-                                    ))}
-                                </div>
-                            </div>
-                            <Settings2 size={18} style={{ color: 'var(--accent)', opacity: selectedItem?.id === item.id ? 1 : 0.3 }} />
                         </motion.div>
                     ))}
                 </div>
