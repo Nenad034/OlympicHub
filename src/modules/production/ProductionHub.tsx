@@ -108,8 +108,8 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
             name: property.content?.[0]?.displayName || 'New Property',
             location: {
                 address: property.address?.addressLine1 || '',
-                lat: (property.geoCoordinates?.latitude || 0).toString(),
-                lng: (property.geoCoordinates?.longitude || 0).toString(),
+                lat: property.geoCoordinates?.latitude || 0,
+                lng: property.geoCoordinates?.longitude || 0,
                 place: property.address?.city || ''
             },
             amenities: [],
