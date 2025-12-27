@@ -163,35 +163,40 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="services-grid">
+
+                <div className="dashboard-grid">
                     {[
-                        { id: 'accommodation', name: 'Smeštaj', icon: <Building2 />, color: '#10b981', count: hotels.length },
-                        { id: 'flights', name: 'Avio Karte', icon: <Navigation />, color: '#3b82f6', count: 0 },
-                        { id: 'bus', name: 'Prevoz', icon: <Car />, color: '#f59e0b', count: 0 },
-                        { id: 'trips', name: 'Izleti', icon: <Waves />, color: '#8b5cf6', count: 0 }
+                        { id: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, apartmani i smeštajni objekti.', icon: <Building2 />, color: '#10b981', count: hotels.length, badge: 'LIVE' },
+                        { id: 'flights', name: 'Avio Karte', desc: 'Letovi i avio prevoz putnika.', icon: <Navigation />, color: '#3b82f6', count: 0, badge: 'USKORO' },
+                        { id: 'bus', name: 'Prevoz', desc: 'Autobuski i drugi vid prevoza.', icon: <Car />, color: '#f59e0b', count: 0, badge: 'USKORO' },
+                        { id: 'trips', name: 'Izleti', desc: 'Organizovani izleti i ture.', icon: <Waves />, color: '#8b5cf6', count: 0, badge: 'USKORO' }
                     ].map(s => (
                         <motion.div
                             key={s.id}
-                            whileHover={{ y: -8, scale: 1.02 }}
-                            className="service-card-premium"
-                            onClick={() => { setViewMode('list'); }}
+                            whileHover={{ y: -4, scale: 1.02 }}
+                            className="module-card"
+                            onClick={() => { if (s.id === 'accommodation') setViewMode('list'); }}
+                            style={{ cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed', opacity: s.id === 'accommodation' ? 1 : 0.6 }}
                         >
-                            <div className="card-inner">
-                                <div className="icon-wrapper" style={{ background: `linear-gradient(135deg, ${s.color}, transparent)` }}>
-                                    {s.icon}
-                                </div>
-                                <div className="card-content">
-                                    <h3>{s.name}</h3>
-                                    <div className="stats">
-                                        <span className="count">{s.count}</span>
-                                        <span className="label">objekata u bazi</span>
-                                    </div>
-                                </div>
-                                <div className="card-arrow"><ChevronRight size={20} /></div>
+                            <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
+                                {s.icon}
                             </div>
+
+                            <div className={`module-badge ${s.badge === 'LIVE' ? 'live' : 'new'}`}>{s.badge}</div>
+
+                            <h3 className="module-title">{s.name}</h3>
+                            <p className="module-desc">{s.desc}</p>
+
+                            {s.id === 'accommodation' && (
+                                <button className="module-action">
+                                    Otvori Modul
+                                    <ChevronRight size={16} />
+                                </button>
+                            )}
                         </motion.div>
                     ))}
                 </div>
+
 
                 <AnimatePresence>
                     {showImport && (
@@ -252,47 +257,51 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                     {hotels.map(h => (
                         <motion.div
                             key={h.id}
-                            className="app-card"
-                            whileHover={{ y: -8 }}
+                            className="module-card"
+                            whileHover={{ y: -4, scale: 1.02 }}
                             onClick={() => { setSelectedHotel(h); setViewMode('detail'); }}
-                            style={{ cursor: 'pointer', position: 'relative' }}
+                            style={{ cursor: 'pointer' }}
                         >
-                            <div className="card-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-                                <Building2 size={24} />
+                            <div className="module-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                                <Building2 size={28} />
                             </div>
-                            <h3 className="card-title">{h.name}</h3>
-                            <p className="card-desc">
-                                <MapPin size={14} style={{ display: 'inline', marginRight: '6px' }} />
+
+                            <div className="module-badge live">AKTIVAN</div>
+
+                            <h3 className="module-title">{h.name}</h3>
+                            <p className="module-desc">
+                                <MapPin size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
                                 {h.location.place}, {h.location.address}
                             </p>
-                            <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                <div className="badge" style={{ background: 'var(--accent-glow)', color: 'var(--accent)', position: 'static' }}>
+
+                            <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <div className="info-badge">
+                                    <Bed size={12} />
                                     {h.units.length} Jedinica
                                 </div>
-                                <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', position: 'static' }}>
+                                <div className="info-badge">
+                                    <Tag size={12} />
                                     ID: {h.id}
                                 </div>
                             </div>
+
+                            <button className="module-action">
+                                Otvori Modul
+                                <ChevronRight size={16} />
+                            </button>
                         </motion.div>
                     ))}
 
                     <motion.div
-                        className="app-card"
-                        whileHover={{ y: -8 }}
-                        onClick={() => setShowImport(true)}
-                        style={{
-                            cursor: 'pointer',
-                            border: '2px dashed var(--border)',
-                            background: 'transparent',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: '200px'
-                        }}
+                        className="module-card add-new"
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        onClick={() => setShowWizard(true)}
+                        style={{ cursor: 'pointer' }}
                     >
-                        <Plus size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
-                        <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Dodaj Novi Objekat</span>
+                        <div className="add-icon">
+                            <Plus size={48} />
+                        </div>
+                        <span className="add-text">Dodaj Novi Objekat</span>
                     </motion.div>
                 </div>
             </div>
