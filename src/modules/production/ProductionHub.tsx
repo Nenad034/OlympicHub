@@ -11,7 +11,6 @@ import {
     User,
     Anchor,
     ArrowLeft,
-    ChevronRight,
     ShoppingBag,
     Briefcase,
     X,
@@ -33,7 +32,7 @@ interface ProductionHubProps {
     userLevel: number;
 }
 
-const ProductionHub: React.FC<ProductionHubProps> = ({ onBack, lang }) => {
+const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [selectedItem, setSelectedItem] = useState<ProductionItem | null>(null);
     const [items, setItems] = useState<ProductionItem[]>([
         {
