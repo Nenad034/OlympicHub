@@ -25,7 +25,6 @@ export default function SettingsModule({ onBack, lang, userLevel, setUserLevel }
     const t = translations[lang];
 
     const [geminiKey, setGeminiKey] = useState(config.geminiKey);
-    const [backupNote, setBackupNote] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async () => {
@@ -35,9 +34,9 @@ export default function SettingsModule({ onBack, lang, userLevel, setUserLevel }
     };
 
     const handleCreateSnapshot = async () => {
-        if (!backupNote) return;
-        await createSnapshot(backupNote);
-        setBackupNote("");
+        const now = new Date();
+        const note = `${now.toLocaleDateString('sr-RS')} ${now.toLocaleTimeString('sr-RS')}`;
+        await createSnapshot(note);
     };
 
     return (
@@ -123,16 +122,9 @@ export default function SettingsModule({ onBack, lang, userLevel, setUserLevel }
                         Napravite kopiju trenutnog stanja svih API ključeva i podešavanja kako biste mogli da se vratite ako nešto krene po zlu.
                     </p>
 
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
-                        <input
-                            type="text"
-                            placeholder="Naziv snapshot-a (npr. Stabilna verzija)"
-                            value={backupNote}
-                            onChange={e => setBackupNote(e.target.value)}
-                            style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                        />
-                        <button onClick={handleCreateSnapshot} className="action-btn-hub success">
-                            <Plus size={18} /> {t.createBackup}
+                    <div style={{ marginBottom: '30px' }}>
+                        <button onClick={handleCreateSnapshot} className="action-btn-hub success" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>
+                            <Plus size={18} /> Kreiraj Tačku Povratka
                         </button>
                     </div>
 
