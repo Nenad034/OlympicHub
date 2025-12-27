@@ -22,6 +22,8 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
+import PropertyWizard from '../../components/PropertyWizard';
+import type { Property } from '../../types/property.types';
 
 // --- TCT-IMC DATA STRUCTURES ---
 
@@ -97,6 +99,28 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
     const [showImport, setShowImport] = useState(false);
     const [importData, setImportData] = useState('');
+    const [showWizard, setShowWizard] = useState(false);
+
+    const handleWizardSave = (property: Partial<Property>) => {
+        // Convert OTA Property to Hotel format for now
+        const newHotel: Hotel = {
+            id: Math.random().toString(36).substr(2, 9),
+            name: property.content?.[0]?.displayName || 'New Property',
+            location: {
+                address: property.address?.addressLine1 || '',
+                lat: (property.geoCoordinates?.latitude || 0).toString(),
+                lng: (property.geoCoordinates?.longitude || 0).toString(),
+                place: property.address?.city || ''
+            },
+            amenities: [],
+            units: [],
+            commonItems: { discount: [], touristTax: [], supplement: [] },
+            images: []
+        };
+        setHotels([...hotels, newHotel]);
+        setShowWizard(false);
+        alert('Objekat uspešno kreiran!');
+    };
 
     const handleImport = () => {
         try {
@@ -210,11 +234,19 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             <Search size={18} />
                             <input type="text" placeholder="Pretraži objekte..." />
                         </div>
-                        <button className="btn-primary-action" onClick={() => setShowImport(true)}>
-                            <Plus size={18} /> Dodaj Novi
+                        <button className="btn-primary-action" onClick={() => setShowWizard(true)}>
+                            <Plus size={18} /> Kreiraj Objekat (OTA)
+                        </button>
+                        <button className="btn-secondary" onClick={() => setShowImport(true)}>
+                            <Download size={18} /> Import JSON
                         </button>
                     </div>
                 </div>
+
+                {/* Property Wizard */}
+                {showWizard && (
+                    <PropertyWizard onClose={() => setShowWizard(false)} onSave={handleWizardSave} />
+                )}
 
                 <div className="dashboard-grid" style={{ marginTop: '32px' }}>
                     {hotels.map(h => (
