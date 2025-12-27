@@ -184,7 +184,7 @@ function App() {
             {activeModule === 'mars-analysis' ? (
               <MarsAnalysis key="mars" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} onOpenChat={() => setIsChatOpen(true)} onDataUpdate={setAnalysisData} />
             ) : activeModule === 'production-hub' ? (
-              <ProductionHub key="prod-hub" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} />
+              <ProductionHub key="prod-hub" onBack={() => setActiveModule(null)} />
             ) : activeModule === 'suppliers' ? (
               <SuppliersModule key="suppliers" onBack={() => setActiveModule(null)} />
             ) : activeModule === 'customers' ? (
