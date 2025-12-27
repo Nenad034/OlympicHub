@@ -18,8 +18,8 @@ import {
     Trash2,
     AlertCircle
 } from 'lucide-react';
-import type { Property, PropertyContent, RoomType, BeddingConfiguration, PropertyAmenity, RatePlan, HouseRules, KeyCollection, HostProfile, Tax, PropertyImage } from '../../types/property.types';
-import { validateProperty } from '../../types/property.types';
+import type { Property, PropertyContent, RoomType, BeddingConfiguration, PropertyAmenity, RatePlan, HouseRules, KeyCollection, HostProfile, Tax, PropertyImage } from '../types/property.types';
+import { validateProperty } from '../types/property.types';
 
 interface PropertyWizardProps {
     onClose: () => void;
