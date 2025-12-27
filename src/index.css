@@ -528,7 +528,7 @@ h3,
 /* Add New Card Style */
 .module-card.add-new {
   border: 2px dashed var(--border);
-  background: transparent;
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
   align-items: center;
