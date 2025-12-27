@@ -2,37 +2,89 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building2,
-    Plane,
-    Bus,
-    Anchor,
-    Car,
-    MapPin,
-    ShoppingBag,
-    Briefcase,
-    ListPlus,
-    Plus,
     X,
     ArrowLeft,
+    Plus,
+    MapPin,
     Bed,
-    Info,
-    Trash2,
     Download,
-    ChevronRight
+    ChevronRight,
+    Search,
+    Navigation,
+    Shield,
+    Waves,
+    Utensils,
+    Car,
+    Maximize,
+    Tag,
+    Clock,
+    UserCheck,
+    CheckCircle2
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 
-// --- TYPES ---
-interface AmenityItem { name: string; values: any; }
-interface PriceItem { dateFrom: string; dateTo: string; price: number | null; currency: string; percent?: number | null; title: string; type: string; }
-interface Unit {
-    id: number | string; name: string; type: string; basicBeds: number; extraBeds: number; minOccupancy: number; images: { url: string }[];
-    pricelist: { baseRate: PriceItem[]; supplement: PriceItem[]; discount: PriceItem[]; touristTax: PriceItem[]; };
+// --- TCT-IMC DATA STRUCTURES ---
+
+interface Amenity {
+    name: string;
+    values: any;
 }
-interface HotelObject {
-    id: number | string; name: string;
-    location: { address: string; lat: number | string; lng: number | string; place: string; };
-    images: { url: string }[]; amenities: AmenityItem[]; units: Unit[];
-    commonItems: { discount: PriceItem[]; touristTax: PriceItem[]; supplement: PriceItem[]; };
+
+interface PriceRule {
+    dateFrom: string;
+    dateTo: string;
+    price: number | null;
+    currency: string;
+    percent?: number | null;
+    arrivalDays?: string;
+    departureDays?: string;
+    minStay?: number;
+    maxStay?: number;
+    title: string;
+    type: string;
+    paymentType?: string;
+}
+
+interface Unit {
+    id: number | string;
+    name: string;
+    type: string;
+    basicBeds: number;
+    extraBeds: number;
+    minOccupancy: number;
+    images: { url: string }[];
+    amenites?: any[]; // Note: Typo in JSON "amenites"
+    availabilities: {
+        dateFrom: string;
+        dateTo: string;
+        type: string;
+        quantity: number;
+    }[];
+    pricelist: {
+        baseRate: PriceRule[];
+        supplement: PriceRule[];
+        discount: PriceRule[];
+        touristTax: PriceRule[];
+    };
+}
+
+interface Hotel {
+    id: number | string;
+    name: string;
+    location: {
+        address: string;
+        lat: number;
+        lng: number;
+        place: string;
+    };
+    images: { url: string }[];
+    amenities: Amenity[];
+    units: Unit[];
+    commonItems: {
+        discount: PriceRule[];
+        touristTax: PriceRule[];
+        supplement: PriceRule[];
+    };
 }
 
 interface ProductionHubProps {
@@ -40,243 +92,446 @@ interface ProductionHubProps {
 }
 
 const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
-    const [selectedService, setSelectedService] = useState<string | null>(null);
-    const [hotels, setHotels] = useState<HotelObject[]>([]);
-    const [showAddForm, setShowAddForm] = useState(false);
-    const [activeFormTab, setActiveFormTab] = useState<'general' | 'units'>('general');
-
-    const [currentHotel, setCurrentHotel] = useState<Partial<HotelObject>>({
-        name: '', location: { address: '', lat: '', lng: '', place: '' },
-        amenities: [], units: [], commonItems: { discount: [], touristTax: [], supplement: [] }
-    });
-
-    const services = [
-        { id: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, Apartmani, Vile', icon: <Building2 size={24} />, color: '#3fb950' },
-        { id: 'flights', name: 'Avio Karte', desc: 'Redovne linije i Čarteri', icon: <Plane size={24} />, color: '#2188ff' },
-        { id: 'bus', name: 'Autobuski Prevoz', desc: 'Linije i Zakup autobusa', icon: <Bus size={24} />, color: '#ffa657' },
-        { id: 'trips', name: 'Izleti', desc: 'Lokalne ture i atrakcije', icon: <MapPin size={24} />, color: '#bc8cff' },
-        { id: 'transfers', name: 'Transferi', desc: 'Aerodrom - Hotel i lokalno', icon: <Car size={24} />, color: '#f34b7d' },
-        { id: 'cruises', name: 'Krstarenja', desc: 'Brodski aranžmani', icon: <Anchor size={24} />, color: '#00d2ff' },
-    ];
-
-    const packages = [
-        { id: 'summer', name: 'Leto 2024', desc: 'Grčka, Turska, Crna Gora', icon: <ShoppingBag size={20} /> },
-        { id: 'winter', name: 'Zima 2024', desc: 'Kopaonik, Jahorina, Alpi', icon: <Briefcase size={20} /> },
-        { id: 'group', name: 'Grupna Putovanja', desc: 'Evropski gradovi i daleke destinacije', icon: <ListPlus size={20} /> },
-    ];
-
-    const handleAddHotel = () => {
-        const hotelToSave = { ...currentHotel, id: currentHotel.id || Date.now() } as HotelObject;
-        setHotels([...hotels, hotelToSave]);
-        setShowAddForm(false);
-        resetHotelForm();
-    };
-
-    const resetHotelForm = () => {
-        setCurrentHotel({ name: '', location: { address: '', lat: '', lng: '', place: '' }, amenities: [], units: [], commonItems: { discount: [], touristTax: [], supplement: [] } });
-        setActiveFormTab('general');
-    };
+    const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
+    const [hotels, setHotels] = useState<Hotel[]>([]);
+    const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+    const [showImport, setShowImport] = useState(false);
+    const [importData, setImportData] = useState('');
 
     const handleImport = () => {
-        const input = prompt('Nalepite TCT JSON (data niz):');
-        if (input) {
-            try {
-                const parsed = JSON.parse(input);
-                const data = parsed.data || (Array.isArray(parsed) ? parsed : [parsed]);
-                setHotels([...hotels, ...data]);
-                alert(`Uspešno uvezeno ${data.length} objekata!`);
-            } catch (e) { alert('Greška u formatu JSON-a.'); }
+        try {
+            const parsed = JSON.parse(importData);
+            const data = parsed.data || (Array.isArray(parsed) ? parsed : [parsed]);
+            setHotels([...hotels, ...data]);
+            setShowImport(false);
+            setImportData('');
+            alert(`Uspešno uvezeno ${data.length} objekata!`);
+        } catch (e) {
+            alert('Greška u formatu JSON-a.');
         }
     };
 
-    // --- MAIN HUB VIEW ---
-    if (!selectedService) {
+    const getDistance = (name: string) => {
+        const item = selectedHotel?.amenities.find(a => a.name === name);
+        return item ? `${item.values}m` : 'N/A';
+    };
+
+    const getAmenityValue = (name: string) => {
+        const item = selectedHotel?.amenities.find(a => a.name === name);
+        if (!item) return 'N/A';
+        if (typeof item.values === 'boolean') return item.values ? 'Da' : 'Ne';
+        return item.values;
+    };
+
+    if (viewMode === 'hub') {
         return (
             <div className="module-container fade-in">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div className="hub-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={onBack} className="btn-icon"><ArrowLeft size={20} /></button>
+                        <button onClick={onBack} className="btn-icon circle"><ArrowLeft size={20} /></button>
                         <div>
-                            <h2 style={{ fontSize: '24px', fontWeight: '700' }}>Produkcija</h2>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Upravljanje turističkim proizvodima</p>
+                            <h2 className="title-gradient">ERP Produkcija</h2>
+                            <p className="subtitle">Centralni sistem za upravljanje turističkim inventarom</p>
                         </div>
                     </div>
-                </div>
-
-                <div className="hub-section">
-                    <h3 className="section-subtitle">Glavne stavke</h3>
-                    <div className="dashboard-grid">
-                        {services.map(s => (
-                            <motion.div key={s.id} whileHover={{ y: -5 }} className="app-card highlight-card" onClick={() => setSelectedService(s.id)}>
-                                <div className="card-icon" style={{ background: s.color }}>{s.icon}</div>
-                                <h3 className="card-title">{s.name}</h3>
-                                <p className="card-desc">{s.desc}</p>
-                                <div className="card-footer-simple">Otvori modul <ChevronRight size={14} /></div>
-                            </motion.div>
-                        ))}
+                    <div className="header-actions">
+                        <button className="btn-glass" onClick={() => setShowImport(true)}><Download size={18} /> Import JSON</button>
                     </div>
                 </div>
 
-                <div className="hub-section" style={{ marginTop: '48px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                        <h3 className="section-subtitle">Specijalne kategorije (Paketi)</h3>
-                        <button className="btn-secondary" style={{ fontSize: '12px' }}>Upravljaj kategorijama</button>
-                    </div>
-                    <div className="packages-grid">
-                        {packages.map(p => (
-                            <div key={p.id} className="package-card">
-                                <div className="p-icon">{p.icon}</div>
-                                <div className="p-info">
-                                    <h4>{p.name}</h4>
-                                    <p>{p.desc}</p>
+                <div className="services-grid">
+                    {[
+                        { id: 'accommodation', name: 'Smeštaj', icon: <Building2 />, color: '#10b981', count: hotels.length },
+                        { id: 'flights', name: 'Avio Karte', icon: <Navigation />, color: '#3b82f6', count: 0 },
+                        { id: 'bus', name: 'Prevoz', icon: <Car />, color: '#f59e0b', count: 0 },
+                        { id: 'trips', name: 'Izleti', icon: <Waves />, color: '#8b5cf6', count: 0 }
+                    ].map(s => (
+                        <motion.div
+                            key={s.id}
+                            whileHover={{ y: -8, scale: 1.02 }}
+                            className="service-card-premium"
+                            onClick={() => { setViewMode('list'); }}
+                        >
+                            <div className="card-inner">
+                                <div className="icon-wrapper" style={{ background: `linear-gradient(135deg, ${s.color}, transparent)` }}>
+                                    {s.icon}
                                 </div>
-                                <ChevronRight size={18} className="p-arrow" />
-                            </div>
-                        ))}
-                        <div className="package-card add-card" style={{ borderStyle: 'dashed', background: 'transparent' }}>
-                            <Plus size={20} />
-                            <span>Dodaj novi paket</span>
-                        </div>
-                    </div>
-                </div>
-
-                <style>{`
-                    .section-subtitle { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 24px; font-weight: 700; }
-                    .card-footer-simple { margin-top: 16px; font-size: 12px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 4px; }
-                    .packages-grid { display: grid; gridTemplateColumns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-                    .package-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px; borderRadius: 16px; display: flex; alignItems: center; gap: 16px; cursor: pointer; transition: 0.2s; }
-                    .package-card:hover { border-color: var(--accent); background: rgba(255,255,255,0.02); }
-                    .p-icon { width: 44px; height: 44px; background: var(--glass-bg); borderRadius: 12px; display: flex; alignItems: center; justifyContent: center; color: var(--accent); }
-                    .p-info h4 { font-size: 15px; margin: 0; }
-                    .p-info p { font-size: 12px; color: var(--text-secondary); margin: 4px 0 0; }
-                    .p-arrow { margin-left: auto; color: var(--text-secondary); opacity: 0.5; }
-                    .add-card { border: 1px dashed var(--border); color: var(--text-secondary); justifyContent: center; }
-                `}</style>
-            </div>
-        );
-    }
-
-    // --- ACCOMMODATION (SMEŠTAJ) MODULE VIEW ---
-    if (selectedService === 'accommodation') {
-        return (
-            <div className="module-container fade-in">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <button onClick={() => setSelectedService(null)} className="btn-icon"><ArrowLeft size={20} /></button>
-                        <div>
-                            <h2 style={{ fontSize: '24px', fontWeight: '700' }}>Smeštaj (TCT)</h2>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Baza objekata i jedinica</p>
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={handleImport} className="btn-secondary"><Download size={18} /> Import</button>
-                        <button onClick={() => setShowAddForm(true)} className="btn-primary"><Plus size={18} /> Kreiraj</button>
-                        <button className="btn-secondary" onClick={() => exportToJSON(hotels, 'tct')}>JSON</button>
-                    </div>
-                </div>
-
-                <div className="hotels-grid">
-                    {hotels.length === 0 ? (
-                        <div style={{ padding: '80px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '24px', border: '1px dashed var(--border)' }}>
-                            <Building2 size={48} style={{ opacity: 0.1, marginBottom: '16px' }} />
-                            <p style={{ color: 'var(--text-secondary)' }}>Nema objekata. Uvezite JSON ili kreirajte novi.</p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-                            {hotels.map(h => (
-                                <motion.div layout className="app-card highlight-card" key={h.id} style={{ padding: '24px' }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: '700' }}>{h.name}</h3>
-                                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}><MapPin size={12} /> {h.location.place}</p>
-                                    <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--accent)', fontWeight: '600' }}>{h.units.length} JEDINICE</div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* MODAL IS THE SAME AS PREVIOUSLY CREATED */}
-                <AnimatePresence>
-                    {showAddForm && (
-                        <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
-                            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }} className="modal-content large-modal" onClick={e => e.stopPropagation()}>
-                                <div className="modal-sidebar">
-                                    <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}><h3>Novi Objekat</h3></div>
-                                    <div className="modal-nav">
-                                        <button className={activeFormTab === 'general' ? 'active' : ''} onClick={() => setActiveFormTab('general')}><Info size={16} /> Opšte</button>
-                                        <button className={activeFormTab === 'units' ? 'active' : ''} onClick={() => setActiveFormTab('units')}><Bed size={16} /> Jedinice</button>
+                                <div className="card-content">
+                                    <h3>{s.name}</h3>
+                                    <div className="stats">
+                                        <span className="count">{s.count}</span>
+                                        <span className="label">objekata u bazi</span>
                                     </div>
-                                    <div style={{ marginTop: 'auto', padding: '16px' }}><button onClick={handleAddHotel} className="btn-primary" style={{ width: '100%' }}>SAČUVAJ</button></div>
                                 </div>
-                                <div className="modal-main">
-                                    <button className="close-btn" onClick={() => setShowAddForm(false)}><X size={20} /></button>
-                                    {activeFormTab === 'general' && (
-                                        <div className="form-section">
-                                            <h2 className="section-title">Osnovne informacije</h2>
-                                            <div className="form-grid">
-                                                <div className="form-item spread"><label>Ime Objekta</label><input value={currentHotel.name} onChange={e => setCurrentHotel({ ...currentHotel, name: e.target.value })} /></div>
-                                                <div className="form-item"><label>Mesto</label><input value={currentHotel.location?.place} onChange={e => setCurrentHotel({ ...currentHotel, location: { ...currentHotel.location!, place: e.target.value } })} /></div>
-                                                <div className="form-item"><label>Adresa</label><input value={currentHotel.location?.address} onChange={e => setCurrentHotel({ ...currentHotel, location: { ...currentHotel.location!, address: e.target.value } })} /></div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {activeFormTab === 'units' && (
-                                        <div className="form-section">
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                                                <h2 className="section-title" style={{ margin: 0 }}>Smeštajne Jedinice</h2>
-                                                <button className="btn-secondary" onClick={() => {
-                                                    const nu = { id: Date.now(), name: 'Nova ', type: 'room', basicBeds: 2, extraBeds: 0, minOccupancy: 1, images: [], pricelist: { baseRate: [], supplement: [], discount: [], touristTax: [] } };
-                                                    setCurrentHotel({ ...currentHotel, units: [...(currentHotel.units || []), nu] });
-                                                }}>+ Dodaj</button>
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                {currentHotel.units?.map((u, i) => (
-                                                    <div key={u.id} className="unit-nav-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <input value={u.name} onChange={e => {
-                                                            const nu = [...currentHotel.units!]; nu[i].name = e.target.value; setCurrentHotel({ ...currentHotel, units: nu });
-                                                        }} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px' }} />
-                                                        <Trash2 size={16} color="#ff4444" style={{ cursor: 'pointer' }} onClick={() => setCurrentHotel({ ...currentHotel, units: currentHotel.units?.filter(unit => unit.id !== u.id) })} />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                <div className="card-arrow"><ChevronRight size={20} /></div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                <AnimatePresence>
+                    {showImport && (
+                        <div className="modal-overlay-blur" onClick={() => setShowImport(false)}>
+                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="modal-content-glass" onClick={e => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3>Import TCT-IMC Podataka</h3>
+                                    <button onClick={() => setShowImport(false)}><X size={20} /></button>
+                                </div>
+                                <textarea
+                                    placeholder="Nalepite JSON objekat ovde..."
+                                    className="import-textarea"
+                                    value={importData}
+                                    onChange={e => setImportData(e.target.value)}
+                                />
+                                <div className="modal-footer">
+                                    <button className="btn-primary-glow" onClick={handleImport}>Potvrdi Uvoz</button>
                                 </div>
                             </motion.div>
                         </div>
                     )}
                 </AnimatePresence>
+            </div>
+        );
+    }
+
+    if (viewMode === 'list') {
+        return (
+            <div className="module-container fade-in">
+                <div className="top-section-bar">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <button onClick={() => setViewMode('hub')} className="btn-icon circle"><ArrowLeft size={20} /></button>
+                        <div>
+                            <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Baza Smeštaja</h1>
+                            <p className="subtitle">Upravljanje hotelima i smeštajnim objektima</p>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <div className="search-bar">
+                            <Search size={18} />
+                            <input type="text" placeholder="Pretraži objekte..." />
+                        </div>
+                        <button className="btn-primary-action" onClick={() => setShowImport(true)}>
+                            <Plus size={18} /> Dodaj Novi
+                        </button>
+                    </div>
+                </div>
+
+                <div className="dashboard-grid" style={{ marginTop: '32px' }}>
+                    {hotels.map(h => (
+                        <motion.div
+                            key={h.id}
+                            className="app-card"
+                            whileHover={{ y: -8 }}
+                            onClick={() => { setSelectedHotel(h); setViewMode('detail'); }}
+                            style={{ cursor: 'pointer', position: 'relative' }}
+                        >
+                            <div className="card-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                                <Building2 size={24} />
+                            </div>
+                            <h3 className="card-title">{h.name}</h3>
+                            <p className="card-desc">
+                                <MapPin size={14} style={{ display: 'inline', marginRight: '6px' }} />
+                                {h.location.place}, {h.location.address}
+                            </p>
+                            <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                <div className="badge" style={{ background: 'var(--accent-glow)', color: 'var(--accent)', position: 'static' }}>
+                                    {h.units.length} Jedinica
+                                </div>
+                                <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', position: 'static' }}>
+                                    ID: {h.id}
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+
+                    <motion.div
+                        className="app-card"
+                        whileHover={{ y: -8 }}
+                        onClick={() => setShowImport(true)}
+                        style={{
+                            cursor: 'pointer',
+                            border: '2px dashed var(--border)',
+                            background: 'transparent',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '200px'
+                        }}
+                    >
+                        <Plus size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Dodaj Novi Objekat</span>
+                    </motion.div>
+                </div>
+            </div>
+        );
+    }
+
+    if (viewMode === 'detail' && selectedHotel) {
+        return (
+            <div className="module-container fade-in detail-view">
+                <div className="detail-top-bar">
+                    <button onClick={() => setViewMode('list')} className="btn-back-circle"><ArrowLeft size={20} /></button>
+                    <div className="breadcrumb">Produkcija / Smeštaj / {selectedHotel.name}</div>
+                    <div className="detail-actions">
+                        <button className="btn-export" onClick={() => exportToJSON(selectedHotel, `hotel_${selectedHotel.id}`)}>EXPORT</button>
+                    </div>
+                </div>
+
+                <div className="detail-grid-layout">
+                    {/* Left Panel: Profile Info */}
+                    <div className="profile-panel">
+                        <section className="profile-hero">
+                            <div className="hero-img">
+                                <img src={selectedHotel.images[0]?.url} alt={selectedHotel.name} />
+                            </div>
+                            <div className="hero-content">
+                                <div className="badge-id">#OBJ-{selectedHotel.id}</div>
+                                <h1>{selectedHotel.name}</h1>
+                                <div className="location-info">
+                                    <MapPin size={16} />
+                                    <span>{selectedHotel.location.address}, {selectedHotel.location.place}</span>
+                                </div>
+                                <div className="coords">
+                                    <Navigation size={14} /> {selectedHotel.location.lat}, {selectedHotel.location.lng}
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="amenities-section">
+                            <h2 className="section-title"><Shield size={18} /> Sadržaji Objekta</h2>
+                            <div className="amenity-groups">
+                                <div className="amenity-group">
+                                    <h4><Maximize size={16} /> Karakteristike</h4>
+                                    <ul>
+                                        <li>Broj soba: {getAmenityValue('numberOfRooms')}</li>
+                                        <li>Spratnost: {getAmenityValue('numberOfFloors')}</li>
+                                        <li>Internet: {getAmenityValue('internetAccess')}</li>
+                                        <li>Klimatizovano: {getAmenityValue('airConditioning')}</li>
+                                    </ul>
+                                </div>
+                                <div className="amenity-group">
+                                    <h4><MapPin size={16} /> Udaljenosti</h4>
+                                    <div className="distance-grid">
+                                        <div className="dist-item"><span>Centar</span><strong>{getDistance('Center')}</strong></div>
+                                        <div className="dist-item"><span>Plaža</span><strong>{getDistance('Beach')}</strong></div>
+                                        <div className="dist-item"><span>Prodavnica</span><strong>{getDistance('Shop')}</strong></div>
+                                        <div className="dist-item"><span>Restoran</span><strong>{getDistance('Restaurant')}</strong></div>
+                                    </div>
+                                </div>
+                                <div className="amenity-group">
+                                    <h4><Utensils size={16} /> Ishrana i Bar</h4>
+                                    <p>{getAmenityValue('fb')}</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Right Panel: Units & Pricing */}
+                    <div className="logic-panel">
+                        <section className="units-section">
+                            <div className="section-header">
+                                <h2><Bed size={20} /> Smeštajne Jedinice</h2>
+                                <span className="unit-count">{selectedHotel.units.length} Jedinica</span>
+                            </div>
+
+                            {selectedHotel.units.map(unit => (
+                                <div key={unit.id} className="unit-card-erp">
+                                    <div className="unit-header">
+                                        <h3>{unit.name} <span>(ID: {unit.id})</span></h3>
+                                        <div className="unit-type-tag">{unit.type}</div>
+                                    </div>
+
+                                    <div className="unit-stats-grid">
+                                        <div className="stat-box"><Bed size={14} /> {unit.basicBeds} osnovnih</div>
+                                        <div className="stat-box"><Plus size={14} /> {unit.extraBeds} pomoćnih</div>
+                                        <div className="stat-box"><Clock size={14} /> Min. {unit.minOccupancy} osobe</div>
+                                        <div className="stat-box"><UserCheck size={14} /> Instant Booking</div>
+                                    </div>
+
+                                    {/* Pricing Logic Table */}
+                                    <div className="pricing-matrix">
+                                        <div className="matrix-title">Cenovnik i pravila (Base Rate)</div>
+                                        <table className="erp-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Period</th>
+                                                    <th>Noćenje</th>
+                                                    <th>Min. Stay</th>
+                                                    <th>Dolasci / Odlasci</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {unit.pricelist.baseRate.map((rate, i) => (
+                                                    <tr key={i}>
+                                                        <td>{rate.dateFrom} - {rate.dateTo}</td>
+                                                        <td className="price-td">{rate.price} {rate.currency}</td>
+                                                        <td>{rate.minStay} dana</td>
+                                                        <td>D: {rate.arrivalDays} / O: {rate.departureDays}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div className="supplements-row">
+                                        <div className="supp-item">
+                                            <Tag size={12} /> <strong>Popust:</strong> {unit.pricelist.discount[0]?.title} ({unit.pricelist.discount[0]?.percent}%)
+                                        </div>
+                                        <div className="supp-item">
+                                            <Waves size={12} /> <strong>Taksa:</strong> {unit.pricelist.touristTax[0]?.title} ({unit.pricelist.touristTax[0]?.price} {unit.pricelist.touristTax[0]?.currency})
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </section>
+
+                        <section className="common-rules-section">
+                            <h2><CheckCircle2 size={18} /> Zajednička pravila i doplate</h2>
+                            <div className="common-items-cards">
+                                {selectedHotel.commonItems.supplement.map((s, i) => (
+                                    <div key={i} className="common-rule-card">
+                                        <div className="rule-title">{s.title}</div>
+                                        <div className="rule-price">{s.price} {s.currency} <span>({s.paymentType})</span></div>
+                                    </div>
+                                ))}
+                                {selectedHotel.commonItems.discount.map((d, i) => (
+                                    <div key={i} className="common-rule-card discount">
+                                        <div className="rule-title">{d.title}</div>
+                                        <div className="rule-price">{d.percent}% popusta</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+                </div>
 
                 <style>{`
-                    .large-modal { width: 900px !important; height: 70vh !important; display: flex !important; padding: 0 !important; overflow: hidden !important; border-radius: 20px !important; }
-                    .modal-sidebar { width: 220px; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-                    .modal-nav { padding: 10px; display: flex; flex-direction: column; gap: 4px; }
-                    .modal-nav button { background: transparent; border: none; padding: 10px 15px; border-radius: 8px; color: var(--text-secondary); text-align: left; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-                    .modal-nav button.active { background: var(--accent); color: #fff; }
-                    .modal-main { flex: 1; padding: 40px; position: relative; background: var(--bg-main); overflow-y: auto; }
-                    .close-btn { position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; }
-                    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-                    .spread { grid-column: span 2; }
-                    .form-item label { font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block; }
-                    .form-item input { width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); outline: none; }
-                    .unit-nav-item { padding: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+                    .detail-view { background: var(--bg-dark); min-height: 100vh; }
+                    .detail-top-bar { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; }
+                    .btn-back-circle { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--glass-bg); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+                    .breadcrumb { font-size: 13px; color: var(--text-secondary); flex: 1; }
+                    
+                    .detail-grid-layout { display: grid; grid-template-columns: 400px 1fr; gap: 30px; }
+                    
+                    .profile-panel { display: flex; flex-direction: column; gap: 30px; }
+                    .profile-hero { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; }
+                    .hero-img img { width: 100%; height: 250px; object-fit: cover; }
+                    .hero-content { padding: 24px; }
+                    .badge-id { font-size: 11px; background: var(--accent-glow); color: var(--accent); padding: 4px 8px; border-radius: 6px; width: fit-content; margin-bottom: 12px; font-weight: 700; }
+                    .hero-content h1 { font-size: 28px; margin-bottom: 12px; }
+                    .location-info { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 14px; margin-bottom: 8px; }
+                    .coords { font-size: 12px; color: var(--text-secondary); opacity: 0.6; display: flex; align-items: center; gap: 6px; }
+
+                    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: #fff; }
+                    .amenities-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 24px; }
+                    .amenity-group { margin-bottom: 24px; }
+                    .amenity-group h4 { font-size: 13px; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
+                    .amenity-group ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+                    .amenity-group li { font-size: 14px; color: var(--text-secondary); display: flex; justify-content: space-between; }
+                    .distance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+                    .dist-item { background: var(--glass-bg); padding: 10px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; }
+                    .dist-item span { font-size: 11px; color: var(--text-secondary); }
+                    .dist-item strong { font-size: 14px; color: #fff; }
+
+                    .logic-panel { display: flex; flex-direction: column; gap: 30px; }
+                    .unit-card-erp { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 24px; margin-bottom: 24px; }
+                    .unit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+                    .unit-header h3 { font-size: 18px; }
+                    .unit-header h3 span { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+                    .unit-type-tag { font-size: 11px; background: var(--border); padding: 4px 10px; border-radius: 100px; font-weight: 700; text-transform: uppercase; }
+                    .unit-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+                    .stat-box { background: var(--glass-bg); padding: 10px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); border: 1px solid var(--glass-border); }
+
+                    .pricing-matrix { background: rgba(0,0,0,0.2); border-radius: 16px; padding: 16px; border: 1px solid var(--border); }
+                    .matrix-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; }
+                    .erp-table { width: 100%; border-collapse: collapse; }
+                    .erp-table th { text-align: left; font-size: 11px; color: var(--text-secondary); padding: 8px; border-bottom: 1px solid var(--border); }
+                    .erp-table td { padding: 12px 8px; font-size: 13px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.05); }
+                    .price-td { color: var(--accent) !important; font-weight: 700; }
+
+                    .supplements-row { display: flex; gap: 16px; margin-top: 20px; }
+                    .supp-item { font-size: 12px; color: var(--text-secondary); background: var(--glass-bg); padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
+
+                    .common-items-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+                    .common-rule-card { background: var(--bg-card); border: 1px solid var(--border); padding: 16px; border-radius: 16px; border-left: 4px solid var(--accent); }
+                    .common-rule-card.discount { border-left-color: #f59e0b; }
+                    .rule-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+                    .rule-price { font-size: 15px; color: var(--accent); font-weight: 700; }
+                    .rule-price span { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+                    /* HUB STYLING REFINED */
+                    .hub-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px; }
+                    .title-gradient { font-size: 36px; font-weight: 800; background: linear-gradient(to right, #fff, #8b949e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+                    .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+                    .service-card-premium { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 4px; cursor: pointer; position: relative; }
+                    .card-inner { padding: 24px; display: flex; align-items: center; gap: 20px; }
+                    .icon-wrapper { width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #fff; }
+                    .card-content h3 { font-size: 18px; margin-bottom: 4px; }
+                    .stats { display: flex; align-items: baseline; gap: 6px; }
+                    .count { font-size: 18px; font-weight: 700; color: var(--accent); }
+                    .label { font-size: 12px; color: var(--text-secondary); }
+                    .card-arrow { margin-left: auto; color: var(--text-secondary); opacity: 0.5; }
+
+                    .hotel-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+                    .hotel-item-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; cursor: pointer; transition: 0.3s; }
+                    .hotel-item-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+                    .hotel-thumb { position: relative; height: 180px; }
+                    .hotel-thumb img { width: 100%; height: 100%; object-fit: cover; }
+                    .hotel-id-tag { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+                    .hotel-info { padding: 20px; }
+                    .hotel-info h3 { font-size: 18px; margin-bottom: 8px; }
+                    .loc { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+                    .units-info { font-size: 12px; color: var(--accent); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+                    .modal-overlay-blur { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+                    .modal-content-glass { background: rgba(22, 27, 34, 0.9); border: 1px solid var(--glass-border); width: 600px; border-radius: 32px; padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+                    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                    .modal-header h3 { font-size: 20px; font-weight: 700; margin: 0; }
+                    .modal-header button { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; transition: 0.2s; }
+                    .modal-header button:hover { color: var(--accent); }
+                    .modal-footer { margin-top: 24px; }
+                    .import-textarea { width: 100%; height: 300px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; color: #fff; font-family: monospace; font-size: 12px; margin: 20px 0; outline: none; }
+                    .btn-primary-glow { width: 100%; background: var(--accent); color: #fff; border: none; padding: 16px; border-radius: 100px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 20px var(--accent-glow); transition: 0.2s; }
+                    .btn-primary-glow:hover { transform: translateY(-2px); box-shadow: 0 15px 30px var(--accent-glow); }
+                    
+                    .btn-icon { background: transparent; border: 1px solid var(--border); color: var(--text-primary); padding: 10px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+                    .btn-icon:hover { background: var(--glass-bg); border-color: var(--accent); }
+                    .btn-icon.circle { border-radius: 50%; width: 40px; height: 40px; }
+                    
+                    .subtitle { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+                    .header-actions { display: flex; gap: 12px; }
+                    
+                    .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+                    .list-header h1 { font-size: 32px; font-weight: 700; margin: 0; }
+                    .btn-back { background: var(--glass-bg); border: 1px solid var(--border); color: var(--text-primary); padding: 10px 20px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; transition: 0.2s; }
+                    .btn-back:hover { background: var(--glass-border); }
+                    
+                    .search-bar { position: relative; width: 400px; }
+                    .search-bar input { width: 100%; padding: 12px 20px 12px 48px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 100px; color: var(--text-primary); font-size: 14px; outline: none; }
+                    .search-bar svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+                    
+                    .add-hotel-placeholder { background: var(--bg-card); border: 2px dashed var(--border); border-radius: 20px; padding: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; cursor: pointer; transition: 0.3s; color: var(--text-secondary); }
+                    .add-hotel-placeholder:hover { border-color: var(--accent); color: var(--accent); }
+                    
+                    .btn-export { background: var(--accent); color: #fff; border: none; padding: 10px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+                    .btn-export:hover { transform: translateY(-2px); box-shadow: 0 10px 20px var(--accent-glow); }
+                    
+                    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+                    .section-header h2 { font-size: 20px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px; }
+                    .unit-count { font-size: 14px; color: var(--text-secondary); background: var(--glass-bg); padding: 6px 12px; border-radius: 100px; }
+                    
+                    .common-rules-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 24px; }
+                    
+                    .top-section-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+                    .btn-primary-action { background: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+                    .btn-primary-action:hover { transform: translateY(-2px); box-shadow: 0 10px 20px var(--accent-glow); }
                 `}</style>
             </div>
         );
     }
 
-    // Placeholder for other services
-    return (
-        <div className="module-container fade-in">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-                <button onClick={() => setSelectedService(null)} className="btn-icon"><ArrowLeft size={20} /></button>
-                <h2 style={{ fontSize: '24px', fontWeight: '700' }}> {selectedService?.toUpperCase()} </h2>
-            </div>
-            <div style={{ padding: '100px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '32px' }}>
-                <Plus size={48} style={{ opacity: 0.1, marginBottom: '16px' }} />
-                <p style={{ color: 'var(--text-secondary)' }}>Ovaj modul je u fazi razvoja.</p>
-            </div>
-        </div>
-    );
+    return null;
 };
 
 export default ProductionHub;

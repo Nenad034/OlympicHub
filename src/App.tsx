@@ -60,6 +60,8 @@ function App() {
 
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem('lang') as Language) || 'sr');
   const [userLevel, setUserLevel] = useState<number>(5);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
+  const [navMode, setNavMode] = useState<'sidebar' | 'horizontal'>(() => (localStorage.getItem('nav-mode') as any) || 'sidebar');
 
   const [analysisData, setAnalysisData] = useState<any[]>([]);
 
@@ -76,6 +78,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('lang', lang);
   }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  useEffect(() => {
+    localStorage.setItem('nav-mode', navMode);
+  }, [navMode]);
 
   if (isLoading) {
     return (
@@ -99,64 +109,101 @@ function App() {
   };
 
   return (
-    <div className="hub-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <div className="logo-container" style={{ background: 'transparent', boxShadow: 'none' }}>
-            <img src="/logo.jpg" alt="Olympic Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
-          </div>
-          <span className="brand-text">Olympic Hub</span>
-        </div>
-
-        <nav className="nav-section">
-          <div className="nav-group">
-            <h3 className="nav-label">Main</h3>
-            <div className={`nav-item ${(activeTab === 'dashboard' && !activeModule) ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setActiveModule(null); }}>
-              <LayoutDashboard size={20} /> {t.dashboard}
+    <div className={`hub-container ${navMode}-mode`}>
+      {/* Sidebar - only if navMode is sidebar */}
+      {navMode === 'sidebar' && (
+        <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="sidebar-header">
+            <div className="logo-container" style={{ background: 'transparent', boxShadow: 'none' }}>
+              <img src="/logo.jpg" alt="Olympic Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
             </div>
-            <div className={`nav-item ${isChatOpen ? 'active' : ''}`} onClick={() => setIsChatOpen(true)}>
-              <Brain size={20} color="var(--accent)" /> AI Chat
-            </div>
+            {!isSidebarCollapsed && <span className="brand-text">Olympic Hub</span>}
+            <button className="collapse-toggle" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
+              {isSidebarCollapsed ? <ChevronRight size={16} /> : <div style={{ transform: 'rotate(180deg)' }}><ChevronRight size={16} /></div>}
+            </button>
           </div>
 
-          <div className="nav-group">
-            <h3 className="nav-label">{t.sectors}</h3>
-            <div className={`nav-item ${activeTab === 'prod' ? 'active' : ''}`} onClick={() => { setActiveTab('prod'); setActiveModule('production-hub'); }}>
-              <Package size={20} /> {t.production}
+          <nav className="nav-section">
+            <div className="nav-group">
+              <h3 className="nav-label">{!isSidebarCollapsed && 'Main'}</h3>
+              <div className={`nav-item ${(activeTab === 'dashboard' && !activeModule) ? 'active' : ''}`} title={t.dashboard} onClick={() => { setActiveTab('dashboard'); setActiveModule(null); }}>
+                <LayoutDashboard size={20} /> {!isSidebarCollapsed && t.dashboard}
+              </div>
+              <div className={`nav-item ${isChatOpen ? 'active' : ''}`} title="AI Chat" onClick={() => setIsChatOpen(true)}>
+                <Brain size={20} color="var(--accent)" /> {!isSidebarCollapsed && 'AI Chat'}
+              </div>
             </div>
-            <div className={`nav-item ${activeModule === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveModule('suppliers')}>
-              <Truck size={20} /> Dobavljači
-            </div>
-            <div className={`nav-item ${activeModule === 'customers' ? 'active' : ''}`} onClick={() => setActiveModule('customers')}>
-              <Users size={20} /> Kupci
-            </div>
-          </div>
 
-          <div className="nav-group" style={{ marginTop: 'auto', paddingBottom: '10px' }}>
-            <h3 className="nav-label">{t.system}</h3>
-            <div className={`nav-item ${activeModule === 'settings' ? 'active' : ''}`} onClick={() => { setActiveModule('settings'); setActiveTab('settings'); }}>
-              <SettingsIcon size={20} /> {t.settings}
+            <div className="nav-group">
+              <h3 className="nav-label">{!isSidebarCollapsed && t.sectors}</h3>
+              <div className={`nav-item ${activeTab === 'prod' ? 'active' : ''}`} title={t.production} onClick={() => { setActiveTab('prod'); setActiveModule('production-hub'); }}>
+                <Package size={20} /> {!isSidebarCollapsed && t.production}
+              </div>
+              <div className={`nav-item ${activeModule === 'suppliers' ? 'active' : ''}`} title="Dobavljači" onClick={() => setActiveModule('suppliers')}>
+                <Truck size={20} /> {!isSidebarCollapsed && 'Dobavljači'}
+              </div>
+              <div className={`nav-item ${activeModule === 'customers' ? 'active' : ''}`} title="Kupci" onClick={() => setActiveModule('customers')}>
+                <Users size={20} /> {!isSidebarCollapsed && 'Kupci'}
+              </div>
             </div>
-          </div>
-        </nav>
-      </aside>
 
-      {/* Main Content */}
+            <div className="nav-group" style={{ marginTop: 'auto', paddingBottom: '10px' }}>
+              <h3 className="nav-label">{!isSidebarCollapsed && t.system}</h3>
+              <div className={`nav-item ${activeModule === 'settings' ? 'active' : ''}`} title={t.settings} onClick={() => { setActiveModule('settings'); setActiveTab('settings'); }}>
+                <SettingsIcon size={20} /> {!isSidebarCollapsed && t.settings}
+              </div>
+            </div>
+          </nav>
+        </aside>
+      )}
+
+      {/* Main Content Area */}
       <main className="main-content">
+        {/* Horizontal Menu if enabled */}
+        {navMode === 'horizontal' && (
+          <div className="horizontal-nav">
+            <div className="logo-container sm" style={{ background: 'transparent', boxShadow: 'none', width: '32px', height: '32px' }}>
+              <img src="/logo.jpg" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }} />
+            </div>
+            <div className="nav-horizontal-items">
+              <div className={`h-nav-item ${(activeTab === 'dashboard' && !activeModule) ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setActiveModule(null); }}>
+                <LayoutDashboard size={18} /> {t.dashboard}
+              </div>
+              <div className={`h-nav-item ${activeTab === 'prod' ? 'active' : ''}`} onClick={() => { setActiveTab('prod'); setActiveModule('production-hub'); }}>
+                <Package size={18} /> {t.production}
+              </div>
+              <div className={`h-nav-item ${activeModule === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveModule('suppliers')}>
+                <Truck size={18} /> Dobavljači
+              </div>
+              <div className={`h-nav-item ${activeModule === 'customers' ? 'active' : ''}`} onClick={() => setActiveModule('customers')}>
+                <Users size={18} /> Kupci
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="top-bar">
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
             <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
             <input
               type="text"
               placeholder={t.searchPlaceholder}
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '100px', padding: '12px 20px 12px 48px', color: 'var(--text-primary)', width: '400px', fontSize: '14px' }}
+              className="search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: '100%', maxWidth: '400px' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <button
+              className="btn-glass"
+              onClick={() => setNavMode(navMode === 'sidebar' ? 'horizontal' : 'sidebar')}
+              title="Toggle Nav Layout"
+            >
+              {navMode === 'sidebar' ? <LayoutDashboard size={18} /> : <SettingsIcon size={18} />}
+              <span style={{ fontSize: '12px', fontWeight: 600 }}>{navMode === 'sidebar' ? 'Horizontal Menu' : 'Sidebar Menu'}</span>
+            </button>
             <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' }}>
               <button onClick={() => setLang('sr')} style={{ padding: '6px 10px', border: 'none', background: lang === 'sr' ? 'var(--bg-card)' : 'transparent', borderRadius: '6px', color: lang === 'sr' ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>SRB</button>
               <button onClick={() => setLang('en')} style={{ padding: '6px 10px', border: 'none', background: lang === 'en' ? 'var(--bg-card)' : 'transparent', borderRadius: '6px', color: lang === 'en' ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>ENG</button>

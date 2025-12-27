@@ -82,6 +82,12 @@ h3,
   display: flex;
   flex-direction: column;
   z-index: 10;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.sidebar.collapsed {
+  width: 80px;
 }
 
 .sidebar-header {
@@ -89,6 +95,36 @@ h3,
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 30px 18px;
+  justify-content: center;
+}
+
+.collapse-toggle {
+  position: absolute;
+  right: -12px;
+  top: 40px;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: 0.2s;
+}
+
+.collapse-toggle:hover {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .logo-container {
@@ -145,12 +181,111 @@ h3,
 
 .nav-item:hover {
   background: var(--glass-bg);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .nav-item.active {
   background: var(--accent-glow);
   color: var(--accent);
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar.collapsed .nav-label {
+  display: none;
+}
+
+/* Horizontal Nav Mode */
+.hub-container.horizontal-mode {
+  flex-direction: column;
+}
+
+.horizontal-nav {
+  height: 64px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  gap: 40px;
+  backdrop-filter: blur(20px);
+  z-index: 100;
+}
+
+.nav-horizontal-items {
+  display: flex;
+  gap: 8px;
+}
+
+.h-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.h-nav-item:hover {
+  background: var(--glass-bg);
+  color: var(--text-primary);
+}
+
+.h-nav-item.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.hub-container.horizontal-mode .main-content {
+  padding-top: 20px;
+}
+
+.hub-container.horizontal-mode .top-bar {
+  margin-bottom: 30px;
+}
+
+.btn-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-glass:hover {
+  background: var(--glass-border);
+}
+
+.search-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 12px 20px 12px 48px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.module-container {
+  padding: 40px;
+  min-height: 100vh;
 }
 
 /* Main Content Area */
@@ -277,6 +412,89 @@ h3,
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Button Styles */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px var(--accent-glow);
+}
+
+.btn-secondary {
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--glass-border);
+  border-color: var(--accent);
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.btn-icon:hover {
+  background: var(--glass-bg);
+  border-color: var(--accent);
+}
+
+.export-group {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.nav-btn:hover {
+  background: var(--glass-border);
+}
+
+.nav-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 /* Scrollbar Styling */
