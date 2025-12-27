@@ -2,28 +2,36 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building2,
-    Plane,
-    Bus,
-    Car,
-    MapPin,
-    Ticket,
-    Users,
-    User,
-    Anchor,
-    ArrowLeft,
-    ShoppingBag,
-    Briefcase,
     X,
-    Settings2,
-    ListPlus
+    ArrowLeft,
+    Plus,
+    Building,
+    MapPin,
+    Star,
+    Wifi,
+    Utensils,
+    Waves,
+    Car,
+    CreditCard
 } from 'lucide-react';
+import { exportToJSON, exportToExcel, exportToXML, exportToPDF } from '../../utils/exportUtils';
 
-interface ProductionItem {
+interface Hotel {
     id: string;
-    title: string;
-    icon: React.ReactNode;
-    color: string;
-    options: string[];
+    name: string;
+    hotel_id?: string;
+    city: string;
+    destination: string;
+    country: string;
+    category: string;
+    address: string;
+    phone: string;
+    email: string;
+    latitude: string;
+    longitude: string;
+    mealPlan: string;
+    website: string;
+    facilities: string[];
 }
 
 interface ProductionHubProps {
@@ -33,323 +41,180 @@ interface ProductionHubProps {
 }
 
 const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
-    const [selectedItem, setSelectedItem] = useState<ProductionItem | null>(null);
-    const [items, setItems] = useState<ProductionItem[]>([
-        {
-            id: 'accommodation',
-            title: 'Smeštaj',
-            icon: <Building2 size={24} />,
-            color: 'var(--gradient-blue)',
-            options: ['Hotel', 'Apartman', 'Vila', 'Resort', 'Bungalov', 'Hostel']
-        },
-        {
-            id: 'trips',
-            title: 'Putovanja',
-            icon: <MapPin size={24} />,
-            color: 'var(--gradient-purple)',
-            options: ['Avion', 'Autobus', 'Voz', 'Brod']
-        },
-        {
-            id: 'flights',
-            title: 'Avio karte',
-            icon: <Plane size={24} />,
-            color: 'var(--gradient-orange)',
-            options: ['Redovne linije', 'Low cost', 'Individualni upiti', 'Čarteri']
-        },
-        {
-            id: 'transport',
-            title: 'Prevoz',
-            icon: <Bus size={24} />,
-            color: 'var(--gradient-green)',
-            options: ['Sopstveni prevoz', 'Avion', 'Autobus', 'Voz', 'Brod']
-        },
-        {
-            id: 'transfers',
-            title: 'Transferi',
-            icon: <Car size={24} />,
-            color: 'var(--gradient-blue)',
-            options: ['Avion', 'Mini bus', 'Autobus', 'Brod', 'Voz', 'Automobil', 'Rent-a car', 'Uber']
-        },
-        {
-            id: 'extra',
-            title: 'Extra usluge',
-            icon: <Ticket size={24} />,
-            color: 'var(--gradient-purple)',
-            options: ['Vodiči', 'Izleti', 'Ulaznice', 'Obroci', 'Osiguranje', 'SPA paketi']
-        }
-    ]);
+    const [hotels, setHotels] = useState<Hotel[]>([]);
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [formData, setFormData] = useState<Partial<Hotel>>({
+        category: '4',
+        mealPlan: 'HB',
+        country: 'RS',
+        facilities: []
+    });
 
-    const packages = [
-        {
-            id: 'group-dynamic',
-            title: 'Grupni Dinamički paketi',
-            desc: 'avion + smeštaj + transfer + extra usluge',
-            icon: <Users size={24} />,
-            color: 'rgba(57, 118, 245, 0.1)',
-            borderColor: '#3976f5'
-        },
-        {
-            id: 'ind-dynamic',
-            title: 'Individualni dinamički paketi',
-            desc: 'avion + smeštaj + transfer + extra usluge',
-            icon: <User size={24} />,
-            color: 'rgba(188, 140, 255, 0.1)',
-            borderColor: '#bc8cff'
-        },
-        {
-            id: 'charters',
-            title: 'Čarteri',
-            desc: 'avion + smeštaj + transfer',
-            icon: <Anchor size={24} />,
-            color: 'rgba(63, 185, 80, 0.1)',
-            borderColor: '#3fb950'
-        }
+    const categories = [
+        { val: '0', label: 'Uncategorized' },
+        { val: '1', label: '1 Star' },
+        { val: '2', label: '2 Stars' },
+        { val: '3', label: '3 Stars' },
+        { val: '4', label: '4 Stars' },
+        { val: '5', label: '5 Stars' }
     ];
 
-    const handleAddOption = (itemId: string, option: string) => {
-        if (!option.trim()) return;
-        setItems(prev => prev.map(item =>
-            item.id === itemId ? { ...item, options: [...item.options, option] } : item
-        ));
-        if (selectedItem?.id === itemId) {
-            setSelectedItem(prev => prev ? { ...prev, options: [...prev.options, option] } : null);
-        }
+    const mealPlans = [
+        { val: 'RO', label: 'Room Only' },
+        { val: 'BB', label: 'Bed & Breakfast' },
+        { val: 'HB', label: 'Half Board' },
+        { val: 'FB', label: 'Full Board' },
+        { val: 'AI', label: 'All Inclusive' }
+    ];
+
+    const handleAddHotel = (e: React.FormEvent) => {
+        e.preventDefault();
+        const newHotel = {
+            ...formData,
+            id: Math.random().toString(36).substr(2, 9),
+            hotel_id: Math.floor(Math.random() * 10000000).toString()
+        } as Hotel;
+        setHotels([...hotels, newHotel]);
+        setShowAddForm(false);
     };
 
-    const handleRemoveOption = (itemId: string, option: string) => {
-        setItems(prev => prev.map(item =>
-            item.id === itemId ? { ...item, options: item.options.filter(o => o !== option) } : item
-        ));
-        if (selectedItem?.id === itemId) {
-            setSelectedItem(prev => prev ? { ...prev, options: prev.options.filter(o => o !== option) } : null);
+    const handleExport = (format: 'json' | 'excel' | 'xml' | 'pdf') => {
+        if (hotels.length === 0) return alert('Nema hotela za export');
+        switch (format) {
+            case 'json': exportToJSON(hotels, 'smestaj_export'); break;
+            case 'excel': exportToExcel(hotels, 'smestaj_export'); break;
+            case 'xml': exportToXML(hotels, 'smestaj_export'); break;
+            case 'pdf': exportToPDF(hotels, 'smestaj_export', 'Baza Smestaja - Olympic Hub'); break;
         }
     };
 
     return (
         <div className="module-container">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-                <button
-                    onClick={onBack}
-                    style={{
-                        background: 'var(--glass-bg)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-primary)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}
-                >
-                    <ArrowLeft size={20} />
-                </button>
-                <div>
-                    <h2 style={{ fontSize: '24px', fontWeight: '700' }}>Produkcija</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Upravljanje turističkim proizvodima i paketima</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button onClick={onBack} className="btn-icon"><ArrowLeft size={20} /></button>
+                    <div>
+                        <h2 style={{ fontSize: '24px', fontWeight: '700' }}>Smeštaj (Hoteli)</h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Upravljanje bazom smeštajnih kapaciteta</p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={() => setShowAddForm(true)} className="btn-primary">
+                        <Plus size={18} /> Dodaj Hotel
+                    </button>
+                    <div className="export-group">
+                        <button className="btn-secondary" onClick={() => handleExport('json')}>JSON</button>
+                        <button className="btn-secondary" onClick={() => handleExport('excel')}>XLSX</button>
+                        <button className="btn-secondary" onClick={() => handleExport('pdf')}>PDF</button>
+                    </div>
                 </div>
             </div>
 
-            <div style={{ marginBottom: '40px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <ShoppingBag size={20} color="var(--accent)" /> Glavne stavke
-                    </h3>
-                </div>
-
-                <div className="dashboard-grid">
-                    {items.map((item, idx) => (
-                        <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.05 }}
-                            className={`app-card ${selectedItem?.id === item.id ? 'active-selection' : ''}`}
-                            onClick={() => setSelectedItem(item)}
-                            style={{ paddingBottom: '16px' }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                <div className="card-icon" style={{ background: item.color, marginBottom: 0 }}>
-                                    {item.icon}
+            <div className="hotels-grid">
+                {hotels.length === 0 ? (
+                    <div style={{ padding: '80px', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '24px', border: '1px solid var(--border)' }}>
+                        <Building2 size={48} color="var(--text-secondary)" style={{ marginBottom: '16px', opacity: 0.3 }} />
+                        <p style={{ color: 'var(--text-secondary)' }}>Nema unetih hotela. Kliknite na "Dodaj Hotel" da započnete.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                        {hotels.map(h => (
+                            <motion.div key={h.id} layout className="app-card" style={{ padding: '24px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {[...Array(Number(h.category))].map((_, i) => <Star key={i} size={14} fill="var(--accent)" color="var(--accent)" />)}
+                                    </div>
+                                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>ID: {h.hotel_id}</span>
                                 </div>
-                                <div style={{ color: 'var(--accent)', opacity: selectedItem?.id === item.id ? 1 : 0 }}>
-                                    <Settings2 size={18} />
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>{h.name}</h3>
+                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                    <MapPin size={12} /> {h.city}, {h.country}
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '10px', background: 'var(--glass-bg)', padding: '4px 8px', borderRadius: '6px' }}>{h.mealPlan}</span>
+                                    {h.facilities?.map(f => <span key={f} style={{ fontSize: '10px', background: 'var(--glass-bg)', padding: '4px 8px', borderRadius: '6px' }}>{f}</span>)}
                                 </div>
-                            </div>
-                            <h3 className="card-title">{item.title}</h3>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
-                                {item.options.slice(0, 4).map(opt => (
-                                    <span key={opt} style={{ fontSize: '11px', background: 'var(--glass-bg)', padding: '4px 8px', borderRadius: '6px', color: 'var(--text-secondary)' }}>
-                                        {opt}
-                                    </span>
-                                ))}
-                                {item.options.length > 4 && (
-                                    <span style={{ fontSize: '11px', background: 'var(--glass-bg)', padding: '4px 8px', borderRadius: '6px', color: 'var(--accent)' }}>
-                                        +{item.options.length - 4} još
-                                    </span>
-                                )}
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>
-                {selectedItem && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--accent)',
-                            borderRadius: '24px',
-                            padding: '30px',
-                            marginBottom: '40px',
-                            position: 'relative'
-                        }}
-                    >
-                        <button
-                            onClick={() => setSelectedItem(null)}
-                            style={{ position: 'absolute', top: '20px', right: '20px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                        >
-                            <X size={20} />
-                        </button>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: selectedItem.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                {selectedItem.icon}
+                {showAddForm && (
+                    <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="modal-content" onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                <h3>Novi Hotel</h3>
+                                <button onClick={() => setShowAddForm(false)} className="btn-icon"><X size={20} /></button>
                             </div>
-                            <h3 style={{ fontSize: '20px', fontWeight: '600' }}>Upravljanje: {selectedItem.title}</h3>
-                        </div>
-
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
-                            {selectedItem.options.map(opt => (
-                                <div key={opt} style={{
-                                    background: 'var(--glass-bg)',
-                                    padding: '8px 16px',
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px',
-                                    border: '1px solid var(--border)'
-                                }}>
-                                    <span style={{ fontSize: '14px' }}>{opt}</span>
-                                    <button
-                                        onClick={() => handleRemoveOption(selectedItem.id, opt)}
-                                        style={{ background: 'transparent', border: 'none', color: '#ff4444', cursor: 'pointer', display: 'flex', padding: '2px' }}
-                                    >
-                                        <X size={14} />
-                                    </button>
+                            <form onSubmit={handleAddHotel} className="form-grid">
+                                <div className="form-item" style={{ gridColumn: 'span 2' }}>
+                                    <label>Ime Hotela</label>
+                                    <input required type="text" onChange={e => setFormData({ ...formData, name: e.target.value })} />
                                 </div>
-                            ))}
-                            <div style={{ position: 'relative' }}>
-                                <input
-                                    type="text"
-                                    placeholder="Dodaj novu opciju..."
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleAddOption(selectedItem.id, (e.target as HTMLInputElement).value);
-                                            (e.target as HTMLInputElement).value = '';
-                                        }
-                                    }}
-                                    style={{
-                                        background: 'transparent',
-                                        border: '1px dashed var(--border)',
-                                        padding: '8px 16px',
-                                        borderRadius: '12px',
-                                        color: 'var(--text-primary)',
-                                        fontSize: '14px',
-                                        width: '200px'
-                                    }}
-                                />
-                                <ListPlus size={14} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                            </div>
-                        </div>
-                    </motion.div>
+                                <div className="form-item">
+                                    <label>Kategorija</label>
+                                    <select onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '12px', borderRadius: '12px', color: 'var(--text-primary)' }}>
+                                        {categories.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-item">
+                                    <label>Usluga (Meal Plan)</label>
+                                    <select onChange={e => setFormData({ ...formData, mealPlan: e.target.value })} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '12px', borderRadius: '12px', color: 'var(--text-primary)' }}>
+                                        {mealPlans.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-item">
+                                    <label>Grad</label>
+                                    <input required type="text" onChange={e => setFormData({ ...formData, city: e.target.value })} />
+                                </div>
+                                <div className="form-item">
+                                    <label>Država (Kod)</label>
+                                    <input required type="text" defaultValue="RS" onChange={e => setFormData({ ...formData, country: e.target.value })} />
+                                </div>
+                                <div className="form-item" style={{ gridColumn: 'span 2' }}>
+                                    <label>Adresa</label>
+                                    <input required type="text" onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                                </div>
+                                <div className="form-item">
+                                    <label>Email</label>
+                                    <input required type="email" onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                </div>
+                                <div className="form-item">
+                                    <label>Telefon</label>
+                                    <input required type="text" onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                                </div>
+                                <div className="form-item">
+                                    <label>Latitude</label>
+                                    <input type="text" placeholder="0.0000" onChange={e => setFormData({ ...formData, latitude: e.target.value })} />
+                                </div>
+                                <div className="form-item">
+                                    <label>Longitude</label>
+                                    <input type="text" placeholder="0.0000" onChange={e => setFormData({ ...formData, longitude: e.target.value })} />
+                                </div>
+
+                                <button type="submit" className="btn-primary" style={{ gridColumn: 'span 2', marginTop: '20px', padding: '15px' }}>
+                                    Sačuvaj Hotel
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
-            <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Briefcase size={20} color="var(--accent)" /> Specijalne kategorije (Paketi)
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                    {packages.map((pkg, idx) => (
-                        <motion.div
-                            key={pkg.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.3 + idx * 0.1 }}
-                            whileHover={{ scale: 1.02 }}
-                            style={{
-                                background: pkg.color,
-                                border: `1px solid ${pkg.borderColor}44`,
-                                borderRadius: '24px',
-                                padding: '24px',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                                <div style={{
-                                    width: '48px',
-                                    height: '48px',
-                                    borderRadius: '14px',
-                                    background: 'var(--bg-card)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: pkg.borderColor,
-                                    border: `1px solid ${pkg.borderColor}44`
-                                }}>
-                                    {pkg.icon}
-                                </div>
-                                <div>
-                                    <h4 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)' }}>{pkg.title}</h4>
-                                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{pkg.desc}</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button style={{
-                                    flex: 1,
-                                    background: pkg.borderColor,
-                                    color: '#fff',
-                                    border: 'none',
-                                    padding: '10px',
-                                    borderRadius: '12px',
-                                    fontWeight: '700',
-                                    fontSize: '13px',
-                                    cursor: 'pointer'
-                                }}>
-                                    Kreiraj novi
-                                </button>
-                                <button style={{
-                                    background: 'var(--bg-card)',
-                                    color: 'var(--text-primary)',
-                                    border: `1px solid ${pkg.borderColor}44`,
-                                    padding: '10px 16px',
-                                    borderRadius: '12px',
-                                    fontWeight: '600',
-                                    fontSize: '13px',
-                                    cursor: 'pointer'
-                                }}>
-                                    Lista
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-            </div>
-
             <style>{`
-        .module-container {
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-        .active-selection {
-          border-color: var(--accent) !important;
-          background: rgba(63, 185, 80, 0.05) !important;
-        }
-      `}</style>
+                .btn-icon { background: var(--glass-bg); border: 1px solid var(--border); color: var(--text-primary); padding: 8px; borderRadius: 12px; cursor: pointer; display: flex; align-items: center; }
+                .btn-primary { background: var(--accent); color: #fff; border: none; padding: 10px 20px; borderRadius: 12px; fontWeight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+                .btn-secondary { background: var(--glass-bg); border: 1px solid var(--border); color: var(--text-primary); padding: 10px 15px; borderRadius: 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
+                .export-group { display: flex; background: var(--glass-bg); padding: 4px; borderRadius: 14px; border: 1px solid var(--border); gap: 4px; }
+                .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: flex; align-items: center; justifyContent: center; z-index: 1000; }
+                .modal-content { background: var(--bg-main); border: 1px solid var(--border); padding: 40px; borderRadius: 32px; width: 600px; max-height: 90vh; overflowY: auto; }
+                .form-grid { display: grid; gridTemplateColumns: 1fr 1fr; gap: 20px; }
+                .form-item { display: flex; flexDirection: column; gap: 8px; }
+                .form-item label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+                .form-item input { background: var(--bg-card); border: 1px solid var(--border); padding: 12px; borderRadius: 12px; color: var(--text-primary); }
+            `}</style>
         </div>
     );
 };
