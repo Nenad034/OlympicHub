@@ -536,10 +536,94 @@ const BasicInfoStep: React.FC<{ data: Partial<Property>; onChange: (updates: Par
 };
 
 const LocationStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
+    const [mapLink, setMapLink] = useState('');
+
+    const parseMapLink = () => {
+        if (!mapLink) return;
+
+        // Pattern 1: @lat,lng (e.g. google.com/maps/@44.81,20.46,12z)
+        const atMatch = mapLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (atMatch) {
+            const lat = parseFloat(atMatch[1]);
+            const lng = parseFloat(atMatch[2]);
+            onChange({
+                geoCoordinates: {
+                    ...data.geoCoordinates,
+                    latitude: lat,
+                    longitude: lng,
+                    coordinateSource: 'MAP_PIN'
+                } as any
+            });
+            return;
+        }
+
+        // Pattern 2: search/lat,lng or place/lat,lng
+        const pathMatch = mapLink.match(/\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (pathMatch) {
+            const lat = parseFloat(pathMatch[1]);
+            const lng = parseFloat(pathMatch[2]);
+            onChange({
+                geoCoordinates: {
+                    ...data.geoCoordinates,
+                    latitude: lat,
+                    longitude: lng,
+                    coordinateSource: 'MAP_PIN'
+                } as any
+            });
+        }
+    };
+
     return (
         <div>
+            {/* Google Maps Integration Section */}
             <div className="form-section">
-                <h3 className="form-section-title">Fizička Adresa</h3>
+                <h3 className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MapPin size={20} className="text-accent" /> Google Mape Integracija
+                </h3>
+                <div className="form-group">
+                    <label className="form-label">Brzo popunjavanje: Nalepite link sa Google Mapa</label>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <input
+                            type="text"
+                            className="form-input"
+                            placeholder="https://www.google.com/maps/place/..."
+                            value={mapLink}
+                            onChange={(e) => setMapLink(e.target.value)}
+                            style={{ flex: 1 }}
+                        />
+                        <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={parseMapLink}
+                            style={{ whiteSpace: 'nowrap' }}
+                        >
+                            <Globe size={16} style={{ marginRight: '6px' }} /> Povuci Podatke
+                        </button>
+                    </div>
+                    <small style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Kopirajte URL iz browsera kada ste na željenoj lokaciji na Google Mapama.
+                    </small>
+                </div>
+
+                {data.geoCoordinates?.latitude && data.geoCoordinates?.longitude && (
+                    <div style={{ marginTop: '20px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', height: '300px', background: 'var(--bg-card)' }}>
+                        <iframe
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            scrolling="no"
+                            marginHeight={0}
+                            marginWidth={0}
+                            title="Location Preview"
+                            src={`https://maps.google.com/maps?q=${data.geoCoordinates.latitude},${data.geoCoordinates.longitude}&z=15&output=embed`}
+                            style={{ filter: 'grayscale(0.2) contrast(1.1)' }}
+                        ></iframe>
+                    </div>
+                )}
+            </div>
+
+            <div className="form-section">
+                <h3 className="form-section-title">Manualni Unos Adrese</h3>
                 <div className="form-grid">
                     <div className="form-group span-2">
                         <label className="form-label required">Ulica i Broj</label>
@@ -621,7 +705,7 @@ const LocationStep: React.FC<{ data: Partial<Property>; onChange: (updates: Part
             </div>
 
             <div className="form-section">
-                <h3 className="form-section-title">GPS Koordinate</h3>
+                <h3 className="form-section-title">GPS Koordinate (Sistemski)</h3>
                 <div className="form-grid">
                     <div className="form-group">
                         <label className="form-label">Geografska Širina (Latitude)</label>
@@ -667,7 +751,7 @@ const LocationStep: React.FC<{ data: Partial<Property>; onChange: (updates: Part
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Google Place ID</label>
+                        <label className="form-label">Google Place ID (Opciono)</label>
                         <input
                             type="text"
                             className="form-input"

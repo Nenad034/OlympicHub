@@ -339,6 +339,20 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             </div>
                         </section>
 
+                        <section className="location-map-section" style={{ marginTop: '20px', borderRadius: '24px', overflow: 'hidden', border: '1px solid var(--border)', height: '250px', background: 'var(--bg-card)' }}>
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                frameBorder="0"
+                                scrolling="no"
+                                marginHeight={0}
+                                marginWidth={0}
+                                title="Hotel Location"
+                                src={`https://maps.google.com/maps?q=${selectedHotel.location.lat},${selectedHotel.location.lng}&z=15&output=embed`}
+                                style={{ filter: 'grayscale(0.2) contrast(1.1)' }}
+                            ></iframe>
+                        </section>
+
                         <section className="amenities-section">
                             <h2 className="section-title"><Shield size={18} /> Sadržaji Objekta</h2>
                             <div className="amenity-groups">
