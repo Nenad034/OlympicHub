@@ -18,7 +18,7 @@ import {
     Trash2,
     AlertCircle
 } from 'lucide-react';
-import type { Property, PropertyContent, RoomType, BeddingConfiguration, PropertyAmenity, RatePlan, HouseRules, KeyCollection, HostProfile, Tax } from '../../types/property.types';
+import type { Property, PropertyContent, RoomType, BeddingConfiguration, PropertyAmenity, RatePlan, HouseRules, KeyCollection, HostProfile, Tax, PropertyImage } from '../../types/property.types';
 import { validateProperty } from '../../types/property.types';
 
 interface PropertyWizardProps {
@@ -800,13 +800,273 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
     );
 };
 
-// Placeholder components for other steps
-const ImagesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = () => (
-    <div className="form-section">
-        <h3 className="form-section-title">Slike Objekta</h3>
-        <p style={{ color: 'var(--text-secondary)' }}>Upload slika - u razvoju...</p>
-    </div>
-);
+const ImagesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
+    const [imageUrl, setImageUrl] = useState('');
+    const [imageCategory, setImageCategory] = useState<'Exterior' | 'Lobby' | 'Room' | 'Bathroom' | 'Pool' | 'Restaurant' | 'View' | 'Amenity'>('Exterior');
+    const [selectedRoomType, setSelectedRoomType] = useState<string>('');
+    const [imageCaption, setImageCaption] = useState('');
+
+    const addImage = () => {
+        if (!imageUrl.trim()) {
+            alert('Unesite URL slike!');
+            return;
+        }
+
+        const newImage: PropertyImage = {
+            url: imageUrl,
+            category: imageCategory,
+            roomTypeId: selectedRoomType || undefined,
+            sortOrder: (data.images?.length || 0) + 1,
+            caption: imageCaption || undefined
+        };
+
+        onChange({ images: [...(data.images || []), newImage] });
+
+        // Reset form
+        setImageUrl('');
+        setImageCaption('');
+        setSelectedRoomType('');
+    };
+
+    const deleteImage = (index: number) => {
+        const newImages = data.images?.filter((_, i) => i !== index) || [];
+        onChange({ images: newImages });
+    };
+
+    const moveImage = (index: number, direction: 'up' | 'down') => {
+        if (!data.images) return;
+
+        const newImages = [...data.images];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+        if (targetIndex < 0 || targetIndex >= newImages.length) return;
+
+        [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]];
+
+        // Update sort orders
+        newImages.forEach((img, i) => img.sortOrder = i + 1);
+
+        onChange({ images: newImages });
+    };
+
+    return (
+        <div>
+            <div className="form-section">
+                <h3 className="form-section-title">Dodavanje Slika</h3>
+
+                <div style={{
+                    background: 'var(--bg-card)',
+                    border: '2px dashed var(--border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    marginBottom: '24px'
+                }}>
+                    <div className="form-grid">
+                        <div className="form-group span-2">
+                            <label className="form-label required">URL Slike</label>
+                            <input
+                                type="url"
+                                className="form-input"
+                                placeholder="https://example.com/image.jpg (min 1280px širine)"
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                            />
+                            <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                Preporučena rezolucija: 1920x1080 ili veća. Format: JPG, PNG, WebP
+                            </small>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label required">Kategorija Slike</label>
+                            <select
+                                className="form-select"
+                                value={imageCategory}
+                                onChange={(e) => setImageCategory(e.target.value as any)}
+                            >
+                                <option value="Exterior">Exterior (Spoljašnjost)</option>
+                                <option value="Lobby">Lobby (Recepcija)</option>
+                                <option value="Room">Room (Soba)</option>
+                                <option value="Bathroom">Bathroom (Kupatilo)</option>
+                                <option value="Pool">Pool (Bazen)</option>
+                                <option value="Restaurant">Restaurant (Restoran)</option>
+                                <option value="View">View (Pogled)</option>
+                                <option value="Amenity">Amenity (Sadržaj)</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Vezano za Sobu (opciono)</label>
+                            <select
+                                className="form-select"
+                                value={selectedRoomType}
+                                onChange={(e) => setSelectedRoomType(e.target.value)}
+                            >
+                                <option value="">Opšta slika objekta</option>
+                                {data.roomTypes?.map(room => (
+                                    <option key={room.roomTypeId} value={room.roomTypeId}>
+                                        {room.nameInternal || room.code}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group span-2">
+                            <label className="form-label">Opis Slike (Caption)</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Kratak opis slike..."
+                                value={imageCaption}
+                                onChange={(e) => setImageCaption(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        className="btn-primary"
+                        onClick={addImage}
+                        style={{ marginTop: '16px', width: '100%' }}
+                    >
+                        <Plus size={18} /> Dodaj Sliku
+                    </button>
+                </div>
+
+                {/* Images Gallery */}
+                {data.images && data.images.length > 0 ? (
+                    <div>
+                        <h4 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '16px' }}>
+                            Galerija Slika ({data.images.length})
+                        </h4>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                            {data.images.map((image, index) => (
+                                <div key={index} style={{
+                                    background: 'var(--bg-card)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                }}>
+                                    {/* Image Preview */}
+                                    <div style={{
+                                        width: '100%',
+                                        height: '200px',
+                                        background: `url(${image.url}) center/cover no-repeat`,
+                                        backgroundColor: 'rgba(0,0,0,0.1)'
+                                    }} />
+
+                                    {/* Image Info */}
+                                    <div style={{ padding: '12px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                                            <div>
+                                                <div className="badge" style={{ background: 'var(--accent-glow)', color: 'var(--accent)', position: 'static', marginBottom: '4px' }}>
+                                                    {image.category}
+                                                </div>
+                                                {image.roomTypeId && (
+                                                    <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', position: 'static' }}>
+                                                        {data.roomTypes?.find(r => r.roomTypeId === image.roomTypeId)?.nameInternal || 'Room'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                                #{image.sortOrder}
+                                            </div>
+                                        </div>
+
+                                        {image.caption && (
+                                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '8px 0' }}>
+                                                {image.caption}
+                                            </p>
+                                        )}
+
+                                        {/* Controls */}
+                                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                            <button
+                                                onClick={() => moveImage(index, 'up')}
+                                                disabled={index === 0}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '6px',
+                                                    background: 'var(--bg-main)',
+                                                    border: '1px solid var(--border)',
+                                                    borderRadius: '6px',
+                                                    cursor: index === 0 ? 'not-allowed' : 'pointer',
+                                                    opacity: index === 0 ? 0.5 : 1
+                                                }}
+                                            >
+                                                ↑
+                                            </button>
+                                            <button
+                                                onClick={() => moveImage(index, 'down')}
+                                                disabled={index === (data.images?.length || 0) - 1}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '6px',
+                                                    background: 'var(--bg-main)',
+                                                    border: '1px solid var(--border)',
+                                                    borderRadius: '6px',
+                                                    cursor: index === (data.images?.length || 0) - 1 ? 'not-allowed' : 'pointer',
+                                                    opacity: index === (data.images?.length || 0) - 1 ? 0.5 : 1
+                                                }}
+                                            >
+                                                ↓
+                                            </button>
+                                            <button
+                                                onClick={() => deleteImage(index)}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '6px',
+                                                    background: 'rgba(239, 68, 68, 0.1)',
+                                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                    borderRadius: '6px',
+                                                    color: '#ef4444',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{
+                        padding: '60px',
+                        textAlign: 'center',
+                        background: 'var(--bg-card)',
+                        border: '2px dashed var(--border)',
+                        borderRadius: '16px',
+                        color: 'var(--text-secondary)'
+                    }}>
+                        <ImageIcon size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                        <p>Nema dodanih slika. Unesite URL slike iznad.</p>
+                    </div>
+                )}
+            </div>
+
+            <div style={{
+                background: 'rgba(255, 193, 7, 0.1)',
+                border: '1px solid rgba(255, 193, 7, 0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                marginTop: '24px'
+            }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <AlertCircle size={20} style={{ color: '#ffc107', flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ fontSize: '13px', color: '#ffc107' }}>
+                        <strong>OTA Image Requirements:</strong>
+                        <p style={{ margin: '8px 0 0 0', lineHeight: '1.5' }}>
+                            Booking.com zahteva minimum 1280px širine. Prva slika je glavna (hero image).
+                            Preporučuje se 5-15 slika različitih kategorija za najbolji prikaz.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const RoomsStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
     const [editingRoom, setEditingRoom] = useState<number | null>(null);
