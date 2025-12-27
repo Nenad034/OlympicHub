@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MarsAnalysis from './modules/production/MarsAnalysis';
+import ProductionHub from './modules/production/ProductionHub';
 import SettingsModule from './modules/system/Settings';
 import GeneralAIChat from './components/GeneralAIChat';
 import { translations, type Language } from './translations';
@@ -36,6 +37,7 @@ interface AppConfig {
 
 const apps: AppConfig[] = [
   { id: 'mars-analysis', name: 'Mars ERP Analitika', desc: 'Finansijska i operativna analiza procesa.', icon: <Database size={24} />, category: 'production', color: 'var(--gradient-blue)', badge: 'Live', minLevel: 1 },
+  { id: 'production-hub', name: 'Upravljanje Produkcijom', desc: 'Smeštaj, putovanja, transferi i paketi.', icon: <Package size={24} />, category: 'production', color: 'var(--gradient-green)', badge: 'Novo', minLevel: 1 },
   { id: 'price-generator', name: 'Generator Cenovnika', desc: 'Kreiranje cenovnika i import u Mars.', icon: <BarChart3 size={24} />, category: 'production', color: 'var(--gradient-green)', minLevel: 3 },
   { id: 'portfolio', name: 'Naša Ponuda', desc: 'Upravljanje bazom hotela i prevoza.', icon: <Building2 size={24} />, category: 'sales', color: 'var(--gradient-purple)', minLevel: 2 },
   { id: 'marketing-ses', name: 'Amazon SES Marketing', desc: 'Slanje newslettera subagentima.', icon: <Mail size={24} />, category: 'marketing', color: 'var(--gradient-orange)', badge: 'Novi', minLevel: 4 }
@@ -110,7 +112,7 @@ function App() {
 
           <div className="nav-group">
             <h3 className="nav-label">{t.sectors}</h3>
-            <div className={`nav-item ${activeTab === 'prod' ? 'active' : ''}`} onClick={() => setActiveTab('prod')}>
+            <div className={`nav-item ${activeTab === 'prod' ? 'active' : ''}`} onClick={() => { setActiveTab('prod'); setActiveModule('production-hub'); }}>
               <Package size={20} /> {t.production}
             </div>
           </div>
@@ -158,6 +160,8 @@ function App() {
           <AnimatePresence mode="wait">
             {activeModule === 'mars-analysis' ? (
               <MarsAnalysis key="mars" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} onOpenChat={() => setIsChatOpen(true)} onDataUpdate={setAnalysisData} />
+            ) : activeModule === 'production-hub' ? (
+              <ProductionHub key="prod-hub" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} />
             ) : activeModule === 'settings' ? (
               <SettingsModule key="settings" onBack={() => setActiveModule(null)} lang={lang} userLevel={userLevel} setUserLevel={setUserLevel} />
             ) : (
@@ -175,7 +179,7 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                       className="app-card"
-                      onClick={() => app.id === 'mars-analysis' && setActiveModule('mars-analysis')}
+                      onClick={() => (app.id === 'mars-analysis' || app.id === 'production-hub') && setActiveModule(app.id)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div className="card-icon" style={{ background: app.color }}>{app.icon}</div>
