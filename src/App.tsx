@@ -178,24 +178,43 @@ function App() {
               <div className={`h-nav-item ${activeModule === 'customers' ? 'active' : ''}`} onClick={() => setActiveModule('customers')}>
                 <Users size={18} /> Kupci
               </div>
+              <div className={`h-nav-item ${activeModule === 'settings' ? 'active' : ''}`} onClick={() => { setActiveModule('settings'); setActiveTab('settings'); }}>
+                <SettingsIcon size={18} /> {t.settings}
+              </div>
+            </div>
+
+            {/* Search in Horizontal Nav */}
+            <div style={{ position: 'relative', marginLeft: 'auto' }}>
+              <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: '300px', padding: '10px 20px 10px 48px' }}
+              />
             </div>
           </div>
         )}
 
         <div className="top-bar">
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-            <input
-              type="text"
-              placeholder={t.searchPlaceholder}
-              className="search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: '100%', maxWidth: '400px' }}
-            />
-          </div>
+          {/* Show search only in sidebar mode */}
+          {navMode === 'sidebar' && (
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: '100%', maxWidth: '400px' }}
+              />
+            </div>
+          )}
 
-          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginLeft: navMode === 'horizontal' ? 'auto' : '0' }}>
             <button
               className="btn-glass"
               onClick={() => setNavMode(navMode === 'sidebar' ? 'horizontal' : 'sidebar')}

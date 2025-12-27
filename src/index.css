@@ -210,7 +210,7 @@ h3,
   display: flex;
   align-items: center;
   padding: 0 40px;
-  gap: 40px;
+  gap: 24px;
   backdrop-filter: blur(20px);
   z-index: 100;
 }
@@ -218,6 +218,7 @@ h3,
 .nav-horizontal-items {
   display: flex;
   gap: 8px;
+  flex: 1;
 }
 
 .h-nav-item {
@@ -248,7 +249,8 @@ h3,
 }
 
 .hub-container.horizontal-mode .top-bar {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  padding: 0;
 }
 
 .btn-glass {
