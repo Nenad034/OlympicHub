@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Brain,
   Users,
-  Truck
+  Truck,
+  Coffee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MarsAnalysis from './modules/production/MarsAnalysis';
@@ -65,7 +66,10 @@ function App() {
   const t = translations[lang];
 
   useEffect(() => {
-    document.body.className = theme === 'light' ? 'light-theme' : '';
+    let themeClass = '';
+    if (theme === 'light') themeClass = 'light-theme';
+    else if (theme === 'cream') themeClass = 'cream-theme';
+    document.body.className = themeClass;
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -158,8 +162,15 @@ function App() {
               <button onClick={() => setLang('en')} style={{ padding: '6px 10px', border: 'none', background: lang === 'en' ? 'var(--bg-card)' : 'transparent', borderRadius: '6px', color: lang === 'en' ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>ENG</button>
             </div>
 
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '12px', display: 'flex' }}>
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <button
+              onClick={() => {
+                if (theme === 'dark') setTheme('light');
+                else if (theme === 'light') setTheme('cream');
+                else setTheme('dark');
+              }}
+              style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '12px', display: 'flex' }}
+            >
+              {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Coffee size={18} />}
             </button>
             <div className="user-profile">
               <div className="avatar"></div>

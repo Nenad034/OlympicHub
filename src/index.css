@@ -30,6 +30,19 @@
   --glass-border: rgba(0, 0, 0, 0.05);
 }
 
+.cream-theme {
+  --bg-dark: #fbf8f3;
+  --bg-sidebar: #f5eee6;
+  --bg-card: #ffffff;
+  --accent: #c6a664;
+  --accent-glow: rgba(198, 166, 100, 0.1);
+  --text-primary: #433d3c;
+  --text-secondary: #8e8381;
+  --border: #e8ded1;
+  --glass-bg: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.05);
+}
+
 * {
   margin: 0;
   padding: 0;
