@@ -5,14 +5,8 @@ import {
     X,
     ArrowLeft,
     Plus,
-    Building,
     MapPin,
-    Star,
-    Wifi,
-    Utensils,
-    Waves,
-    Car,
-    CreditCard
+    Star
 } from 'lucide-react';
 import { exportToJSON, exportToExcel, exportToXML, exportToPDF } from '../../utils/exportUtils';
 

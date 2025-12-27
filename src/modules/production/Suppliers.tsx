@@ -4,11 +4,8 @@ import {
     Truck,
     X,
     ArrowLeft,
-    ChevronRight,
-    Download,
     Plus,
     Building,
-    Globe,
     Phone,
     Mail,
     CreditCard

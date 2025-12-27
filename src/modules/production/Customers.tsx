@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users,
     ArrowLeft,
-    ChevronRight,
     Briefcase,
     Plus,
     X,
-    Building,
     Mail,
     Phone,
-    CreditCard,
-    Download,
-    User
+    User,
+    MapPin
 } from 'lucide-react';
 import { exportToJSON, exportToExcel, exportToXML, exportToPDF } from '../../utils/exportUtils';
 
