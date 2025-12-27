@@ -271,7 +271,7 @@ function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="app-card"
+                      className="module-card"
                       onClick={() => (app.id === 'mars-analysis' || app.id === 'production-hub' || app.id === 'suppliers' || app.id === 'customers') && setActiveModule(app.id)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

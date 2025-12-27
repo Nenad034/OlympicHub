@@ -428,8 +428,8 @@ h3,
 .module-card:hover {
   transform: translateY(-8px);
   border-color: var(--glass-border);
-  background: rgba(30, 35, 43, 0.8);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 252, 248, 0.95);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
 }
 
 .module-card:hover::before {
