@@ -27,7 +27,7 @@ const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
 export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [config, setConfig] = useState<AppConfig>({
-        geminiKey: "AIzaSyB6au4kyI_Y-e4T6NrKdzgmR7Jaz9lPEho", // Default
+        geminiKey: "", // Unosi se kroz UI ili env varijable
         defaultModel: "gemini-1.5-flash",
         userLevels: { "current": 5 }
     });

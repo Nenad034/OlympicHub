@@ -106,7 +106,7 @@ export default function GeneralAIChat({ isOpen, onClose, lang, context = "Dashbo
             if (successfulResponse) break;
             for (const modelName of modelsToTry) {
                 try {
-                    const fallbackKey = "AIzaSyB6au4kyI_Y-e4T6NrKdzgmR7Jaz9lPEho";
+                    const fallbackKey = ""; // Ključ treba uneti u Settings sekciji
                     const apiKey = (config.geminiKey && config.geminiKey.trim().length > 10) ? config.geminiKey.trim() : fallbackKey;
                     const genAI = new GoogleGenerativeAI(apiKey);
                     const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: apiVer });
