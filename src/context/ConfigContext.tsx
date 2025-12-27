@@ -66,7 +66,7 @@ export const ConfigProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             note: note,
             created_at: new Date().toISOString()
         };
-        const { data, error } = await supabase.from('app_backups').insert([newBackup]).select();
+        const { data } = await supabase.from('app_backups').insert([newBackup]).select();
         if (data) setBackups([data[0], ...backups]);
     };
 

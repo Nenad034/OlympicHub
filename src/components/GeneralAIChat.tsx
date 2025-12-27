@@ -1,13 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
     Send,
     Brain,
-    Plus,
     Loader2,
     User,
     Bot,
     X,
-    Languages,
     ShieldCheck,
     Zap,
     GripHorizontal,
@@ -151,8 +149,8 @@ export default function GeneralAIChat({ isOpen, onClose, lang, context = "Dashbo
 
         const onPointerMove = (moveEvent: PointerEvent) => {
             if (!isResizing.current) return;
-            const deltaX = startX - moveEvent.clientX; // Dragging left increases width
-            const deltaY = startY - moveEvent.clientY; // Dragging up increases height
+            const deltaX = startX - moveEvent.clientX;
+            const deltaY = startY - moveEvent.clientY;
             setDimensions({
                 width: Math.max(320, Math.min(800, startW + deltaX)),
                 height: Math.max(400, Math.min(900, startH + deltaY))
@@ -206,7 +204,6 @@ export default function GeneralAIChat({ isOpen, onClose, lang, context = "Dashbo
                         zIndex: 99999, overflow: 'hidden', backdropFilter: 'blur(30px)', touchAction: 'none'
                     }}
                 >
-                    {/* Resize Handle - Top Left */}
                     <div
                         onPointerDown={startResizing}
                         style={{
@@ -218,7 +215,6 @@ export default function GeneralAIChat({ isOpen, onClose, lang, context = "Dashbo
                         <Maximize2 size={14} style={{ transform: 'rotate(-45deg)', color: '#fff' }} />
                     </div>
 
-                    {/* Header */}
                     <div style={{ padding: '20px', background: 'var(--gradient-blue)', color: '#fff', cursor: 'move', userSelect: 'none', flexShrink: 0, position: 'relative' }}>
                         <div style={{ position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', opacity: 0.5 }}>
                             <GripHorizontal size={16} />
@@ -246,7 +242,6 @@ export default function GeneralAIChat({ isOpen, onClose, lang, context = "Dashbo
                         </div>
                     </div>
 
-                    {/* Chat Area */}
                     <div onPointerDown={(e) => e.stopPropagation()} ref={scrollRef} style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         {messages.map((m, i) => (
                             <div key={i} style={{ display: 'flex', gap: '12px', flexDirection: m.role === 'user' ? 'row-reverse' : 'row' }}>
@@ -267,7 +262,6 @@ export default function GeneralAIChat({ isOpen, onClose, lang, context = "Dashbo
                         {isThinking && <div style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)', fontSize: '12px', marginLeft: '48px' }}><Loader2 size={16} className="rotate" /> Gemini razmišlja...</div>}
                     </div>
 
-                    {/* Input Area */}
                     <div onPointerDown={(e) => e.stopPropagation()} style={{ padding: '24px', borderTop: '1px solid var(--border)', background: 'var(--bg-sidebar)' }}>
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <button onClick={toggleListening} style={{ background: isListening ? 'var(--accent)' : 'var(--glass-bg)', border: '1px solid var(--border)', width: '46px', height: '46px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: isListening ? 'pulse 1.5s infinite' : 'none' }}>
