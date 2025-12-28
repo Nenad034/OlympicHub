@@ -9,8 +9,6 @@ import {
     Building,
     Phone,
     Mail,
-    CreditCard,
-    MapPin,
     Wallet,
     Info,
     GripHorizontal,
@@ -61,7 +59,6 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
     const [types] = useState(['Svi', 'Hoteli', 'Hotelske grupe i organizacije', 'Lanac Hotela', 'Brand Hotela', 'Touroperatori', 'Prevoznici']);
     const [selectedType, setSelectedType] = useState<string>('Svi');
     const [showAddForm, setShowAddForm] = useState(false);
-    const [activeTab, setActiveTab] = useState<'basic' | 'location' | 'finance'>('basic');
 
     // New States for View and Search
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -148,13 +145,11 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
 
         setShowAddForm(false);
         setFormData({ type: 'Hoteli', contacts: [] }); // Reset to default
-        setActiveTab('basic');
     };
 
     const handleEditSupplier = (supplier: Supplier) => {
         setFormData(supplier);
         setShowAddForm(true);
-        setActiveTab('basic');
     };
 
     const handleExport = (format: 'json' | 'excel' | 'xml' | 'pdf') => {
@@ -185,11 +180,7 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
         });
     };
 
-    const tabs = [
-        { id: 'basic', label: 'Osnovni Podaci', icon: <Info size={18} /> },
-        { id: 'location', label: 'Lokacija', icon: <MapPin size={18} /> },
-        { id: 'finance', label: 'Finansije', icon: <Wallet size={18} /> }
-    ];
+
 
     // Filter logic
     const filteredSuppliers = suppliers.filter(s => {

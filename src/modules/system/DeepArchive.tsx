@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
     ShieldAlert,
-    ArrowLeft,
     Search,
     Download,
     Database,
@@ -9,9 +8,7 @@ import {
     History,
     RefreshCcw,
     Trash2,
-    AlertCircle,
     Layout,
-    Filter,
     FileJson,
     LogOut
 } from 'lucide-react';

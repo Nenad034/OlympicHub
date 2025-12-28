@@ -12,7 +12,6 @@ import {
     ChevronRight,
     ChevronLeft,
     Check,
-    X,
     Plus,
     Trash2,
     AlertCircle,
@@ -1226,7 +1225,8 @@ const ImagesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partia
     }, [data]);
 
     const [isFetching, setIsFetching] = useState(false);
-    const [showManual, setShowManual] = useState(false);
+    // const [showManual, setShowManual] = useState(false); // Removed unused state
+
 
     // Manual States
     const [imageUrl, setImageUrl] = useState('');

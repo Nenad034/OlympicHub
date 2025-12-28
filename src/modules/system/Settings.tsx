@@ -4,7 +4,6 @@ import {
     Users,
     Shield,
     Activity,
-    Save,
     RotateCcw,
     Search,
     ArrowLeft,
@@ -21,13 +20,12 @@ import {
     Smartphone,
     UserPlus,
     AlertTriangle,
-    Key,
     Database,
     Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../context/ConfigContext';
-import { translations, type Language } from '../../translations';
+import { type Language } from '../../translations';
 import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
 
 // --- Types ---
@@ -163,9 +161,9 @@ const styles = {
     })
 };
 
-export default function SettingsModule({ onBack, lang, userLevel, setUserLevel }: Props) {
+export default function SettingsModule({ onBack, userLevel, setUserLevel }: Props) {
     const { config, updateConfig, createSnapshot, backups, restoreSnapshot } = useConfig();
-    const t = translations[lang];
+
 
     const [activeTab, setActiveTab] = useState<TabType>('connections'); // Default to connections as requested
     const [searchQuery, setSearchQuery] = useState('');
@@ -462,7 +460,7 @@ export default function SettingsModule({ onBack, lang, userLevel, setUserLevel }
                             <div>
                                 <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     {u.firstName} {u.lastName}
-                                    {u.level === 6 && <span title="Master Account" style={{ fontSize: '16px' }}>🦅</span>}
+                                    {u.level === 6 && <img src="/logo.jpg" alt="Master" title="Master Account" style={{ width: '20px', height: '20px', borderRadius: '4px', objectFit: 'cover' }} />}
                                     <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>LVL {u.level}</span>
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#64748b' }}>{u.email}</div>

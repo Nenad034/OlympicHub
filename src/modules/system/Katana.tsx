@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-    CheckCircle2,
     Circle,
     Star,
     Calendar,
@@ -11,10 +10,7 @@ import {
     Layout,
     Search,
     Send,
-    ArrowLeft,
-    Clock,
     Tag,
-    Check,
     LogOut,
     CheckCircle,
     X
@@ -168,7 +164,7 @@ export default function Katana({ onBack }: Props) {
                     </div>
 
                     <div className="wizard-steps-list">
-                        {categories.map((cat, idx) => (
+                        {categories.map((cat) => (
                             <div
                                 key={cat.id}
                                 className={`step-item-row ${activeCategory === cat.id ? 'active' : ''}`}
