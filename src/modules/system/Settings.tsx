@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../context/ConfigContext';
 import { type Language } from '../../translations';
 import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
+import SystemPulse from './SystemPulse';
 
 // --- Types ---
 interface UserAccount {
@@ -58,7 +59,7 @@ interface Props {
     setUserLevel: (level: number) => void;
 }
 
-type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'backups';
+type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'pulse' | 'backups';
 
 // --- KATANA STYLED COMPONENTS (Inline Styles) ---
 const styles = {
@@ -731,6 +732,7 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                     {activeTab === 'users' && renderUsers()}
                     {activeTab === 'permissions' && renderPermissions()}
                     {activeTab === 'connections' && renderConnections()}
+                    {activeTab === 'pulse' && <SystemPulse />}
                     {activeTab === 'backups' && renderBackups()}
                 </div>
             </div>
