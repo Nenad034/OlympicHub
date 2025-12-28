@@ -26,7 +26,9 @@ import {
     Pencil,
     Star,
     Globe,
-    Power
+    Power,
+    CloudCheck,
+    RefreshCw
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
@@ -377,10 +379,12 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
         const updatedHotel = { ...hotel, originalPropertyData: updatedData as Property };
 
-        setHotels(hotels.map(h => h.id === hotel.id ? updatedHotel : h));
+        const updatedList = hotels.map(h => h.id === hotel.id ? updatedHotel : h);
+        setHotels(updatedList);
         if (selectedHotel?.id === hotel.id) {
             setSelectedHotel(updatedHotel);
         }
+        syncToSupabase(updatedList);
     };
 
     const startCreate = () => {
@@ -469,7 +473,9 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
         try {
             const parsed = JSON.parse(importData);
             const data = parsed.data || (Array.isArray(parsed) ? parsed : [parsed]);
-            setHotels([...hotels, ...data]);
+            const updatedList = [...hotels, ...data];
+            setHotels(updatedList);
+            syncToSupabase(updatedList);
             setShowImport(false);
             setImportData('');
             alert(`Uspešno uvezeno ${data.length} objekata!`);
@@ -573,10 +579,28 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <button onClick={() => setViewMode('hub')} className="btn-icon circle"><ArrowLeft size={20} /></button>
                         <div>
-                            <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Baza Smeštaja</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Baza Smeštaja</h1>
+                                {isSyncing ? (
+                                    <div className="sync-badge syncing">
+                                        <RefreshCw size={14} className="spin" /> Syncing...
+                                    </div>
+                                ) : (
+                                    <div className="sync-badge synced">
+                                        <CloudCheck size={14} /> Cloud Active
+                                    </div>
+                                )}
+                            </div>
                             <p className="subtitle">Upravljanje hotelima i smeštajnim objektima</p>
                         </div>
                     </div>
+                    <style>{`
+                        .sync-badge { display: flex; alignItems: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+                        .sync-badge.syncing { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+                        .sync-badge.synced { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+                        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                        .spin { animation: spin 2s linear infinite; }
+                    `}</style>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                         <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' }}>
                             <button

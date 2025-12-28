@@ -16,7 +16,8 @@ import {
   Brain,
   Users,
   Truck,
-  Coffee
+  Coffee,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MarsAnalysis from './modules/production/MarsAnalysis';
@@ -55,6 +56,7 @@ function App() {
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [isPrism, setIsPrism] = useState(() => localStorage.getItem('isPrism') === 'true');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { isLoading } = useConfig();
 
@@ -71,9 +73,17 @@ function App() {
     let themeClass = '';
     if (theme === 'light') themeClass = 'light-theme';
     else if (theme === 'cream') themeClass = 'cream-theme';
-    document.body.className = themeClass;
+    else if (theme === 'navy') themeClass = 'navy-theme';
+
+    // Apply prism-mode independently
+    if (isPrism) {
+      themeClass += ' prism-mode';
+    }
+
+    document.body.className = themeClass.trim();
     localStorage.setItem('theme', theme);
-  }, [theme]);
+    localStorage.setItem('isPrism', String(isPrism));
+  }, [theme, isPrism]);
 
   useEffect(() => {
     localStorage.setItem('lang', lang);
@@ -230,13 +240,36 @@ function App() {
 
             <button
               onClick={() => {
-                if (theme === 'dark') setTheme('light');
+                if (theme === 'dark') setTheme('navy');
+                else if (theme === 'navy') setTheme('light');
                 else if (theme === 'light') setTheme('cream');
                 else setTheme('dark');
               }}
-              style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '12px', display: 'flex' }}
+              style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', cursor: 'pointer', padding: '10px', borderRadius: '12px', display: 'flex', gap: '8px', alignItems: 'center' }}
             >
-              {theme === 'dark' ? <Moon size={18} /> : theme === 'light' ? <Sun size={18} /> : <Coffee size={18} />}
+              {theme === 'dark' ? <Moon size={18} /> :
+                theme === 'navy' ? <Zap size={18} color="#38bdf8" /> :
+                  theme === 'light' ? <Sun size={18} /> : <Coffee size={18} />}
+              <span style={{ fontSize: '11px', fontWeight: 600 }}>
+                {theme === 'dark' ? 'Dark' : theme === 'navy' ? 'Navy' : theme === 'light' ? 'Light' : 'Cream'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setIsPrism(!isPrism)}
+              className={`btn-glass ${isPrism ? 'active' : ''}`}
+              style={{
+                padding: '10px',
+                borderRadius: '12px',
+                borderColor: isPrism ? '#bb9af7' : 'var(--border)',
+                boxShadow: isPrism ? '0 0 15px rgba(187, 154, 247, 0.3)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              title="Sarena slova (Prism Mode)"
+            >
+              <Sparkles size={18} color={isPrism ? '#bb9af7' : 'var(--text-secondary)'} />
             </button>
             <div className="user-profile">
               <div className="avatar"></div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building2,
     MapPin,
@@ -546,8 +546,8 @@ const BasicInfoStep: React.FC<{ data: Partial<Property>; onChange: (updates: Par
                         type="text"
                         className="form-input"
                         placeholder="npr. Hotel Grand"
-                        value={data.name || ''}
-                        onChange={(e) => onChange({ name: e.target.value })}
+                        value={(data as any).name || ''}
+                        onChange={(e) => onChange({ name: e.target.value } as any)}
                         style={{ fontSize: '16px', padding: '12px' }}
                     />
                 </div>
@@ -847,7 +847,7 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
         setIsGenerating(true);
         // Simulate AI generation delay
         setTimeout(() => {
-            const name = data.name || 'Naš Hotel';
+            const name = (data as any).name || 'Naš Hotel';
             const city = data.address?.city || 'Centar';
 
             // 1. Generate Serbian Content
