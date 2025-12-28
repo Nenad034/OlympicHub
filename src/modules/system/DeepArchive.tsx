@@ -40,55 +40,22 @@ export default function DeepArchive({ onBack }: Props) {
     const [selectedItem, setSelectedItem] = useState<ArchiveItem | null>(null);
 
     // Initial dummy data for the Deep Archive
+    // Load real archive data
     useEffect(() => {
-        const dummyData: ArchiveItem[] = [
-            {
-                id: 'log_1',
-                type: 'DELETE',
-                entityType: 'User',
-                entityId: '2',
-                oldData: { firstName: 'Marko', lastName: 'Agent', email: 'marko@example.com', level: 3 },
-                changedBy: 'Nenad Admin (Master)',
-                userEmail: 'nenad@example.com',
-                timestamp: '2025-12-28 15:25:34',
-                summary: 'Obrisan nalog korisnika Marko Agent'
-            },
-            {
-                id: 'log_2',
-                type: 'UPDATE',
-                entityType: 'Hotel',
-                entityId: 'h_101',
-                oldData: { price: 120, status: 'Available' },
-                newData: { price: 145, status: 'Available' },
-                changedBy: 'Jovan Prodaja',
-                userEmail: 'jovan@example.com',
-                timestamp: '2025-12-28 14:10:05',
-                summary: 'Izmenjena cena za Hotel Splendid'
-            },
-            {
-                id: 'log_3',
-                type: 'DELETE',
-                entityType: 'Reservation',
-                entityId: 'RES-9988',
-                oldData: { guest: 'Ivan Ivić', amount: 450, date: '2026-05-12' },
-                changedBy: 'Milica Rezervacije',
-                userEmail: 'milica@example.com',
-                timestamp: '2025-12-27 10:45:22',
-                summary: 'Stornirana rezervacija RES-9988'
-            },
-            {
-                id: 'log_old',
-                type: 'DELETE',
-                entityType: 'Payment',
-                entityId: 'PAY-77',
-                oldData: { amount: 1500, bank: 'Intesa' },
-                changedBy: 'Sistem',
-                userEmail: 'system@olympichub.rs',
-                timestamp: '2024-11-15 09:00:12',
-                summary: 'Obrisan stari unos uplate'
+        const loadArchive = async () => {
+            // 1. Try Local Storage first
+            try {
+                const localData = localStorage.getItem('olympic_deep_archive');
+                if (localData) {
+                    setItems(JSON.parse(localData));
+                }
+            } catch (e) {
+                console.error("Archive Load Error:", e);
             }
-        ];
-        setItems(dummyData);
+
+            // 2. TODO: Implement Cloud Sync loading here
+        };
+        loadArchive();
     }, []);
 
     const filteredItems = items.filter(item => {

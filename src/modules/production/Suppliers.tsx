@@ -23,8 +23,9 @@ import {
 } from 'lucide-react';
 import { exportToJSON, exportToExcel, exportToXML, exportToPDF } from '../../utils/exportUtils';
 import { useEffect } from 'react';
-import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
+import { saveToCloud, loadFromCloud, archiveItem } from '../../utils/storageUtils';
 import { useConfig } from '../../context/ConfigContext';
+import SecurityGate from '../../components/SecurityGate';
 
 interface ContactPerson {
     id: string;
@@ -59,6 +60,7 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
     const [types] = useState(['Svi', 'Hoteli', 'Hotelske grupe i organizacije', 'Lanac Hotela', 'Brand Hotela', 'Touroperatori', 'Prevoznici']);
     const [selectedType, setSelectedType] = useState<string>('Svi');
     const [showAddForm, setShowAddForm] = useState(false);
+    const [showSecurityGate, setShowSecurityGate] = useState(false);
 
     // New States for View and Search
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -145,6 +147,23 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
 
         setShowAddForm(false);
         setFormData({ type: 'Hoteli', contacts: [] }); // Reset to default
+    };
+
+    const handleDelete = async () => {
+        if (formData.id) {
+            // Archive before delete
+            await archiveItem(
+                'Supplier',
+                formData.id,
+                formData,
+                'current.user@example.com', // Replace with real user email from context
+                `Obrisan dobavljač "${formData.name}"`
+            );
+
+            setSuppliers(suppliers.filter(s => s.id !== formData.id));
+            setShowAddForm(false);
+            setShowSecurityGate(false);
+        }
     };
 
     const handleEditSupplier = (supplier: Supplier) => {
@@ -618,28 +637,55 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
                                         </div>
                                     </div>
 
-                                    <div style={{ paddingTop: '20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                                        <button type="button" onClick={() => setShowAddForm(false)} className="btn-secondary" style={{ padding: '12px 24px', fontSize: '14px' }}>
-                                            Otkaži
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="btn-primary"
-                                            style={{
-                                                padding: '12px 32px',
-                                                fontSize: '14px',
-                                                borderRadius: '12px',
-                                                boxShadow: '0 10px 30px -10px var(--accent)'
-                                            }}
-                                        >
-                                            <Plus size={18} /> Sačuvaj Izmene
-                                        </button>
+                                    <div style={{ paddingTop: '20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        {formData.id && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowSecurityGate(true)}
+                                                className="btn-secondary"
+                                                style={{ padding: '12px 24px', fontSize: '14px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.05)' }}
+                                            >
+                                                <Trash2 size={16} style={{ marginRight: '6px' }} /> Obriši
+                                            </button>
+                                        )}
+                                        <div style={{ display: 'flex', gap: '12px', marginLeft: 'auto' }}>
+                                            <button type="button" onClick={() => setShowAddForm(false)} className="btn-secondary" style={{ padding: '12px 24px', fontSize: '14px' }}>
+                                                Otkaži
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="btn-primary"
+                                                style={{
+                                                    padding: '12px 32px',
+                                                    fontSize: '14px',
+                                                    borderRadius: '12px',
+                                                    boxShadow: '0 10px 30px -10px var(--accent)'
+                                                }}
+                                            >
+                                                <Plus size={18} /> Sačuvaj Izmene
+                                            </button>
+                                        </div>
                                     </div>
 
                                 </form>
                             </div>
                         </motion.div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showSecurityGate && (
+                    <SecurityGate
+                        isOpen={showSecurityGate}
+                        onCancel={() => setShowSecurityGate(false)}
+                        onConfirm={handleDelete}
+                        title="Brisanje Dobavljača"
+                        description={`Da li ste sigurni da želite da trajno obrišete dobavljača "${formData.name}"? Ova akcija se ne može opozvati i svi povezani ugovori će biti arhivirani.`}
+                        actionType="delete"
+                        entityName={formData.name}
+                        requireMasterAuth={currentLevel >= 6}
+                    />
                 )}
             </AnimatePresence>
 

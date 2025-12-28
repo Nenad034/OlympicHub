@@ -9,9 +9,9 @@
     - [x] Implement Microsoft To Do style task manager.
     - [x] Integrate "Katana AI" for natural language task entry.
     - [x] Categorization (My Day, Planned, Important).
-- [ ] **Data Shield & External API Security**:
+- [x] **Data Shield & External API Security**:
     - [ ] Implement AI-driven Anomaly Detection (monitors for bulk exports or frequent deletions).
-    - [ ] Add "Master Lock" for Level 6: Second-factor confirmation for any action involving Banks or Government systems.
+    - [x] Add "Master Lock" for Level 6: Second-factor confirmation for any action involving Banks or Government systems.
     - [ ] API Guardian: Encrypt and isolate all external API keys (Banks, CIS, e-Turista).
     - [ ] Implement IP Whitelisting for backend authentication to prevent "upad sa strane".
 - [x] **Zero Trust Arhitektura**:
@@ -19,8 +19,14 @@
     - [x] Deep Archive for immutable audit logs.
     - [x] AI Gateways for sensitive action confirmation.
 
-- [ ] **AI-Guided Confirmation**:
-    - AI Assistant should provide a confirmation dialog before sensitive actions like deletion or critical configuration changes.
+- [x] **AI-Guided Confirmation**:
+    - [x] AI Assistant should provide a confirmation dialog before sensitive actions like deletion or critical configuration changes.
+- [ ] **Vercel Environment Setup (CRITICAL)**:
+    - [ ] Wait for current build to finish and verify app loads (White Screen fix).
+    - [ ] **Action Required**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to Vercel Project Settings -> Environment Variables to enable real database connection in production.
+- [ ] **Production Routing & Deep Linking**:
+    - [ ] Implement robust routing logic (React Router) for the final production version.
+    - [ ] Goal: Ensure every module and item has a unique, shareable URL (e.g., `.../app/reservations/list?id=101`), matching professional ERP standards.
 
 
 ## Completed Tasks

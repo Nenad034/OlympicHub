@@ -36,3 +36,43 @@ export const syncAppStates = async (datasets: { table: string, data: any[] }[]) 
     const promises = datasets.map(d => saveToCloud(d.table, d.data));
     return Promise.all(promises);
 };
+
+// Basic Archive Utility
+export const archiveItem = async (
+    entityType: string,
+    entityId: string,
+    data: any,
+    userEmail: string,
+    summary: string,
+    actionType: 'DELETE' | 'UPDATE' = 'DELETE'
+) => {
+    const archiveRecord = {
+        id: `arc_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        type: actionType,
+        entityType,
+        entityId,
+        oldData: data,
+        changedBy: 'Current User', // In real app, get from Context
+        userEmail,
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        summary
+    };
+
+    // 1. Save to LocalStorage (Immediate Backup)
+    try {
+        const currentArchive = JSON.parse(localStorage.getItem('olympic_deep_archive') || '[]');
+        const updatedArchive = [archiveRecord, ...currentArchive];
+        localStorage.setItem('olympic_deep_archive', JSON.stringify(updatedArchive));
+    } catch (e) {
+        console.error("Local Archive Error:", e);
+    }
+
+    // 2. Try Save to Cloud (Async)
+    try {
+        await supabase.from('deep_archive').insert([archiveRecord]);
+        return { success: true };
+    } catch (e) {
+        console.warn("Cloud Archive skipped (offline/no table):", e);
+        return { success: true, localOnly: true };
+    }
+};
