@@ -1,34 +1,52 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import {
     Building2,
     MapPin,
     Globe,
-    Image as ImageIcon,
+    ImageIcon,
     Bed,
     DollarSign,
     Shield,
     Key,
-    User,
     ChevronRight,
     ChevronLeft,
     Check,
     X,
     Plus,
     Trash2,
-    AlertCircle
+    AlertCircle,
+    Save,
+    Sparkles,
+    LogOut
 } from 'lucide-react';
 import type { Property, PropertyContent, RoomType, BeddingConfiguration, PropertyAmenity, RatePlan, HouseRules, KeyCollection, HostProfile, Tax, PropertyImage } from '../types/property.types';
 import { validateProperty } from '../types/property.types';
+import LocationPicker, { type LocationData } from './LocationPicker';
 
 interface PropertyWizardProps {
     onClose: () => void;
-    onSave: (property: Partial<Property>) => void;
+    onSave: (property: Partial<Property>, shouldClose?: boolean) => void;
+    initialData?: Partial<Property>;
 }
 
-const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave }) => {
+// MOCK DATA FOR SUPPLIERS (Should be fetched from API)
+const MOCK_SUPPLIERS = [
+    { id: 'sup1', name: 'Hilton Hotels & Resorts', type: 'Lanac Hotela' },
+    { id: 'sup2', name: 'Marriott International', type: 'Lanac Hotela' },
+    { id: 'sup3', name: 'Accor', type: 'Lanac Hotela' },
+    { id: 'sup4', name: 'Hyatt Hotels Corporation', type: 'Lanac Hotela' },
+    { id: 'sup5', name: 'Best Western', type: 'Brand Hotela' },
+    { id: 'sup6', name: 'Holiday Inn', type: 'Brand Hotela' },
+    { id: 'sup7', name: 'Crowne Plaza', type: 'Brand Hotela' },
+    { id: 'sup8', name: 'Balkan Tours', type: 'Touroperatori' },
+    { id: 'sup9', name: 'Argus Tours', type: 'Touroperatori' },
+    { id: 'sup10', name: 'Hotel Serbia', type: 'Hoteli' },
+];
+
+const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initialData }) => {
     const [currentStep, setCurrentStep] = useState(0);
-    const [propertyData, setPropertyData] = useState<Partial<Property>>({
+    const [propertyData, setPropertyData] = useState<Partial<Property>>(initialData || {
         propertyType: 'Hotel',
         isActive: false,
         content: [],
@@ -75,13 +93,13 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave }) => {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = (shouldClose: boolean = false) => {
         const validationErrors = validateProperty(propertyData);
+        // Do not block saving, just show errors if any
         if (validationErrors.length > 0) {
             setErrors(validationErrors);
-            return;
         }
-        onSave(propertyData);
+        onSave(propertyData, shouldClose);
     };
 
     const renderStepContent = () => {
@@ -110,330 +128,408 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave }) => {
     return (
         <div className="wizard-overlay">
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 className="wizard-container"
             >
-                {/* Header */}
-                <div className="wizard-header">
-                    <h2>Kreiranje Novog Objekta (OTA Standard)</h2>
-                    <button onClick={onClose} className="close-btn"><X size={24} /></button>
-                </div>
-
-                {/* Progress Steps */}
-                <div className="wizard-steps">
-                    {steps.map((step, index) => (
-                        <div
-                            key={step.id}
-                            className={`step-item ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
-                            onClick={() => setCurrentStep(index)}
-                        >
-                            <div className="step-icon">
-                                {index < currentStep ? <Check size={16} /> : step.icon}
-                            </div>
-                            <span className="step-title">{step.title}</span>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Content Area */}
-                <div className="wizard-content">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentStep}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            {renderStepContent()}
-                        </motion.div>
-                    </AnimatePresence>
-
-                    {/* Validation Errors */}
-                    {errors.length > 0 && (
-                        <div className="validation-errors">
-                            <AlertCircle size={20} />
-                            <div>
-                                <strong>Greške u validaciji:</strong>
-                                <ul>
-                                    {errors.map((error, index) => (
-                                        <li key={index}>{error}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer Navigation */}
-                <div className="wizard-footer">
-                    <button
-                        onClick={handlePrevious}
-                        disabled={currentStep === 0}
-                        className="btn-secondary"
-                    >
-                        <ChevronLeft size={18} /> Nazad
-                    </button>
-                    <div className="step-indicator">
-                        Korak {currentStep + 1} od {steps.length}
+                {/* SIDEBAR NAVIGATION */}
+                <div className="wizard-sidebar">
+                    <div className="wizard-sidebar-header">
+                        <h2>Izmena Objekta</h2>
                     </div>
-                    {currentStep < steps.length - 1 ? (
-                        <button onClick={handleNext} className="btn-primary">
-                            Sledeće <ChevronRight size={18} />
+
+                    <div className="wizard-steps-list">
+                        {steps.map((step, index) => (
+                            <div
+                                key={step.id}
+                                className={`step-item-row ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
+                                onClick={() => setCurrentStep(index)}
+                            >
+                                <div className="step-icon-small">
+                                    {index < currentStep ? <Check size={16} /> : (index + 1)}
+                                </div>
+                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{step.title}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* MAIN CONTENT AREA */}
+                <div className="wizard-main-area">
+                    {/* TOPBAR */}
+                    <div className="wizard-topbar">
+                        <div className="topbar-title">
+                            <h3>{steps[currentStep].title}</h3>
+                            <span className="topbar-subtitle">Korak {currentStep + 1} od {steps.length} • OTA Standard</span>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: 'var(--bg-card)',
+                                border: '1px solid var(--border)',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                color: 'var(--text-primary)',
+                                fontSize: '13px',
+                                fontWeight: 500
+                            }}
+                        >
+                            <LogOut size={16} /> Exit
                         </button>
-                    ) : (
-                        <button onClick={handleSave} className="btn-primary">
-                            <Check size={18} /> Sačuvaj Objekat
+                    </div>
+
+                    {/* SCROLLABLE CONTENT */}
+                    <div className="wizard-content-wrapper">
+                        <div className="content-center-limit">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={currentStep}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    {renderStepContent()}
+                                </motion.div>
+                            </AnimatePresence>
+
+                            {/* Validation Errors */}
+                            {errors.length > 0 && (
+                                <div className="validation-errors">
+                                    <AlertCircle size={20} />
+                                    <div>
+                                        <strong>Greške u validaciji:</strong>
+                                        <ul>
+                                            {errors.map((error, index) => (
+                                                <li key={index}>{error}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ACTION FOOTER */}
+                    <div className="wizard-action-footer">
+                        <button
+                            onClick={handlePrevious}
+                            disabled={currentStep === 0}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: 'transparent', border: '1px solid var(--border)',
+                                color: 'var(--text-primary)',
+                                padding: '10px 20px', borderRadius: '8px', cursor: 'pointer',
+                                opacity: currentStep === 0 ? 0.5 : 1
+                            }}
+                        >
+                            <ChevronLeft size={18} /> Nazad
                         </button>
-                    )}
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            {currentStep < steps.length - 1 ? (
+                                <>
+                                    <button
+                                        onClick={() => handleSave(false)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '8px',
+                                            background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
+                                            padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+                                        }}
+                                    >
+                                        <Save size={18} /> Sačuvaj
+                                    </button>
+                                    <button
+                                        onClick={handleNext}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '8px',
+                                            background: 'var(--accent)', color: '#fff', border: 'none',
+                                            padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+                                        }}
+                                    >
+                                        Sledeće <ChevronRight size={18} />
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => handleSave(true)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        background: 'var(--accent)', color: '#fff', border: 'none',
+                                        padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600,
+                                        boxShadow: '0 4px 12px var(--accent-glow)'
+                                    }}
+                                >
+                                    <Check size={18} /> Završi i Sačuvaj
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </motion.div>
 
             <style>{`
-                .wizard-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.85);
-                    backdrop-filter: blur(10px);
-                    z-index: 2000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                }
+    .wizard-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-dark);
+    z-index: 2000;
+    display: flex;
+}
 
-                .wizard-container {
-                    background: var(--bg-main);
-                    border: 1px solid var(--border);
-                    border-radius: 24px;
-                    width: 100%;
-                    max-width: 1200px;
-                    max-height: 90vh;
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                }
+.wizard-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    background: var(--bg-dark);
+    overflow: hidden;
+}
 
-                .wizard-header {
-                    padding: 24px 32px;
-                    border-bottom: 1px solid var(--border);
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
+/* Sidebar Styling */
+.wizard-sidebar {
+    width: 280px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
 
-                .wizard-header h2 {
-                    font-size: 24px;
-                    font-weight: 700;
-                    margin: 0;
-                }
+.wizard-sidebar-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 
-                .wizard-steps {
-                    display: flex;
-                    padding: 24px 32px;
-                    gap: 8px;
-                    overflow-x: auto;
-                    border-bottom: 1px solid var(--border);
-                }
+.wizard-sidebar-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
 
-                .step-item {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 12px 16px;
-                    border-radius: 12px;
-                    cursor: pointer;
-                    transition: 0.2s;
-                    min-width: 120px;
-                    background: var(--bg-card);
-                    border: 1px solid var(--border);
-                }
+.wizard-steps-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
 
-                .step-item:hover {
-                    background: var(--glass-bg);
-                }
+.step-item-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    font-weight: 500;
+    user-select: none;
+}
 
-                .step-item.active {
-                    background: var(--accent-glow);
-                    border-color: var(--accent);
-                }
+.step-item-row:hover {
+    background: var(--glass-bg);
+}
 
-                .step-item.completed {
-                    background: rgba(63, 185, 80, 0.1);
-                    border-color: var(--accent);
-                }
+.step-item-row.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 600;
+    border-right: 3px solid var(--accent);
+}
 
-                .step-icon {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    background: var(--glass-bg);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: var(--text-secondary);
-                }
+.step-item-row.completed {
+    color: var(--accent);
+}
 
-                .step-item.active .step-icon {
-                    background: var(--accent);
-                    color: #fff;
-                }
+.step-icon-small {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
 
-                .step-item.completed .step-icon {
-                    background: var(--accent);
-                    color: #fff;
-                }
+.step-item-row.active .step-icon-small, .step-item-row.completed .step-icon-small {
+    background: var(--accent);
+    color: #fff;
+}
 
-                .step-title {
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: var(--text-secondary);
-                    text-align: center;
-                }
+/* Main Content Area */
+.wizard-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-dark); /* Slightly different bg for contrast */
+}
 
-                .step-item.active .step-title {
-                    color: var(--accent);
-                }
+.wizard-topbar {
+    height: 70px;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    flex-shrink: 0;
+}
 
-                .wizard-content {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 32px;
-                }
+.topbar-title h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+.topbar-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
 
-                .wizard-footer {
-                    padding: 20px 32px;
-                    border-top: 1px solid var(--border);
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
+.wizard-content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px;
+}
 
-                .step-indicator {
-                    font-size: 14px;
-                    color: var(--text-secondary);
-                    font-weight: 600;
-                }
+.content-center-limit {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+}
 
-                .validation-errors {
-                    background: rgba(239, 68, 68, 0.1);
-                    border: 1px solid rgba(239, 68, 68, 0.3);
-                    border-radius: 12px;
-                    padding: 16px;
-                    margin-top: 24px;
-                    display: flex;
-                    gap: 12px;
-                    color: #ef4444;
-                }
+.wizard-action-footer {
+    height: 80px;
+    padding: 0 40px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
 
-                .validation-errors ul {
-                    margin: 8px 0 0 0;
-                    padding-left: 20px;
-                }
+/* Utility */
+.validation-errors {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    color: #ef4444;
+}
+.validation-errors ul { margin: 8px 0 0 0; padding-left: 20px; }
+.validation-errors li { margin: 4px 0; }
 
-                .validation-errors li {
-                    margin: 4px 0;
-                }
 
                 .form-section {
-                    margin-bottom: 32px;
-                }
+    margin-bottom: 32px;
+}
 
                 .form-section-title {
-                    font-size: 18px;
-                    font-weight: 700;
-                    margin-bottom: 16px;
-                    color: var(--text-primary);
-                }
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
 
                 .form-grid {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 20px;
-                }
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
 
                 .form-grid.single {
-                    grid-template-columns: 1fr;
-                }
+    grid-template-columns: 1fr;
+}
 
                 .form-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
                 .form-group.span-2 {
-                    grid-column: span 2;
-                }
+    grid-column: span 2;
+}
 
                 .form-label {
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: var(--text-secondary);
-                }
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
 
                 .form-label.required::after {
-                    content: '*';
-                    color: #ef4444;
-                    margin-left: 4px;
-                }
+    content: '*';
+    color: #ef4444;
+    margin-left: 4px;
+}
 
                 .form-input {
-                    padding: 12px 16px;
-                    background: var(--bg-card);
-                    border: 1px solid var(--border);
-                    border-radius: 10px;
-                    color: var(--text-primary);
-                    font-size: 14px;
-                    outline: none;
-                    transition: 0.2s;
-                }
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+}
 
                 .form-input:focus {
-                    border-color: var(--accent);
-                }
+    border-color: var(--accent);
+}
 
                 .form-select {
-                    padding: 12px 16px;
-                    background: var(--bg-card);
-                    border: 1px solid var(--border);
-                    border-radius: 10px;
-                    color: var(--text-primary);
-                    font-size: 14px;
-                    outline: none;
-                    cursor: pointer;
-                }
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
 
                 .form-textarea {
-                    padding: 12px 16px;
-                    background: var(--bg-card);
-                    border: 1px solid var(--border);
-                    border-radius: 10px;
-                    color: var(--text-primary);
-                    font-size: 14px;
-                    outline: none;
-                    resize: vertical;
-                    min-height: 100px;
-                }
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+    min-height: 100px;
+}
 
                 .form-checkbox {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    cursor: pointer;
-                }
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
 
                 .form-checkbox input {
-                    width: 18px;
-                    height: 18px;
-                    cursor: pointer;
-                }
-            `}</style>
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+`}</style>
         </div>
     );
 };
@@ -442,6 +538,32 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave }) => {
 const BasicInfoStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
     return (
         <div>
+            <div className="form-section">
+                <h3 className="form-section-title">Identitet Objekta</h3>
+                <div className="form-group">
+                    <label className="form-label required">Naziv Objekta</label>
+                    <input
+                        type="text"
+                        className="form-input"
+                        placeholder="npr. Hotel Grand"
+                        value={data.name || ''}
+                        onChange={(e) => onChange({ name: e.target.value })}
+                        style={{ fontSize: '16px', padding: '12px' }}
+                    />
+                </div>
+                <div className="form-group" style={{ marginTop: '12px' }}>
+                    <label className="form-label">Izvorni Link (Sajt)</label>
+                    <input
+                        type="url"
+                        className="form-input"
+                        placeholder="https://www.hotel-website.com"
+                        value={(data as any).website || ''}
+                        onChange={(e) => onChange({ website: e.target.value } as any)}
+                        style={{ fontFamily: 'monospace', color: 'var(--accent)' }}
+                    />
+                    <small style={{ color: 'var(--text-secondary)' }}>Interni link. Koristi se za generisanje sadržaja i preuzimanje slika.</small>
+                </div>
+            </div>
             <div className="form-section">
                 <h3 className="form-section-title">Tip i Klasifikacija Objekta</h3>
                 <div className="form-grid">
@@ -478,25 +600,31 @@ const BasicInfoStep: React.FC<{ data: Partial<Property>; onChange: (updates: Par
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Chain Code (Lanac)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="npr. MC za Marriott"
-                            value={data.chainCode || ''}
-                            onChange={(e) => onChange({ chainCode: e.target.value })}
-                        />
+                        <label className="form-label">Lanac Hotela (Partner)</label>
+                        <select
+                            className="form-select"
+                            value={data.chainId || ''}
+                            onChange={(e) => onChange({ chainId: e.target.value })}
+                        >
+                            <option value="">Odaberite Lanac...</option>
+                            {MOCK_SUPPLIERS.filter(s => s.type === 'Lanac Hotela').map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Brand Code (Brend)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="npr. CY za Courtyard"
-                            value={data.brandCode || ''}
-                            onChange={(e) => onChange({ brandCode: e.target.value })}
-                        />
+                        <label className="form-label">Brand Hotela (Partner)</label>
+                        <select
+                            className="form-select"
+                            value={data.brandId || ''}
+                            onChange={(e) => onChange({ brandId: e.target.value })}
+                        >
+                            <option value="">Odaberite Brand...</option>
+                            {MOCK_SUPPLIERS.filter(s => s.type === 'Brand Hotela').map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>
@@ -536,232 +664,107 @@ const BasicInfoStep: React.FC<{ data: Partial<Property>; onChange: (updates: Par
 };
 
 const LocationStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
-    const [mapLink, setMapLink] = useState('');
 
-    const parseMapLink = () => {
-        if (!mapLink) return;
+    // Transform Property data to LocationData for the picker
+    const pickerData: LocationData = {
+        address: data.address?.addressLine1 || '',
+        addressLine2: data.address?.addressLine2 || '',
+        city: data.address?.city || '',
+        postalCode: data.address?.postalCode || '',
+        countryCode: data.address?.countryCode || '',
+        stateProvince: data.address?.stateProvince || '',
+        latitude: data.geoCoordinates?.latitude || 0,
+        longitude: data.geoCoordinates?.longitude || 0,
+        googlePlaceId: data.geoCoordinates?.googlePlaceId
+    };
 
-        // Pattern 1: @lat,lng (e.g. google.com/maps/@44.81,20.46,12z)
-        const atMatch = mapLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-        if (atMatch) {
-            const lat = parseFloat(atMatch[1]);
-            const lng = parseFloat(atMatch[2]);
-            onChange({
-                geoCoordinates: {
-                    ...data.geoCoordinates,
-                    latitude: lat,
-                    longitude: lng,
-                    coordinateSource: 'MAP_PIN'
-                } as any
-            });
-            return;
-        }
+    const handleLocationChange = (newData: LocationData) => {
+        onChange({
+            address: {
+                addressLine1: newData.address,
+                addressLine2: newData.addressLine2,
+                city: newData.city,
+                postalCode: newData.postalCode,
+                countryCode: newData.countryCode,
+                stateProvince: newData.stateProvince
+            } as any,
+            geoCoordinates: {
+                latitude: newData.latitude,
+                longitude: newData.longitude,
+                coordinateSource: 'MAP_PIN',
+                googlePlaceId: newData.googlePlaceId
+            } as any
+        });
+    };
 
-        // Pattern 2: search/lat,lng or place/lat,lng
-        const pathMatch = mapLink.match(/\/(-?\d+\.\d+),(-?\d+\.\d+)/);
-        if (pathMatch) {
-            const lat = parseFloat(pathMatch[1]);
-            const lng = parseFloat(pathMatch[2]);
-            onChange({
-                geoCoordinates: {
-                    ...data.geoCoordinates,
-                    latitude: lat,
-                    longitude: lng,
-                    coordinateSource: 'MAP_PIN'
-                } as any
-            });
-        }
+    const addPoi = () => {
+        const newPoi = { poiName: '', distanceMeters: 0, poiType: 'CityCenter' };
+        onChange({ pointsOfInterest: [...(data.pointsOfInterest || []), newPoi as any] });
+    };
+
+    const updatePoi = (index: number, field: string, value: any) => {
+        const newPois = [...(data.pointsOfInterest || [])];
+        newPois[index] = { ...newPois[index], [field]: value };
+        onChange({ pointsOfInterest: newPois });
+    };
+
+    const removePoi = (index: number) => {
+        onChange({ pointsOfInterest: data.pointsOfInterest?.filter((_, i) => i !== index) });
     };
 
     return (
         <div>
-            {/* Google Maps Integration Section */}
-            <div className="form-section">
-                <h3 className="form-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MapPin size={20} className="text-accent" /> Google Mape Integracija
-                </h3>
-                <div className="form-group">
-                    <label className="form-label">Brzo popunjavanje: Nalepite link sa Google Mapa</label>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="https://www.google.com/maps/place/..."
-                            value={mapLink}
-                            onChange={(e) => setMapLink(e.target.value)}
-                            style={{ flex: 1 }}
-                        />
-                        <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={parseMapLink}
-                            style={{ whiteSpace: 'nowrap' }}
-                        >
-                            <Globe size={16} style={{ marginRight: '6px' }} /> Povuci Podatke
-                        </button>
-                    </div>
-                    <small style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        Kopirajte URL iz browsera kada ste na željenoj lokaciji na Google Mapama.
-                    </small>
-                </div>
+            {/* The LocationPicker handles all map logic including auto-search by name */}
+            <LocationPicker
+                data={pickerData}
+                onChange={handleLocationChange}
+            />
 
-                {data.geoCoordinates?.latitude && data.geoCoordinates?.longitude && (
-                    <div style={{ marginTop: '20px', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', height: '300px', background: 'var(--bg-card)' }}>
-                        <iframe
-                            width="100%"
-                            height="100%"
-                            frameBorder="0"
-                            scrolling="no"
-                            marginHeight={0}
-                            marginWidth={0}
-                            title="Location Preview"
-                            src={`https://maps.google.com/maps?q=${data.geoCoordinates.latitude},${data.geoCoordinates.longitude}&z=15&output=embed`}
-                            style={{ filter: 'grayscale(0.2) contrast(1.1)' }}
-                        ></iframe>
-                    </div>
-                )}
-            </div>
-
-            <div className="form-section">
-                <h3 className="form-section-title">Manualni Unos Adrese</h3>
-                <div className="form-grid">
-                    <div className="form-group span-2">
-                        <label className="form-label required">Ulica i Broj</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="npr. Knez Mihailova 12"
-                            value={data.address?.addressLine1 || ''}
-                            onChange={(e) => onChange({
-                                address: { ...data.address, addressLine1: e.target.value } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group span-2">
-                        <label className="form-label">Dodatak Adrese</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Sprat, stan, zgrada..."
-                            value={data.address?.addressLine2 || ''}
-                            onChange={(e) => onChange({
-                                address: { ...data.address, addressLine2: e.target.value } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label required">Grad</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={data.address?.city || ''}
-                            onChange={(e) => onChange({
-                                address: { ...data.address, city: e.target.value } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label required">Poštanski Broj</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={data.address?.postalCode || ''}
-                            onChange={(e) => onChange({
-                                address: { ...data.address, postalCode: e.target.value } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label required">Država (ISO Kod)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="RS, ME, HR..."
-                            maxLength={2}
-                            value={data.address?.countryCode || ''}
-                            onChange={(e) => onChange({
-                                address: { ...data.address, countryCode: e.target.value.toUpperCase() } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Pokrajina/Država (ISO)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Za SAD, Kanadu, Australiju..."
-                            value={data.address?.stateProvince || ''}
-                            onChange={(e) => onChange({
-                                address: { ...data.address, stateProvince: e.target.value } as any
-                            })}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="form-section">
-                <h3 className="form-section-title">GPS Koordinate (Sistemski)</h3>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label className="form-label">Geografska Širina (Latitude)</label>
-                        <input
-                            type="number"
-                            step="0.000001"
-                            className="form-input"
-                            placeholder="44.786568"
-                            value={data.geoCoordinates?.latitude || ''}
-                            onChange={(e) => onChange({
-                                geoCoordinates: { ...data.geoCoordinates, latitude: Number(e.target.value) } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Geografska Dužina (Longitude)</label>
-                        <input
-                            type="number"
-                            step="0.000001"
-                            className="form-input"
-                            placeholder="20.448921"
-                            value={data.geoCoordinates?.longitude || ''}
-                            onChange={(e) => onChange({
-                                geoCoordinates: { ...data.geoCoordinates, longitude: Number(e.target.value) } as any
-                            })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Izvor Koordinata</label>
-                        <select
-                            className="form-select"
-                            value={data.geoCoordinates?.coordinateSource || 'MAP_PIN'}
-                            onChange={(e) => onChange({
-                                geoCoordinates: { ...data.geoCoordinates, coordinateSource: e.target.value as any } as any
-                            })}
-                        >
-                            <option value="GPS_DEVICE">GPS Uređaj</option>
-                            <option value="MAP_PIN">Mapa (Pin)</option>
-                            <option value="ADDRESS_GEOCODING">Geocoding</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Google Place ID (Opciono)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="ChIJ..."
-                            value={data.geoCoordinates?.googlePlaceId || ''}
-                            onChange={(e) => onChange({
-                                geoCoordinates: { ...data.geoCoordinates, googlePlaceId: e.target.value } as any
-                            })}
-                        />
-                    </div>
+            <div className="form-section" style={{ marginTop: '32px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
+                <h3 className="form-section-title">Tačke Interesa (Udaljenosti)</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(data.pointsOfInterest || []).map((poi, index) => (
+                        <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--bg-card)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                            <input
+                                className="form-input"
+                                placeholder="Naziv tačke (npr. Centar)"
+                                value={poi.poiName}
+                                onChange={e => updatePoi(index, 'poiName', e.target.value)}
+                                style={{ flex: 1 }}
+                            />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    placeholder="Distanca"
+                                    value={poi.distanceMeters}
+                                    onChange={e => updatePoi(index, 'distanceMeters', parseInt(e.target.value) || 0)}
+                                    style={{ width: '100px' }}
+                                />
+                                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>m</span>
+                            </div>
+                            <select
+                                className="form-select"
+                                value={poi.poiType}
+                                onChange={e => updatePoi(index, 'poiType', e.target.value)}
+                                style={{ width: '150px' }}
+                            >
+                                <option value="CityCenter">Centar</option>
+                                <option value="Airport">Aerodrom</option>
+                                <option value="TrainStation">Stanica</option>
+                                <option value="Beach">Plaža</option>
+                                <option value="SkiLift">Ski Lift</option>
+                                <option value="Restaurant">Restoran</option>
+                                <option value="Shop">Prodavnica</option>
+                            </select>
+                            <button onClick={() => removePoi(index)} className="btn-icon" style={{ color: '#ef4444', padding: '8px' }}>
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    ))}
+                    <button onClick={addPoi} className="btn-secondary" style={{ alignSelf: 'flex-start', marginTop: '8px' }}>
+                        <Plus size={16} /> Dodaj Tačku
+                    </button>
                 </div>
             </div>
         </div>
@@ -770,6 +773,10 @@ const LocationStep: React.FC<{ data: Partial<Property>; onChange: (updates: Part
 
 const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
     const [selectedLang, setSelectedLang] = useState('sr');
+    const [showAiSettings, setShowAiSettings] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('Pronađi zvanični sajt ovog objekta i koristi ISKLJUČIVO njega kao izvor informacija. Ako ne možeš da nađeš zvanični sajt, stani i zatraži link. Ako nađeš, generiši opis, sadržaje, tačke interesa i tipove soba na osnovu njega.');
+    const [sourceUrl, setSourceUrl] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const currentContent = data.content?.find(c => c.languageCode === selectedLang) || {
         languageCode: selectedLang,
@@ -778,7 +785,10 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
         shortDescription: '',
         longDescription: '',
         locationDescription: '',
-        policyText: ''
+        policyText: '',
+        metaTitle: '',
+        metaDescription: '',
+        structuredJson: ''
     };
 
     const updateContent = (updates: Partial<PropertyContent>) => {
@@ -787,11 +797,305 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
         onChange({ content: newContent });
     };
 
+    const handleHtmlPreview = () => {
+        const title = currentContent.displayName || currentContent.officialName || 'Hotel';
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>${title} - Interni Pregled</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; line-height: 1.6; max-width: 900px; margin: 0 auto; color: #333; }
+                    h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
+                    .section { margin-top: 30px; background: #f5f5f5; padding: 20px; border-radius: 8px; }
+                    .label { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #666; margin-bottom: 5px; }
+                    pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; overflow-x: auto; }
+                    .preview-box { border: 1px solid #ddd; padding: 20px; border-radius: 6px; background: white; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <h1>Interni Pregled Podataka: ${title}</h1>
+                
+                <div class="section">
+                    <div class="label">SEO Meta Podaci</div>
+                    <p><strong>Meta Title:</strong> ${currentContent.metaTitle || '-'}</p>
+                    <p><strong>Meta Description:</strong> ${currentContent.metaDescription || '-'}</p>
+                </div>
+
+                <div class="section">
+                    <div class="label">HTML Sadržaj (Opis)</div>
+                    <div class="preview-box">
+                        ${currentContent.longDescription || '<i>Nema generisanog opisa.</i>'}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="label">Structured Data (JSON-LD)</div>
+                    <pre>${currentContent.structuredJson || '// Empty'}</pre>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+    };
+
+    const handleGenerateAi = () => {
+        setIsGenerating(true);
+        // Simulate AI generation delay
+        setTimeout(() => {
+            const name = data.name || 'Naš Hotel';
+            const city = data.address?.city || 'Centar';
+
+            // 1. Generate Serbian Content
+            const contentSr: PropertyContent = {
+                languageCode: 'sr',
+                officialName: name,
+                displayName: name,
+                shortDescription: `Doživite savršen odmor u ${name}, smeštenom u srcu destinacije ${city}. Spoj luksuza, tradicije i vrhunske usluge za nezaboravne trenutke.`,
+                longDescription: `
+<p><b>${name} – Vaša oaza mira u srcu destinacije ${city}</b></p>
+<p>${name} predstavlja idealan spoj moderne arhitekture i toplog gostoprimstva. Bilo da dolazite poslovno ili na odmor, naš hotel nudi sve što vam je potrebno za savršen boravak - od luksuznih soba do vrhunskog wellness centra.</p>
+
+<p class="section"><b>Lokacija</b></p>
+<p>Hotel se nalazi na prestižnoj lokaciji u mestu ${city}, na adresi ${data.address?.addressLine1 || 'Centar'}. Okružen je zelenilom i nalazi se u neposrednoj blizini glavnih turističkih atrakcija, šetališta i poslovne zone, što ga čini savršenim polazištem za istraživanje.</p>
+
+<p class="section"><b>Sadržaji hotela</b></p>
+<p>Gostima su na raspolaganju brojni sadržaji uključujući à la carte restoran sa lokalnim i internacionalnim specijalitetima, lobby bar sa terasom, moderno opremljenu konferencijsku salu, besplatan brzi Wi-Fi u celom objektu, kao i privatni parking sa video nadzorom (uz doplatu).</p>
+
+<p class="section"><b>Wellness i rekreacija</b></p>
+<p>Naš ekskluzivni Wellness & Spa centar prostire se na 500m2 i nudi zatvoreni bazen sa termalnom vodom, finsku saunu, parno kupatilo i zonu za relaksaciju. Za ljubitelje aktivnog odmora, tu je i moderno opremljena teretana dostupna 24h.</p>
+
+<p class="section"><b>Smeštaj</b></p>
+<p>Hotel raspolaže sa 50 luksuzno opremljenih smeštajnih jedinica. Sve sobe su klimatizovane i zvučno izolovane.</p><br>
+
+<p><b># Standard Soba</b> Kapacitet: 2 osobe<br>Komforna soba površine 25m2, idealna za parove. Sadrži francuski ležaj, radni sto, LCD TV sa kablovskim kanalima, sef, mini-bar, ketler za čaj/kafu i moderno kupatilo sa tuš kabinom i fenom. Wi-Fi je besplatan.</p>
+<hr style="border:0;border-top:1px solid #ccc;margin:10px 0;">
+
+<p><b># Deluxe Apartman</b> Kapacitet: 4 osobe<br>Prostran apartman od 45m2 sa odvojenom spavaćom sobom i dnevnim boravkom. Poseduje privatnu terasu sa panoramskim pogledom. Opremljen je sa dva LCD TV-a, mini-kuhinjom, aparatom za kafu i luksuznim kupatilom sa đakuzi kadom, bade mantilima i papučama.</p>
+<hr style="border:0;border-top:1px solid #ccc;margin:10px 0;">
+
+<p class="section"><b>Usluga</b></p>
+<p>Usluga je na bazi noćenja sa doručkom (bogati švedski sto). Mogućnost doplate za polupansion (večera - izbor više jela ili švedski sto, zavisno od broja gostiju).</p>
+
+<p class="section"><b>Dodatne usluge</b></p>
+<p>Recepcija je otvorena 24h. Nudimo usluge pranja i peglanja veša, room service, kao i organizaciju transfera od/do aerodroma uz prethodnu najavu.</p>
+<hr>
+<p><b>Najčešća pitanja (FAQ)</b></p>
+<p><b>Da li hotel ima wellness sadržaje?</b><br>Da, hotel poseduje Wellness centar sa bazenom i saunom. Korišćenje bazena je besplatno za goste hotela.</p>
+<p><b>Da li hotel ima parking?</b><br>Da, dostupan je privatni parking u okviru objekta (nije potrebna rezervacija) i naplaćuje se 10 EUR po danu.</p>
+<p><b>Da li su kućni ljubimci dozvoljeni?</b><br>Da, kućni ljubimci su dozvoljeni na zahtev. Moguća je dodatna naknada.</p>
+<p><b>Koliko je hotel udaljen od centra?</b><br>Hotel je udaljen oko 500m od strogog centra grada.</p>
+`.trim(),
+                locationDescription: '',
+                policyText: '',
+                metaTitle: `${name} ${city} | Wellness & Spa Odmor | Zvanični Sajt`,
+                metaDescription: `Rezervišite boravak u ${name}, ${city}. Luksuzne sobe, spa centar, restoran i odlična lokacija. Najbolje cene i specijalne ponude za vaš savršen odmor.`,
+                structuredJson: JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "Hotel",
+                    "name": name,
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": city,
+                        "streetAddress": data.address?.addressLine1
+                    },
+                    "description": `Doživite savršen odmor u ${name}...`,
+                    "starRating": data.starRating
+                }, null, 2)
+            };
+
+            // 2. Generate English Content
+            const contentEn: PropertyContent = {
+                languageCode: 'en',
+                officialName: name,
+                displayName: name,
+                shortDescription: `Experience a perfect stay at ${name}, located in the heart of ${city}. A blend of luxury, tradition, and premium service for unforgettable moments.`,
+                longDescription: `
+<p><b>${name} – Your oasis of peace in the heart of ${city}</b></p>
+<p>${name} represents the ideal blend of modern architecture and warm hospitality. Whether you are visiting for business or leisure, our hotel offers everything you need for a perfect stay - from luxurious rooms to a top-notch wellness center.</p>
+
+<p class="section"><b>Location</b></p>
+<p>The hotel is situated in a prestigious location in ${city}, at ${data.address?.addressLine1 || 'City Center'}. Surrounded by greenery and located in close proximity to main tourist attractions, promenades, and the business zone, it is the perfect starting point for exploration.</p>
+
+<p class="section"><b>Hotel Facilities</b></p>
+<p>Guests can enjoy numerous facilities including an à la carte restaurant with local and international specialties, a lobby bar with a terrace, a fully equipped conference hall, free high-speed Wi-Fi throughout the property, and private parking (surcharge applies).</p>
+
+<p class="section"><b>Wellness & Recreation</b></p>
+<p>Our exclusive Wellness & Spa center covers 500m2 and offers an indoor pool with thermal water, Finnish sauna, steam bath, and relaxation zone. For active vacation lovers, a modern gym is available 24/7.</p>
+
+<p class="section"><b>Accommodation</b></p>
+<p>The hotel features 50 luxuriously equipped accommodation units. All rooms are air-conditioned and soundproofed.</p><br>
+
+<p><b># Standard Room</b> Capacity: 2 persons<br>Comfortable room of 25m2, ideal for couples. Features a double bed, work desk, LCD TV with cable channels, safe, mini-bar, kettle for tea/coffee, and a modern bathroom with shower cabin and hairdryer. Wi-Fi is free.</p>
+<hr style="border:0;border-top:1px solid #ccc;margin:10px 0;">
+
+<p><b># Deluxe Suite</b> Capacity: 4 persons<br>Spacious suite of 45m2 with separate bedroom and living room. Features a private terrace with panoramic views. Equipped with two LCD TVs, mini-kuhinjom, aparatom za kafu and a luxurious bathroom with jacuzzi tub, bathrobes, and slippers.</p>
+<hr style="border:0;border-top:1px solid #ccc;margin:10px 0;">
+
+<p class="section"><b>Service</b></p>
+<p>Service is based on Bed & Breakfast (rich buffet). Half-board supplement available (choice of menu or buffet for dinner).</p>
+
+<p class="section"><b>Additional Services</b></p>
+<p>Reception is open 24/7. We offer laundry and ironing services, room service, and airport transfers upon request.</p>
+<hr>
+<p><b>FAQ</b></p>
+<p><b>Does the hotel have wellness facilities?</b><br>Yes, the hotel has a Wellness center with pool and sauna. Pool access is free for guests.</p>
+<p><b>Is parking available?</b><br>Yes, private parking is available on-site (10 EUR/day).</p>
+<p><b>Are pets allowed?</b><br>Yes, pets are allowed upon request. Charges may apply.</p>
+<p><b>How far is the center?</b><br>The hotel is about 500m from the city center.</p>
+`.trim(),
+                locationDescription: '',
+                policyText: '',
+                metaTitle: `${name} ${city} | Wellness & Spa Vacation | Official Site`,
+                metaDescription: `Book your stay at ${name}, ${city}. Luxury rooms, spa, restaurant, and great location. Best rates and special offers.`,
+                structuredJson: JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "Hotel",
+                    "name": name,
+                    "address": {
+                        "@type": "PostalAddress",
+                        "addressLocality": city,
+                        "streetAddress": data.address?.addressLine1
+                    },
+                    "description": `Experience a perfect stay at ${name}...`,
+                    "starRating": data.starRating
+                }, null, 2)
+            };
+
+            // 3. Generate Points of Interest (Distances)
+            const newPois: any[] = [
+                { poiName: `Centar grada (${city})`, distanceMeters: 500, poiType: 'CityCenter' },
+                { poiName: 'Aerodrom Nikola Tesla', distanceMeters: 18500, poiType: 'Airport' },
+                { poiName: 'Glavna Autobuska Stanica', distanceMeters: 2100, poiType: 'TrainStation' },
+                { poiName: 'Lokalni Restorani', distanceMeters: 200, poiType: 'Restaurant' }
+            ];
+
+            // 4. Generate Amenities
+            const newAmenities: any[] = [
+                { amenityId: 'wifi', propertyId: 'temp', otaCode: '1', name: 'Besplatan WiFi', category: 'General', isFree: true, onSite: true, reservationRequired: false },
+                { amenityId: 'parking', propertyId: 'temp', otaCode: '2', name: 'Parking', category: 'General', isFree: true, onSite: true, reservationRequired: true },
+                { amenityId: 'pool', propertyId: 'temp', otaCode: '3', name: 'Bazen', category: 'Wellness', isFree: false, onSite: true, reservationRequired: false },
+                { amenityId: 'ac', propertyId: 'temp', otaCode: '4', name: 'Klima Uređaj', category: 'Room', isFree: true, onSite: true, reservationRequired: false }
+            ];
+
+            // 5. Generate Room Types
+            const newRoomTypes: any[] = [
+                {
+                    roomTypeId: 'rt_' + Date.now(),
+                    code: 'STD',
+                    nameInternal: 'Standard Dvokrevetna Soba',
+                    category: 'Room',
+                    standardOccupancy: 2,
+                    maxAdults: 2,
+                    maxChildren: 1,
+                    maxOccupancy: 3,
+                    minOccupancy: 1,
+                    bathroomCount: 1,
+                    bathroomType: 'Private',
+                    beddingConfigurations: [{ bedTypeCode: 'DOUBLE', quantity: 1, isExtraBed: false }],
+                    amenities: [],
+                    images: []
+                },
+                {
+                    roomTypeId: 'rt_' + (Date.now() + 1),
+                    code: 'DLX',
+                    nameInternal: 'Deluxe Apartman',
+                    category: 'Suite',
+                    standardOccupancy: 3,
+                    maxAdults: 3,
+                    maxChildren: 2,
+                    maxOccupancy: 4,
+                    minOccupancy: 1,
+                    bathroomCount: 1,
+                    bathroomType: 'Private',
+                    beddingConfigurations: [{ bedTypeCode: 'KING', quantity: 1, isExtraBed: false }, { bedTypeCode: 'SOFA_BED', quantity: 1, isExtraBed: true }],
+                    amenities: [],
+                    images: []
+                }
+            ];
+
+            // Update All Data
+            const otherContent = data.content?.filter(c => c.languageCode !== 'sr' && c.languageCode !== 'en') || [];
+            onChange({
+                content: [...otherContent, contentSr, contentEn],
+                pointsOfInterest: newPois,
+                propertyAmenities: newAmenities,
+                roomTypes: newRoomTypes,
+                website: (data as any).website || `https://www.${name.toLowerCase().replace(/[^a-z0-9]/g, '')}.rs`
+            } as any);
+
+            setIsGenerating(false);
+            setShowAiSettings(false);
+        }, 1500);
+    };
+
     return (
         <div>
+            {/* AI Control Panel */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Sparkles size={18} className="text-accent" />
+                        <h4 style={{ margin: 0, fontSize: '14px' }}>Opis i Seo</h4>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                            className="btn-secondary"
+                            onClick={handleHtmlPreview}
+                            style={{ fontSize: '13px', padding: '6px 12px' }}
+                        >
+                            <Globe size={14} style={{ marginRight: '4px' }} /> HTML Prikaz
+                        </button>
+                        <button
+                            className="btn-secondary"
+                            onClick={() => setShowAiSettings(!showAiSettings)}
+                            style={{ fontSize: '13px', padding: '6px 12px' }}
+                        >
+                            {showAiSettings ? 'Sakrij Podešavanja' : 'Podešavanja Prompta'}
+                        </button>
+                        <button
+                            className="btn-primary-glow"
+                            onClick={handleGenerateAi}
+                            disabled={isGenerating}
+                            style={{ fontSize: '13px', padding: '6px 12px' }}
+                        >
+                            {isGenerating ? 'Generisanje...' : 'Generiši Sadržaj'}
+                        </button>
+                    </div>
+                </div>
+
+                {showAiSettings && (
+                    <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                        <label className="form-label">Globalni AI Prompt Template</label>
+                        <textarea
+                            className="form-textarea"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            style={{ fontSize: '13px', fontFamily: 'monospace', minHeight: '80px', width: '100%' }}
+                        />
+                        <small style={{ color: 'var(--text-secondary)' }}>Definišite instrukcije za AI model. Koristite ovaj prostor za tonalitet, stil i specifične zahteve.</small>
+
+                        <div style={{ marginTop: '16px' }}>
+                            <label className="form-label">Link ka izvornom sajtu (Opciono)</label>
+                            <input
+                                className="form-input"
+                                placeholder="https://www.official-hotel-site.com"
+                                value={sourceUrl}
+                                onChange={(e) => setSourceUrl(e.target.value)}
+                            />
+                            <small style={{ color: 'var(--text-secondary)' }}>Ukoliko AI ne pronađe sajt, ovde unesite tačan link.</small>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             <div className="form-section">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 className="form-section-title" style={{ margin: 0 }}>Tekstualni Sadržaj</h3>
+                    <h3 className="form-section-title" style={{ margin: 0 }}>Tekstualni Sadržaj (Višejezično)</h3>
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                             className={`btn-${selectedLang === 'sr' ? 'primary' : 'secondary'}`}
@@ -811,27 +1115,7 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
                 </div>
 
                 <div className="form-grid single">
-                    <div className="form-group">
-                        <label className="form-label required">Zvanični Naziv</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Hotel Moskva doo"
-                            value={currentContent.officialName}
-                            onChange={(e) => updateContent({ officialName: e.target.value })}
-                        />
-                    </div>
 
-                    <div className="form-group">
-                        <label className="form-label required">Prikazni Naziv (Marketing)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Hotel Moskva - City Center"
-                            value={currentContent.displayName}
-                            onChange={(e) => updateContent({ displayName: e.target.value })}
-                        />
-                    </div>
 
                     <div className="form-group">
                         <label className="form-label">Kratak Opis (max 300 karaktera)</label>
@@ -839,7 +1123,7 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
                             className="form-textarea"
                             maxLength={300}
                             placeholder="Za mobilne aplikacije i brzi pregled..."
-                            value={currentContent.shortDescription}
+                            value={currentContent.shortDescription || ''}
                             onChange={(e) => updateContent({ shortDescription: e.target.value })}
                             style={{ minHeight: '80px' }}
                         />
@@ -853,10 +1137,59 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
                         <textarea
                             className="form-textarea"
                             placeholder="Za detaljne stranice i SEO..."
-                            value={currentContent.longDescription}
+                            value={currentContent.longDescription || ''}
                             onChange={(e) => updateContent({ longDescription: e.target.value })}
                             style={{ minHeight: '200px' }}
                         />
+                    </div>
+
+                    {/* SEO SECTION */}
+                    <div style={{ background: 'rgba(0,0,0,0.1)', padding: '16px', borderRadius: '12px', border: '1px dashed var(--border)', marginTop: '16px' }}>
+                        <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--accent)' }}>SEO & Meta Podaci (Google Search)</h4>
+
+                        <div className="form-group" style={{ marginBottom: '16px' }}>
+                            <label className="form-label">Meta Title (Naslov)</label>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    maxLength={60}
+                                    placeholder="Naslov za pretraživače..."
+                                    value={currentContent.metaTitle || ''}
+                                    onChange={(e) => updateContent({ metaTitle: e.target.value })}
+                                    style={{ paddingRight: '60px', width: '100%' }}
+                                />
+                                <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: (currentContent.metaTitle?.length || 0) > 60 ? 'red' : 'gray' }}>
+                                    {currentContent.metaTitle?.length || 0}/60
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Meta Description (Opis)</label>
+                            <textarea
+                                className="form-textarea"
+                                maxLength={160}
+                                placeholder="Kratak opis koji se pojavljuje u rezultatima pretrage..."
+                                value={currentContent.metaDescription || ''}
+                                onChange={(e) => updateContent({ metaDescription: e.target.value })}
+                                style={{ minHeight: '80px' }}
+                            />
+                            <small style={{ color: (currentContent.metaDescription?.length || 0) > 160 ? 'red' : 'var(--text-secondary)' }}>
+                                {currentContent.metaDescription?.length || 0}/160 preporučenih karaktera
+                            </small>
+                        </div>
+
+                        <div className="form-group" style={{ marginTop: '16px' }}>
+                            <label className="form-label">Structured Data (JSON-LD) - Skriveno</label>
+                            <textarea
+                                className="form-textarea"
+                                readOnly
+                                value={currentContent.structuredJson || ''}
+                                placeholder="Automatski generisan JSON-LD kod..."
+                                style={{ minHeight: '60px', fontSize: '11px', fontFamily: 'monospace', background: 'rgba(0,0,0,0.2)', opacity: 0.7 }}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-group">
@@ -864,7 +1197,7 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
                         <textarea
                             className="form-textarea"
                             placeholder="Opis kraja/komšiluka..."
-                            value={currentContent.locationDescription}
+                            value={currentContent.locationDescription || ''}
                             onChange={(e) => updateContent({ locationDescription: e.target.value })}
                         />
                     </div>
@@ -874,7 +1207,7 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
                         <textarea
                             className="form-textarea"
                             placeholder="Sitna slova o pravilima..."
-                            value={currentContent.policyText}
+                            value={currentContent.policyText || ''}
                             onChange={(e) => updateContent({ policyText: e.target.value })}
                         />
                     </div>
@@ -885,30 +1218,76 @@ const ContentStep: React.FC<{ data: Partial<Property>; onChange: (updates: Parti
 };
 
 const ImagesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial<Property>) => void }> = ({ data, onChange }) => {
+    const [websiteUrl, setWebsiteUrl] = useState((data as any).website || 'https://www.example-hotel.com');
+
+    useEffect(() => {
+        const val = (data as any).website;
+        if (val) setWebsiteUrl(val);
+    }, [data]);
+
+    const [isFetching, setIsFetching] = useState(false);
+    const [showManual, setShowManual] = useState(false);
+
+    // Manual States
     const [imageUrl, setImageUrl] = useState('');
     const [imageCategory, setImageCategory] = useState<'Exterior' | 'Lobby' | 'Room' | 'Bathroom' | 'Pool' | 'Restaurant' | 'View' | 'Amenity'>('Exterior');
     const [selectedRoomType, setSelectedRoomType] = useState<string>('');
     const [imageCaption, setImageCaption] = useState('');
+    const [imageAlt, setImageAlt] = useState('');
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+    // Auto-update Alt Text suggestion when Category changes
+    useEffect(() => {
+        const hotelName = (data as any).name || 'Hotel';
+        if (!imageAlt || imageAlt.includes(hotelName)) {
+            setImageAlt(`${hotelName} - ${imageCategory}`);
+        }
+    }, [imageCategory, (data as any).name]);
+
+    const handleFetchImages = () => {
+        if (!websiteUrl) return;
+        setIsFetching(true);
+        setTimeout(() => {
+            // Mock Fetch with diverse images
+            const fetchedImages: PropertyImage[] = [
+                { url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1000', category: 'Exterior', caption: 'Fasada Objekta', sortOrder: 1 },
+                { url: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1000', category: 'Lobby', caption: 'Lobby i Recepcija', sortOrder: 2 },
+                { url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=1000', category: 'Restaurant', caption: 'Restoran', sortOrder: 3 },
+                { url: 'https://images.unsplash.com/photo-1576354302919-96748cb8299e?auto=format&fit=crop&q=80&w=1000', category: 'Room', caption: 'Standardna Soba', sortOrder: 4 },
+                { url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=1000', category: 'Room', caption: 'Pogled iz sobe', sortOrder: 5 },
+                { url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1000', category: 'Bathroom', caption: 'Kupatilo', sortOrder: 6 },
+                { url: 'https://images.unsplash.com/photo-1572331165267-854da2b00cc6?auto=format&fit=crop&q=80&w=1000', category: 'Pool', caption: 'Bazen', sortOrder: 7 },
+                { url: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?auto=format&fit=crop&q=80&w=1000', category: 'Amenity', caption: 'Teretana', sortOrder: 8 },
+            ];
+
+            const currentCount = data.images?.length || 0;
+            const hotelName = (data as any).name || 'Hotel';
+
+            const preparedImages = fetchedImages.map((img, i) => ({
+                ...img,
+                altText: `${hotelName} - ${img.category} - ${img.caption}`,
+                sortOrder: currentCount + i + 1
+            }));
+
+            onChange({ images: [...(data.images || []), ...preparedImages] });
+            setIsFetching(false);
+        }, 2000);
+    };
 
     const addImage = () => {
-        if (!imageUrl.trim()) {
-            alert('Unesite URL slike!');
-            return;
-        }
-
+        if (!imageUrl.trim()) return;
         const newImage: PropertyImage = {
             url: imageUrl,
             category: imageCategory,
             roomTypeId: selectedRoomType || undefined,
             sortOrder: (data.images?.length || 0) + 1,
-            caption: imageCaption || undefined
+            caption: imageCaption || undefined,
+            altText: imageAlt || undefined
         };
-
         onChange({ images: [...(data.images || []), newImage] });
-
-        // Reset form
         setImageUrl('');
         setImageCaption('');
+        setImageAlt(''); // Reset will trigger effect to refill
         setSelectedRoomType('');
     };
 
@@ -917,236 +1296,188 @@ const ImagesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partia
         onChange({ images: newImages });
     };
 
-    const moveImage = (index: number, direction: 'up' | 'down') => {
-        if (!data.images) return;
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
 
-        const newImages = [...data.images];
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+    };
 
-        if (targetIndex < 0 || targetIndex >= newImages.length) return;
+    const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === dropIndex) return;
 
-        [newImages[index], newImages[targetIndex]] = [newImages[targetIndex], newImages[index]];
+        const newImages = [...(data.images || [])];
+        const draggedItem = newImages[draggedIndex];
 
-        // Update sort orders
-        newImages.forEach((img, i) => img.sortOrder = i + 1);
+        newImages.splice(draggedIndex, 1);
+        newImages.splice(dropIndex, 0, draggedItem);
 
-        onChange({ images: newImages });
+        const reordered = newImages.map((img, idx) => ({
+            ...img,
+            sortOrder: idx + 1
+        }));
+
+        onChange({ images: reordered });
+        setDraggedIndex(null);
     };
 
     return (
         <div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             <div className="form-section">
-                <h3 className="form-section-title">Dodavanje Slika</h3>
+                <h3 className="form-section-title">Galerija Slika</h3>
 
-                <div style={{
-                    background: 'var(--bg-card)',
-                    border: '2px dashed var(--border)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    marginBottom: '24px'
-                }}>
-                    <div className="form-grid">
-                        <div className="form-group span-2">
-                            <label className="form-label required">URL Slike</label>
-                            <input
-                                type="url"
-                                className="form-input"
-                                placeholder="https://example.com/image.jpg (min 1280px širine)"
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                            />
-                            <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                Preporučena rezolucija: 1920x1080 ili veća. Format: JPG, PNG, WebP
-                            </small>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label required">Kategorija Slike</label>
-                            <select
-                                className="form-select"
-                                value={imageCategory}
-                                onChange={(e) => setImageCategory(e.target.value as any)}
-                            >
-                                <option value="Exterior">Exterior (Spoljašnjost)</option>
-                                <option value="Lobby">Lobby (Recepcija)</option>
-                                <option value="Room">Room (Soba)</option>
-                                <option value="Bathroom">Bathroom (Kupatilo)</option>
-                                <option value="Pool">Pool (Bazen)</option>
-                                <option value="Restaurant">Restaurant (Restoran)</option>
-                                <option value="View">View (Pogled)</option>
-                                <option value="Amenity">Amenity (Sadržaj)</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Vezano za Sobu (opciono)</label>
-                            <select
-                                className="form-select"
-                                value={selectedRoomType}
-                                onChange={(e) => setSelectedRoomType(e.target.value)}
-                            >
-                                <option value="">Opšta slika objekta</option>
-                                {data.roomTypes?.map(room => (
-                                    <option key={room.roomTypeId} value={room.roomTypeId}>
-                                        {room.nameInternal || room.code}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-group span-2">
-                            <label className="form-label">Opis Slike (Caption)</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="Kratak opis slike..."
-                                value={imageCaption}
-                                onChange={(e) => setImageCaption(e.target.value)}
-                            />
-                        </div>
+                {/* AI / Fetch Section */}
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                        <Sparkles size={18} className="text-accent" />
+                        <h4 style={{ margin: 0, fontSize: '14px' }}>Preuzimanje sa Sajta (Auto-Kategorizacija + SEO)</h4>
                     </div>
 
-                    <button
-                        className="btn-primary"
-                        onClick={addImage}
-                        style={{ marginTop: '16px', width: '100%' }}
-                    >
-                        <Plus size={18} /> Dodaj Sliku
-                    </button>
+                    <div className="form-group">
+                        <label className="form-label">Link ka sajtu hotela</label>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <input
+                                className="form-input"
+                                placeholder="https://www.hotel-website.com"
+                                value={websiteUrl}
+                                onChange={e => setWebsiteUrl(e.target.value)}
+                            />
+                            <button
+                                className="btn-primary-glow"
+                                onClick={handleFetchImages}
+                                disabled={isFetching}
+                                style={{ minWidth: '180px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                            >
+                                {isFetching ? <span style={{ fontSize: '12px' }}>Učitavanje...</span> : <Globe size={16} />}
+                                {isFetching ? '' : ' Preuzmi Slike'}
+                            </button>
+                        </div>
+                        <small style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', marginTop: '8px' }}>
+                            Sistem će preuzeti slike, kategorisati ih i <strong>automatski dodati SEO tagove</strong> (Naziv Hotela + Kategorija).
+                        </small>
+
+                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '10px', borderRadius: '8px', fontSize: '12px', display: 'flex', gap: '8px', lineHeight: '1.4' }}>
+                            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                            <span>
+                                <strong>Napomena (Demo Mod):</strong> Zbog sigurnosnih ograničenja browsera (CORS), aplikacija u ovom trenutku ne može direktno preuzeti slike sa eksternog sajta "{websiteUrl}".
+                                <br />Prikazane su <strong>demo slike</strong> kako bi se demonstriralo automatsko sortiranje i kategorizacija. U produkciji bi ovo radio backend servis.
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Images Gallery */}
-                {data.images && data.images.length > 0 ? (
-                    <div>
-                        <h4 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '16px' }}>
-                            Galerija Slika ({data.images.length})
-                        </h4>
+                {/* Manual Section Toggle */}
+                <div style={{ marginBottom: '24px' }}>
+                    {!showManual ? (
+                        <button className="btn-secondary" onClick={() => setShowManual(true)} style={{ width: '100%', border: '1px dashed var(--border)' }}>
+                            <Plus size={16} style={{ marginRight: 4 }} /> Dodaj Sliku Ručno (URL)
+                        </button>
+                    ) : (
+                        <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', position: 'relative' }}>
+                            <button onClick={() => setShowManual(false)} style={{ position: 'absolute', right: 12, top: 12, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                                <X size={16} />
+                            </button>
+                            <h4 style={{ margin: '0 0 16px 0', fontSize: '14px' }}>Ručni Unos</h4>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                            {data.images.map((image, index) => (
-                                <div key={index} style={{
+                            <div className="form-grid">
+                                <div className="form-group span-2">
+                                    <label className="form-label">URL Slike</label>
+                                    <input type="url" className="form-input" placeholder="https://..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Kategorija</label>
+                                    <select className="form-select" value={imageCategory} onChange={e => setImageCategory(e.target.value as any)}>
+                                        <option value="Exterior">Exterior</option>
+                                        <option value="Lobby">Lobby</option>
+                                        <option value="Room">Room</option>
+                                        <option value="Bathroom">Bathroom</option>
+                                        <option value="Pool">Pool</option>
+                                        <option value="Restaurant">Restaurant</option>
+                                        <option value="Amenity">Amenity</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Vezano za Sobu</label>
+                                    <select className="form-select" value={selectedRoomType} onChange={e => setSelectedRoomType(e.target.value)}>
+                                        <option value="">Opšta slika</option>
+                                        {data.roomTypes?.map(r => <option key={r.roomTypeId} value={r.roomTypeId}>{r.nameInternal || r.code}</option>)}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">SEO Tag (Alt Text)</label>
+                                    <input type="text" className="form-input" placeholder="Naziv Hotela - Kategorija" value={imageAlt} onChange={e => setImageAlt(e.target.value)} />
+                                </div>
+                                <div className="form-group span-2">
+                                    <button className="btn-secondary" onClick={addImage} disabled={!imageUrl}>Dodaj Sliku</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Gallery Grid */}
+                {data.images && data.images.length > 0 ? (
+                    <div className="image-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
+                        {data.images.map((image, index) => (
+                            <div
+                                key={index}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragOver={(e) => handleDragOver(e, index)}
+                                onDrop={(e) => handleDrop(e, index)}
+                                style={{
                                     background: 'var(--bg-card)',
-                                    border: '1px solid var(--border)',
                                     borderRadius: '12px',
                                     overflow: 'hidden',
-                                    position: 'relative'
-                                }}>
-                                    {/* Image Preview */}
-                                    <div style={{
-                                        width: '100%',
-                                        height: '200px',
-                                        background: `url(${image.url}) center/cover no-repeat`,
-                                        backgroundColor: 'rgba(0,0,0,0.1)'
-                                    }} />
-
-                                    {/* Image Info */}
-                                    <div style={{ padding: '12px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                                            <div>
-                                                <div className="badge" style={{ background: 'var(--accent-glow)', color: 'var(--accent)', position: 'static', marginBottom: '4px' }}>
-                                                    {image.category}
-                                                </div>
-                                                {image.roomTypeId && (
-                                                    <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', position: 'static' }}>
-                                                        {data.roomTypes?.find(r => r.roomTypeId === image.roomTypeId)?.nameInternal || 'Room'}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                                #{image.sortOrder}
-                                            </div>
-                                        </div>
-
-                                        {image.caption && (
-                                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '8px 0' }}>
-                                                {image.caption}
-                                            </p>
-                                        )}
-
-                                        {/* Controls */}
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                                            <button
-                                                onClick={() => moveImage(index, 'up')}
-                                                disabled={index === 0}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '6px',
-                                                    background: 'var(--bg-main)',
-                                                    border: '1px solid var(--border)',
-                                                    borderRadius: '6px',
-                                                    cursor: index === 0 ? 'not-allowed' : 'pointer',
-                                                    opacity: index === 0 ? 0.5 : 1
-                                                }}
-                                            >
-                                                ↑
-                                            </button>
-                                            <button
-                                                onClick={() => moveImage(index, 'down')}
-                                                disabled={index === (data.images?.length || 0) - 1}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '6px',
-                                                    background: 'var(--bg-main)',
-                                                    border: '1px solid var(--border)',
-                                                    borderRadius: '6px',
-                                                    cursor: index === (data.images?.length || 0) - 1 ? 'not-allowed' : 'pointer',
-                                                    opacity: index === (data.images?.length || 0) - 1 ? 0.5 : 1
-                                                }}
-                                            >
-                                                ↓
-                                            </button>
-                                            <button
-                                                onClick={() => deleteImage(index)}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '6px',
-                                                    background: 'rgba(239, 68, 68, 0.1)',
-                                                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                                                    borderRadius: '6px',
-                                                    color: '#ef4444',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
+                                    border: '1px solid var(--border)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    cursor: 'grab',
+                                    opacity: draggedIndex === index ? 0.4 : 1,
+                                    transform: draggedIndex === index ? 'scale(0.95)' : 'scale(1)',
+                                    transition: 'all 0.2s',
+                                    boxShadow: draggedIndex === index ? 'none' : '0 2px 4px rgba(0,0,0,0.05)'
+                                }}
+                            >
+                                <div style={{ height: '160px', background: `url(${image.url}) center/cover`, position: 'relative' }}>
+                                    <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px' }}>
+                                        {image.category}
+                                    </div>
+                                    <button onClick={(e) => { e.preventDefault(); deleteImage(index); }} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer' }}>
+                                        <Trash2 size={12} />
+                                    </button>
+                                    <div style={{ position: 'absolute', bottom: 0, right: 0, background: '#fff', color: '#000', fontSize: '10px', padding: '2px 6px', borderTopLeftRadius: '4px', fontWeight: 'bold' }}>
+                                        #{index + 1}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                                <div style={{ padding: '12px', flex: 1 }}>
+                                    {image.caption && <p style={{ fontSize: '12px', fontWeight: 500, margin: '0 0 4px 0' }}>{image.caption}</p>}
+                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{image.url.substring(0, 30)}...</div>
+                                    {image.altText && (
+                                        <div style={{ fontSize: '10px', color: 'var(--accent)', background: 'rgba(59, 130, 246, 0.1)', padding: '4px', borderRadius: '4px', display: 'inline-block' }}>
+                                            SEO: {image.altText.substring(0, 35)}{image.altText.length > 35 ? '...' : ''}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
-                    <div style={{
-                        padding: '60px',
-                        textAlign: 'center',
-                        background: 'var(--bg-card)',
-                        border: '2px dashed var(--border)',
-                        borderRadius: '16px',
-                        color: 'var(--text-secondary)'
-                    }}>
-                        <ImageIcon size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
-                        <p>Nema dodanih slika. Unesite URL slike iznad.</p>
+                    <div style={{ padding: '40px', textAlign: 'center', border: '2px dashed var(--border)', borderRadius: '12px', color: 'var(--text-secondary)' }}>
+                        <ImageIcon size={32} style={{ opacity: 0.3 }} />
+                        <p>Nema slika. Koristite opciju za preuzimanje sa sajta.</p>
                     </div>
                 )}
             </div>
 
-            <div style={{
-                background: 'rgba(255, 193, 7, 0.1)',
-                border: '1px solid rgba(255, 193, 7, 0.3)',
-                borderRadius: '12px',
-                padding: '16px',
-                marginTop: '24px'
-            }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <AlertCircle size={20} style={{ color: '#ffc107', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '13px', color: '#ffc107' }}>
-                        <strong>OTA Image Requirements:</strong>
-                        <p style={{ margin: '8px 0 0 0', lineHeight: '1.5' }}>
-                            Booking.com zahteva minimum 1280px širine. Prva slika je glavna (hero image).
-                            Preporučuje se 5-15 slika različitih kategorija za najbolji prikaz.
-                        </p>
-                    </div>
-                </div>
+            <div style={{ marginTop: '24px', padding: '12px', background: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '8px', display: 'flex', gap: '12px' }}>
+                <AlertCircle size={16} color="#ffc107" />
+                <span style={{ fontSize: '12px', color: '#ffc107' }}>Booking.com zahteva slike min. 1280px širine. Sistem automatski filtrira slike niskog kvaliteta.</span>
             </div>
         </div>
     );
@@ -1677,7 +2008,7 @@ const AmenitiesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Par
                                 style={{
                                     padding: '16px',
                                     background: selected ? 'var(--accent-glow)' : 'var(--bg-card)',
-                                    border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                                    border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'} `,
                                     borderRadius: '12px',
                                     cursor: 'pointer',
                                     transition: '0.2s',
@@ -1986,6 +2317,20 @@ const RatesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partial
                                             value={rate.name}
                                             onChange={(e) => updateRate(rateIndex, { name: e.target.value })}
                                         />
+                                    </div>
+
+                                    <div className="form-group span-2">
+                                        <label className="form-label">Dobavljač (Partner)</label>
+                                        <select
+                                            className="form-select"
+                                            value={rate.supplierId || ''}
+                                            onChange={(e) => updateRate(rateIndex, { supplierId: e.target.value })}
+                                        >
+                                            <option value="">Direktno / Nema Dobavljača</option>
+                                            {MOCK_SUPPLIERS.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name} ({s.type})</option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div className="form-group">

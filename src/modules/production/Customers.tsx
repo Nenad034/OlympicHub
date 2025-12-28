@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LocationPicker from '../../components/LocationPicker';
 import {
     Users,
     ArrowLeft,
@@ -176,17 +177,23 @@ const Customers: React.FC<CustomersProps> = ({ onBack }) => {
                                     <label>PIB / CUI</label>
                                     <input type="text" onChange={e => setFormData({ ...formData, cui: e.target.value })} />
                                 </div>
-                                <div className="form-item">
-                                    <label>Grad</label>
-                                    <input required type="text" onChange={e => setFormData({ ...formData, city: e.target.value })} />
-                                </div>
-                                <div className="form-item">
-                                    <label>Država</label>
-                                    <input required type="text" defaultValue="RS" onChange={e => setFormData({ ...formData, country: e.target.value })} />
-                                </div>
                                 <div className="form-item" style={{ gridColumn: 'span 2' }}>
-                                    <label>Adresa</label>
-                                    <input required type="text" onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                                    <LocationPicker
+                                        data={{
+                                            address: formData.address || '',
+                                            city: formData.city || '',
+                                            postalCode: '',
+                                            countryCode: formData.country || 'RS',
+                                            latitude: 0,
+                                            longitude: 0
+                                        }}
+                                        onChange={(data) => setFormData({
+                                            ...formData,
+                                            address: data.address,
+                                            city: data.city,
+                                            country: data.countryCode
+                                        })}
+                                    />
                                 </div>
                                 <button type="submit" className="btn-primary" style={{ gridColumn: 'span 2', marginTop: '20px', padding: '15px' }}>
                                     Sačuvaj Kupca

@@ -42,6 +42,11 @@ export interface PropertyContent {
     longDescription: string; // 2000+ chars
     locationDescription?: string;
     policyText?: string;
+    // SEO & AI
+    metaTitle?: string;
+    metaDescription?: string;
+    keywords?: string[];
+    structuredJson?: string; // Hidden JSON-LD
 }
 
 export interface PropertyImage {
@@ -50,6 +55,7 @@ export interface PropertyImage {
     roomTypeId?: string; // Nullable - if specific to room type
     sortOrder: number;
     caption?: string;
+    altText?: string;
 }
 
 export interface BeddingConfiguration {
@@ -119,6 +125,7 @@ export interface RatePlan {
     cutOffDays?: number;
     basePrice?: number;
     currency?: string;
+    supplierId?: string; // Link to Supplier (Partner)
 }
 
 export interface Tax {
@@ -162,8 +169,10 @@ export interface Property {
     // Type and Classification
     propertyType: 'Hotel' | 'Apartment' | 'Villa' | 'Resort' | 'Hostel' | 'GuestHouse';
     starRating?: number; // 1-5
-    chainCode?: string;
-    brandCode?: string;
+    chainCode?: string; // Legacy
+    brandCode?: string; // Legacy
+    chainId?: string; // Link to Partner (Chain)
+    brandId?: string; // Link to Partner (Brand)
     affiliation?: string;
 
     // Location

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building2,
@@ -19,11 +19,19 @@ import {
     Tag,
     Clock,
     UserCheck,
-    CheckCircle2
+    LayoutGrid,
+    List,
+    AlertCircle,
+    CheckCircle2,
+    Pencil,
+    Star,
+    Globe,
+    Power
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
-import type { Property } from '../../types/property.types';
+import { type Property, validateProperty } from '../../types/property.types';
+import { supabase } from '../../supabaseClient';
 
 // --- TCT-IMC DATA STRUCTURES ---
 
@@ -87,6 +95,7 @@ interface Hotel {
         touristTax: PriceRule[];
         supplement: PriceRule[];
     };
+    originalPropertyData?: Partial<Property>;
 }
 
 interface ProductionHubProps {
@@ -95,31 +104,365 @@ interface ProductionHubProps {
 
 const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
+    const [displayType, setDisplayType] = useState<'grid' | 'list'>('grid');
+
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    // Load hotels from Supabase on mount
+    useEffect(() => {
+        const loadHotels = async () => {
+            const { data, error } = await supabase
+                .from('properties')
+                .select('*');
+
+            if (!error && data && data.length > 0) {
+                // Map DB schema to Hotel frontend structure if different
+                // For now assuming properties table stores the Hotel structure
+                setHotels(data as any);
+            } else if (error) {
+                console.error("Supabase load error:", error.message);
+            }
+        };
+        loadHotels();
+    }, []);
+
+    // Save/Sync helper
+    const syncToSupabase = async (updatedHotels: Hotel[]) => {
+        setIsSyncing(true);
+        try {
+            // Option 1: Upsert each hotel
+            // We use properties table. Each hotel is a row.
+            const rows = updatedHotels.map(h => ({
+                id: h.id,
+                name: h.name,
+                location: h.location,
+                originalPropertyData: h.originalPropertyData,
+                updated_at: new Date().toISOString()
+            }));
+
+            const { error } = await supabase
+                .from('properties')
+                .upsert(rows);
+
+            if (error) throw error;
+        } catch (e) {
+            console.error("Supabase sync error:", e);
+        } finally {
+            setTimeout(() => setIsSyncing(false), 500);
+        }
+    };
+
+    // Keep localStorage as fallback/cache
+    useEffect(() => {
+        localStorage.setItem('olympic_hub_hotels', JSON.stringify(hotels));
+    }, [hotels]);
     const [showImport, setShowImport] = useState(false);
     const [importData, setImportData] = useState('');
     const [showWizard, setShowWizard] = useState(false);
+    const [wizardInitialData, setWizardInitialData] = useState<Partial<Property> | undefined>(undefined);
 
-    const handleWizardSave = (property: Partial<Property>) => {
-        // Convert OTA Property to Hotel format for now
-        const newHotel: Hotel = {
-            id: Math.random().toString(36).substr(2, 9),
-            name: property.content?.[0]?.displayName || 'New Property',
-            location: {
-                address: property.address?.addressLine1 || '',
-                lat: property.geoCoordinates?.latitude || 0,
-                lng: property.geoCoordinates?.longitude || 0,
-                place: property.address?.city || ''
-            },
-            amenities: [],
-            units: [],
-            commonItems: { discount: [], touristTax: [], supplement: [] },
-            images: []
-        };
-        setHotels([...hotels, newHotel]);
-        setShowWizard(false);
-        alert('Objekat uspešno kreiran!');
+    const handleWizardSave = (property: Partial<Property>, shouldClose: boolean = true) => {
+        if (wizardInitialData && selectedHotel) {
+            // EDIT EXISTING
+            const updatedHotel: Hotel = {
+                ...selectedHotel,
+                name: property.content?.[0]?.displayName || property.content?.[0]?.officialName || property.identifiers?.pmsId || 'Updated Property',
+                location: {
+                    address: property.address?.addressLine1 || selectedHotel.location.address,
+                    lat: property.geoCoordinates?.latitude || selectedHotel.location.lat,
+                    lng: property.geoCoordinates?.longitude || selectedHotel.location.lng,
+                    place: property.address?.city || selectedHotel.location.place
+                },
+                originalPropertyData: property
+            };
+            const updatedList = hotels.map(h => h.id === selectedHotel.id ? updatedHotel : h);
+            setHotels(updatedList);
+            setSelectedHotel(updatedHotel);
+            syncToSupabase(updatedList);
+        } else {
+            // CREATE NEW
+            const newHotel: Hotel = {
+                id: Math.random().toString(36).substr(2, 9),
+                name: property.content?.[0]?.displayName || 'New Property',
+                location: {
+                    address: property.address?.addressLine1 || '',
+                    lat: property.geoCoordinates?.latitude || 0,
+                    lng: property.geoCoordinates?.longitude || 0,
+                    place: property.address?.city || ''
+                },
+                amenities: [],
+                units: [],
+                commonItems: { discount: [], touristTax: [], supplement: [] },
+                images: [],
+                originalPropertyData: property
+            };
+            const updatedList = [...hotels, newHotel];
+            setHotels(updatedList);
+            syncToSupabase(updatedList);
+
+            if (!shouldClose) {
+                // Switch to Edit Mode for the new hotel so subsequent saves don't duplicate
+                setSelectedHotel(newHotel);
+                setWizardInitialData(newHotel.originalPropertyData);
+            }
+        }
+
+        if (shouldClose) {
+            setShowWizard(false);
+            setWizardInitialData(undefined);
+        }
+    };
+
+    const handlePublicPreview = (e: React.MouseEvent, hotel: Hotel) => {
+        e.stopPropagation();
+        const content = hotel.originalPropertyData?.content?.[0];
+        const description = content?.longDescription || '<p>Nema opisa.</p>';
+        const title = hotel.name;
+        const mainImage = hotel.images?.[0]?.url || 'https://placehold.co/1200x800?text=Hotel+Image';
+        const stars = hotel.originalPropertyData?.starRating || 0;
+        const starStr = '★'.repeat(stars);
+
+        const html = `
+            <!DOCTYPE html>
+            <html lang="sr">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>${title} | Olympic Travel Preview</title>
+                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+                <style>
+                    :root { --primary: #e30613; --text: #333; --bg: #f4f5f7; }
+                    body { font-family: 'Roboto', sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); line-height: 1.6; }
+                    h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; margin: 0; }
+                    
+                    /* Navigation Bar (Mock) */
+                    .top-nav { background: #fff; border-bottom: 1px solid #ddd; padding: 15px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+                    .nav-container { max-width: 1170px; margin: 0 auto; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; }
+                    .logo { font-weight: 800; font-size: 24px; color: var(--primary); letter-spacing: -1px; }
+
+                    /* Main Container */
+                    .container { max-width: 1170px; margin: 30px auto; padding: 0 15px; }
+
+                    /* Breadcrumbs */
+                    .breadcrumbs { font-size: 13px; color: #888; margin-bottom: 20px; }
+                    .breadcrumbs span { margin: 0 5px; }
+
+                    /* Hotel Header */
+                    .hotel-header { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+                    .hotel-title { font-size: 32px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #222; }
+                    .stars { color: #f4b400; font-size: 20px; letter-spacing: 2px; }
+                    .location { color: #666; font-size: 14px; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+
+                    /* Gallery Grid */
+                    .gallery { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; height: 450px; margin-bottom: 30px; border-radius: 8px; overflow: hidden; }
+                    .gallery-main { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.3s; }
+                    .gallery-side { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; }
+                    .gallery-img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: opacity 0.3s; }
+                    .gallery-img:hover { opacity: 0.9; }
+
+                    /* Content Layout */
+                    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+                    
+                    /* Main Column */
+                    .main-col { background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+                    
+                    /* Tabs */
+                    .tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 30px; }
+                    .tab { padding: 12px 24px; font-weight: 600; color: #666; cursor: pointer; border-bottom: 3px solid transparent; font-family: 'Outfit', sans-serif; }
+                    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+                    /* Description Content */
+                    .description-content h1 { font-size: 24px; margin: 30px 0 15px 0; border-bottom: 2px solid #e30613; display: inline-block; padding-bottom: 5px; }
+                    .description-content p { margin-bottom: 15px; font-size: 15px; color: #555; text-align: justify; }
+                    .description-content .section { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 30px 0 15px; border-left: 4px solid #e30613; }
+                    .description-content .section b { color: #333; font-size: 18px; display: block; margin-bottom: 10px; }
+                    .description-content hr { border: 0; border-top: 1px solid #eee; margin: 30px 0; }
+                    
+                    /* Sidebar */
+                    .sidebar { }
+                    .booking-card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; }
+                    .price-label { font-size: 14px; color: #888; text-transform: uppercase; font-weight: 600; }
+                    .price-val { font-size: 32px; font-weight: 700; color: #222; margin: 5px 0 20px; }
+                    .btn-book { background: var(--primary); color: #fff; width: 100%; padding: 15px; border: none; border-radius: 4px; font-weight: 700; font-size: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: background 0.2s; }
+                    .btn-book:hover { background: #c20510; }
+                    .sidebar-info { margin-top: 25px; font-size: 14px; color: #666; border-top: 1px solid #eee; padding-top: 15px; }
+                    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+                    .info-row:last-child { border: none; }
+
+                    /* Amenities Icons */
+                    .amenities-preview { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+                    .amenity-pill { background: #f0f2f5; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; color: #444; }
+
+                </style>
+            </head>
+            <body>
+                <div class="top-nav">
+                    <div class="nav-container">
+                        <div class="logo">OLYMPIC TRAVEL</div>
+                    </div>
+                </div>
+
+                <div class="container">
+                    <div class="breadcrumbs">
+                        Početna <span>&rsaquo;</span> ZIMOVANJE <span>&rsaquo;</span> ${hotel.location.place} <span>&rsaquo;</span> ${title}
+                    </div>
+
+                    <div class="hotel-header">
+                        <h1 class="hotel-title">${title} <div class="stars">${starStr}</div></h1>
+                        <div class="location">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            ${hotel.location.address}, ${hotel.location.place}
+                        </div>
+                    </div>
+
+                    <div class="gallery">
+                        <img src="${mainImage}" class="gallery-main" alt="Main View" />
+                        <div class="gallery-side">
+                            <img src="${hotel.images?.[1]?.url || 'https://placehold.co/800x600/eee/999?text=Enterijer+Sobe'}" class="gallery-img" />
+                            <img src="${hotel.images?.[2]?.url || 'https://placehold.co/800x600/eee/999?text=Restoran'}" class="gallery-img" />
+                        </div>
+                    </div>
+
+                    <div class="content-grid">
+                        <div class="main-col">
+                            <div class="tabs">
+                                <div class="tab active">Pregled</div>
+                                <div class="tab">Sadržaj</div>
+                                <div class="tab">Sobe</div>
+                                <div class="tab">Galerija</div>
+                                <div class="tab">Lokacija</div>
+                            </div>
+                            
+                            <div class="amenities-preview">
+                                <div class="amenity-pill">✨ Wellness Centar</div>
+                                <div class="amenity-pill">📶 Besplatan WiFi</div>
+                                <div class="amenity-pill">🅿️ Parking</div>
+                                <div class="amenity-pill">❄️ Ski Oprema</div>
+                            </div>
+
+                            <div class="description-content">
+                                ${description}
+                            </div>
+                        </div>
+
+                        <div class="sidebar">
+                            <div class="booking-card">
+                                <div class="price-label">Već od</div>
+                                <div class="price-val">€ 150 <span style="font-size:16px;font-weight:400;color:#666">/ osoba</span></div>
+                                <button class="btn-book">Pošaljite Upit</button>
+                                <div class="sidebar-info">
+                                    <div class="info-row"><span>Tip Smeštaja:</span> <b>${hotel.originalPropertyData?.propertyType || 'Hotel'}</b></div>
+                                    <div class="info-row"><span>Destinacija:</span> <b>${hotel.location.place}</b></div>
+                                    <div class="info-row"><span>Država:</span> <b>${hotel.originalPropertyData?.address?.countryCode || 'Slovenija'}</b></div>
+                                    <div class="info-row"><span>Usluga:</span> <b>Polupansion</b></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        window.open(URL.createObjectURL(blob), '_blank');
+    };
+
+    const toggleStatus = (e: React.MouseEvent, hotel: Hotel) => {
+        e.stopPropagation();
+        const currentData = hotel.originalPropertyData || {};
+        const newStatus = !currentData.isActive;
+        const updatedData = { ...currentData, isActive: newStatus };
+
+        const updatedHotel = { ...hotel, originalPropertyData: updatedData as Property };
+
+        setHotels(hotels.map(h => h.id === hotel.id ? updatedHotel : h));
+        if (selectedHotel?.id === hotel.id) {
+            setSelectedHotel(updatedHotel);
+        }
+    };
+
+    const startCreate = () => {
+        setWizardInitialData(undefined);
+        setShowWizard(true);
+    };
+
+    const startEdit = (hotelToEdit?: Hotel) => {
+        const targetHotel = hotelToEdit || selectedHotel;
+
+        if (hotelToEdit) {
+            setSelectedHotel(hotelToEdit);
+        }
+
+        if (targetHotel) {
+            // Ensure we have a complete object structure to prevent crashes in Wizard
+            const defaultStructure: Partial<Property> = {
+                propertyType: 'Hotel',
+                isActive: false,
+                content: [],
+                roomTypes: [],
+                propertyAmenities: [],
+                ratePlans: [],
+                taxes: [],
+                pointsOfInterest: [],
+                images: [],
+                houseRules: {
+                    checkInStart: '14:00',
+                    checkInEnd: '22:00',
+                    checkOutTime: '10:00',
+                    smokingAllowed: false,
+                    partiesAllowed: false,
+                    petsAllowed: false
+                },
+                keyCollection: {
+                    method: 'Reception',
+                    instructions: ''
+                },
+                hostProfile: {
+                    hostName: '',
+                    languagesSpoken: []
+                }
+            };
+
+            const existingData = targetHotel.originalPropertyData || {};
+
+            // Fallback content if missing
+            if (!existingData.content || existingData.content.length === 0) {
+                existingData.content = [{
+                    languageCode: 'sr',
+                    officialName: targetHotel.name,
+                    displayName: targetHotel.name,
+                    shortDescription: '',
+                    longDescription: ''
+                }];
+            }
+
+            // Fallback address if missing
+            if (!existingData.address) {
+                existingData.address = {
+                    addressLine1: targetHotel.location.address,
+                    city: targetHotel.location.place,
+                    postalCode: '11000',
+                    countryCode: 'RS'
+                };
+            }
+
+            // Fallback coordinates if missing
+            if (!existingData.geoCoordinates) {
+                existingData.geoCoordinates = {
+                    latitude: targetHotel.location.lat,
+                    longitude: targetHotel.location.lng,
+                    coordinateSource: 'MAP_PIN'
+                };
+            }
+
+            // Merge default structure with existing data
+            const initialData = { ...defaultStructure, ...existingData };
+
+            setWizardInitialData(initialData);
+            setShowWizard(true);
+        }
     };
 
     const handleImport = () => {
@@ -137,7 +480,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
     const getDistance = (name: string) => {
         const item = selectedHotel?.amenities.find(a => a.name === name);
-        return item ? `${item.values}m` : 'N/A';
+        return item ? `${item.values} m` : 'N/A';
     };
 
     const getAmenityValue = (name: string) => {
@@ -178,11 +521,11 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             onClick={() => { if (s.id === 'accommodation') setViewMode('list'); }}
                             style={{ cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed', opacity: s.id === 'accommodation' ? 1 : 0.6 }}
                         >
-                            <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
+                            <div className="module-icon" style={{ background: `linear - gradient(135deg, ${s.color}, ${s.color}dd)` }}>
                                 {s.icon}
                             </div>
 
-                            <div className={`module-badge ${s.badge === 'LIVE' ? 'live' : 'new'}`}>{s.badge}</div>
+                            <div className={`module - badge ${s.badge === 'LIVE' ? 'live' : 'new'} `}>{s.badge}</div>
 
                             <h3 className="module-title">{s.name}</h3>
                             <p className="module-desc">{s.desc}</p>
@@ -235,75 +578,220 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', background: 'var(--bg-card)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                            <button
+                                onClick={() => setDisplayType('grid')}
+                                style={{
+                                    background: displayType === 'grid' ? 'var(--accent)' : 'transparent',
+                                    color: displayType === 'grid' ? '#fff' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex'
+                                }}
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                            <button
+                                onClick={() => setDisplayType('list')}
+                                style={{
+                                    background: displayType === 'list' ? 'var(--accent)' : 'transparent',
+                                    color: displayType === 'list' ? '#fff' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex'
+                                }}
+                            >
+                                <List size={18} />
+                            </button>
+                        </div>
                         <div className="search-bar">
                             <Search size={18} />
                             <input type="text" placeholder="Pretraži objekte..." />
                         </div>
-                        <button className="btn-primary-action" onClick={() => setShowWizard(true)}>
-                            <Plus size={18} /> Kreiraj Objekat (OTA)
+                        <button className="btn-primary-action" onClick={startCreate}>
+                            <Plus size={18} /> Kreiraj Objekat
                         </button>
                         <button className="btn-secondary" onClick={() => setShowImport(true)}>
-                            <Download size={18} /> Import JSON
+                            <Download size={18} /> Import
                         </button>
                     </div>
                 </div>
 
                 {/* Property Wizard */}
                 {showWizard && (
-                    <PropertyWizard onClose={() => setShowWizard(false)} onSave={handleWizardSave} />
+                    <PropertyWizard
+                        onClose={() => setShowWizard(false)}
+                        onSave={handleWizardSave}
+                        initialData={wizardInitialData}
+                    />
                 )}
 
-                <div className="dashboard-grid" style={{ marginTop: '32px' }}>
-                    {hotels.map(h => (
+                {displayType === 'grid' ? (
+                    <div className="dashboard-grid" style={{ marginTop: '32px' }}>
+                        {hotels.map(h => {
+
+                            return (
+                                <motion.div
+                                    key={h.id}
+                                    className="module-card"
+                                    whileHover={{ y: -4, scale: 1.02 }}
+                                    onClick={() => { setSelectedHotel(h); setViewMode('detail'); }}
+                                    style={{ cursor: 'pointer', position: 'relative' }}
+                                >
+                                    <div
+                                        style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10, cursor: 'pointer' }}
+                                        onClick={(e) => toggleStatus(e, h)}
+                                        title={h.originalPropertyData?.isActive ? 'Deaktiviraj Objekat' : 'Aktiviraj Objekat'}
+                                    >
+                                        {h.originalPropertyData?.isActive ?
+                                            <div style={{ background: '#dcfce7', padding: '6px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                                                <Power size={20} color="#16a34a" />
+                                            </div>
+                                            :
+                                            <div style={{ background: '#fee2e2', padding: '6px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                                                <Power size={20} color="#dc2626" />
+                                            </div>
+                                        }
+                                    </div>
+
+
+
+                                    <div className="module-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                                        <Building2 size={28} />
+                                    </div>
+
+
+
+                                    <h3 className="module-title">{h.name}</h3>
+                                    {h.originalPropertyData?.starRating ? (
+                                        <div style={{ display: 'flex', gap: '2px', marginBottom: '8px', alignItems: 'center' }}>
+                                            {[...Array(h.originalPropertyData.starRating)].map((_, i) => (
+                                                <Star key={i} size={14} fill="#fbbf24" strokeWidth={0} />
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                    <p className="module-desc">
+                                        <MapPin size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
+                                        {h.location.place}, {h.location.address}
+                                    </p>
+
+                                    <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                        <div className="info-badge">
+                                            <Bed size={12} />
+                                            {h.units.length} Jedinica
+                                        </div>
+                                        <div className="info-badge">
+                                            <Tag size={12} />
+                                            ID: {h.id}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
+                                        <button
+                                            className="module-action"
+                                            style={{ marginTop: 0, flex: 1 }}
+                                            onClick={(e) => { e.stopPropagation(); startEdit(h); }}
+                                        >
+                                            Otvori Modul
+                                            <ChevronRight size={16} />
+                                        </button>
+                                        <div
+                                            className="module-action"
+                                            style={{ marginTop: 0, width: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            onClick={(e) => handlePublicPreview(e, h)}
+                                            title="Prikaži Web Stranicu"
+                                        >
+                                            <Globe size={18} />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+
                         <motion.div
-                            key={h.id}
-                            className="module-card"
+                            className="module-card add-new"
                             whileHover={{ y: -4, scale: 1.02 }}
-                            onClick={() => { setSelectedHotel(h); setViewMode('detail'); }}
+                            onClick={startCreate}
                             style={{ cursor: 'pointer' }}
                         >
-                            <div className="module-icon" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-                                <Building2 size={28} />
+                            <div className="add-icon">
+                                <Plus size={48} />
                             </div>
-
-                            <div className="module-badge live">AKTIVAN</div>
-
-                            <h3 className="module-title">{h.name}</h3>
-                            <p className="module-desc">
-                                <MapPin size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
-                                {h.location.place}, {h.location.address}
-                            </p>
-
-                            <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                <div className="info-badge">
-                                    <Bed size={12} />
-                                    {h.units.length} Jedinica
-                                </div>
-                                <div className="info-badge">
-                                    <Tag size={12} />
-                                    ID: {h.id}
-                                </div>
-                            </div>
-
-                            <button className="module-action">
-                                Otvori Modul
-                                <ChevronRight size={16} />
-                            </button>
+                            <span className="add-text">Dodaj Novi Objekat</span>
                         </motion.div>
-                    ))}
+                    </div>
+                ) : (
+                    <div style={{ marginTop: '32px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(0,0,0,0.2)' }}>
+                                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', color: 'var(--text-secondary)' }}>Status</th>
+                                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', color: 'var(--text-secondary)' }}>Naziv Objekta</th>
+                                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', color: 'var(--text-secondary)' }}>Lokacija</th>
+                                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', color: 'var(--text-secondary)' }}>Jedinica</th>
+                                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', color: 'var(--text-secondary)' }}>ID</th>
+                                    <th style={{ padding: '16px', textAlign: 'right', fontSize: '12px', color: 'var(--text-secondary)' }}>Akcija</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {hotels.map(h => {
+                                    const isComplete = !h.originalPropertyData || validateProperty(h.originalPropertyData).length === 0;
+                                    return (
+                                        <tr
+                                            key={h.id}
+                                            onClick={() => { setSelectedHotel(h); setViewMode('detail'); }}
+                                            style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.2s' }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-main)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td style={{ padding: '16px' }}>
+                                                {isComplete ?
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontSize: '13px', fontWeight: 'bold' }}>
+                                                        <CheckCircle2 size={18} /> Završeno
+                                                    </div>
+                                                    :
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b', fontSize: '13px', fontWeight: 'bold' }}>
+                                                        <AlertCircle size={18} /> Nezavršeno
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td style={{ padding: '16px', fontWeight: '600' }}>{h.name}</td>
+                                            <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{h.location.place}, {h.location.address}</td>
+                                            <td style={{ padding: '16px' }}>{h.units.length}</td>
+                                            <td style={{ padding: '16px', fontFamily: 'monospace' }}>{h.id}</td>
+                                            <td style={{ padding: '16px', textAlign: 'right' }}>
+                                                <button className="btn-icon">
+                                                    <ChevronRight size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {hotels.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                            Nema unetih objekata.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
-                    <motion.div
-                        className="module-card add-new"
-                        whileHover={{ y: -4, scale: 1.02 }}
-                        onClick={() => setShowWizard(true)}
-                        style={{ cursor: 'pointer' }}
-                    >
-                        <div className="add-icon">
-                            <Plus size={48} />
-                        </div>
-                        <span className="add-text">Dodaj Novi Objekat</span>
-                    </motion.div>
-                </div>
+                <AnimatePresence>
+                    {showWizard && (
+                        <PropertyWizard
+                            onClose={() => { setShowWizard(false); setWizardInitialData(undefined); }}
+                            onSave={handleWizardSave}
+                            initialData={wizardInitialData}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         );
     }
@@ -315,7 +803,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                     <button onClick={() => setViewMode('list')} className="btn-back-circle"><ArrowLeft size={20} /></button>
                     <div className="breadcrumb">Produkcija / Smeštaj / {selectedHotel.name}</div>
                     <div className="detail-actions">
-                        <button className="btn-export" onClick={() => exportToJSON(selectedHotel, `hotel_${selectedHotel.id}`)}>EXPORT</button>
+                        <button className="btn-export" onClick={() => exportToJSON(selectedHotel, `hotel_${selectedHotel.id} `)}>EXPORT</button>
                     </div>
                 </div>
 
@@ -326,15 +814,55 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             <div className="hero-img">
                                 <img src={selectedHotel.images[0]?.url} alt={selectedHotel.name} />
                             </div>
-                            <div className="hero-content">
-                                <div className="badge-id">#OBJ-{selectedHotel.id}</div>
-                                <h1>{selectedHotel.name}</h1>
-                                <div className="location-info">
-                                    <MapPin size={16} />
-                                    <span>{selectedHotel.location.address}, {selectedHotel.location.place}</span>
-                                </div>
-                                <div className="coords">
-                                    <Navigation size={14} /> {selectedHotel.location.lat}, {selectedHotel.location.lng}
+                            <div className="hero-content" style={{ position: 'relative', zIndex: 2 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                                    <div>
+                                        <div className="badge-id">#OBJ-{selectedHotel.id}</div>
+                                        <h1 style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            {selectedHotel.name}
+                                            {selectedHotel.originalPropertyData?.starRating && (
+                                                <div style={{ display: 'flex', gap: '2px', fontSize: '16px', color: '#fbbf24' }}>
+                                                    {[...Array(selectedHotel.originalPropertyData.starRating)].map((_, i) => (
+                                                        <Star key={i} size={20} fill="#fbbf24" strokeWidth={0} />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </h1>
+
+                                        {selectedHotel.originalPropertyData?.propertyType && (
+                                            <div style={{
+                                                display: 'inline-block',
+                                                background: 'rgba(255,255,255,0.1)',
+                                                padding: '4px 12px',
+                                                borderRadius: '20px',
+                                                fontSize: '12px',
+                                                marginBottom: '12px',
+                                                border: '1px solid var(--border)'
+                                            }}>
+                                                {selectedHotel.originalPropertyData.propertyType}
+                                            </div>
+                                        )}
+
+                                        <div className="location-info">
+                                            <MapPin size={16} />
+                                            <span>{selectedHotel.location.address}, {selectedHotel.location.place}</span>
+                                        </div>
+                                        <div className="coords">
+                                            <Navigation size={14} /> {selectedHotel.location.lat}, {selectedHotel.location.lng}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        className="btn-secondary"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log("Edit button clicked");
+                                            startEdit();
+                                        }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', position: 'relative', zIndex: 3 }}
+                                    >
+                                        <Pencil size={16} /> Izmeni
+                                    </button>
                                 </div>
                             </div>
                         </section>
@@ -349,9 +877,10 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                 marginWidth={0}
                                 title="Hotel Location"
                                 src={`https://maps.google.com/maps?q=${selectedHotel.location.lat},${selectedHotel.location.lng}&z=15&output=embed`}
-                                style={{ filter: 'grayscale(0.2) contrast(1.1)' }}
-                            ></iframe>
-                        </section>
+                                style={{ filter: 'grayscale(0.2) contrast(1.1)' }
+                                }
+                            ></iframe >
+                        </section >
 
                         <section className="amenities-section">
                             <h2 className="section-title"><Shield size={18} /> Sadržaji Objekta</h2>
@@ -380,10 +909,10 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                 </div>
                             </div>
                         </section>
-                    </div>
+                    </div >
 
                     {/* Right Panel: Units & Pricing */}
-                    <div className="logic-panel">
+                    < div className="logic-panel" >
                         <section className="units-section">
                             <div className="section-header">
                                 <h2><Bed size={20} /> Smeštajne Jedinice</h2>
@@ -458,10 +987,19 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                 ))}
                             </div>
                         </section>
-                    </div>
-                </div>
+                    </div >
+                </div >
 
-            </div>
+                <AnimatePresence>
+                    {showWizard && (
+                        <PropertyWizard
+                            onClose={() => { setShowWizard(false); setWizardInitialData(undefined); }}
+                            onSave={handleWizardSave}
+                            initialData={wizardInitialData}
+                        />
+                    )}
+                </AnimatePresence>
+            </div >
         );
     }
 

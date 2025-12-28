@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import LocationPicker from '../../components/LocationPicker';
 import {
     Truck,
     X,
@@ -35,7 +36,7 @@ interface SuppliersProps {
 
 const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [types] = useState(['Hoteli', 'Hotelske grupe i organizacije', 'Touroperatori', 'Prevoznici']);
+    const [types] = useState(['Hoteli', 'Hotelske grupe i organizacije', 'Lanac Hotela', 'Brand Hotela', 'Touroperatori', 'Prevoznici']);
     const [selectedType, setSelectedType] = useState<string>('Hoteli');
     const [showAddForm, setShowAddForm] = useState(false);
 
@@ -181,13 +182,23 @@ const Suppliers: React.FC<SuppliersProps> = ({ onBack }) => {
                                     <label>Telefon</label>
                                     <input required type="text" onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                                 </div>
-                                <div className="form-item">
-                                    <label>Grad</label>
-                                    <input required type="text" defaultValue="Beograd" onChange={e => setFormData({ ...formData, city: e.target.value })} />
-                                </div>
-                                <div className="form-item">
-                                    <label>Država (Kod)</label>
-                                    <input required type="text" defaultValue="RS" maxLength={2} onChange={e => setFormData({ ...formData, country: e.target.value })} />
+                                <div className="form-item" style={{ gridColumn: 'span 2' }}>
+                                    <LocationPicker
+                                        data={{
+                                            address: formData.address || '',
+                                            city: formData.city || 'Beograd',
+                                            postalCode: '',
+                                            countryCode: formData.country || 'RS',
+                                            latitude: 0,
+                                            longitude: 0
+                                        }}
+                                        onChange={(data) => setFormData({
+                                            ...formData,
+                                            address: data.address,
+                                            city: data.city,
+                                            country: data.countryCode
+                                        })}
+                                    />
                                 </div>
                                 <div className="form-item" style={{ gridColumn: 'span 2' }}>
                                     <label>IBAN</label>
