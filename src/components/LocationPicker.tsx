@@ -284,6 +284,75 @@ const LocationPicker: React.FC<LocationPickerProps> = ({ data, onChange, searchQ
 
             <style>{`
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+                .form-section-title {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #fff;
+                    margin-bottom: 20px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                .form-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    margin-bottom: 20px;
+                }
+
+                .form-label {
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                    font-weight: 600;
+                    margin-left: 8px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+
+                .form-input, .form-select {
+                    width: 100%;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    padding: 16px 24px;
+                    border-radius: 100px;
+                    color: var(--text-primary);
+                    outline: none;
+                    transition: 0.3s;
+                    font-size: 14px;
+                }
+
+                .form-input:focus, .form-select:focus {
+                    border-color: var(--accent);
+                    background: rgba(0, 92, 197, 0.1);
+                    box-shadow: 0 0 0 4px rgba(0, 92, 197, 0.1);
+                }
+
+                .form-select {
+                    appearance: none;
+                    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+                    background-repeat: no-repeat;
+                    background-position: right 16px center;
+                    background-size: 16px;
+                }
+
+                .btn-secondary {
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    color: var(--text-primary);
+                    padding: 0 24px;
+                    border-radius: 100px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    font-size: 13px;
+                    transition: 0.3s;
+                    white-space: nowrap;
+                }
+
+                .btn-secondary:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    transform: translateY(-1px);
+                }
             `}</style>
         </div>
     );

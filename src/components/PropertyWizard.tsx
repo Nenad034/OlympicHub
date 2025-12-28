@@ -1331,98 +1331,91 @@ const ImagesStep: React.FC<{ data: Partial<Property>; onChange: (updates: Partia
             <div className="form-section">
                 <h3 className="form-section-title">Galerija Slika</h3>
 
-                {/* AI / Fetch Section */}
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                        <Sparkles size={18} className="text-accent" />
-                        <h4 style={{ margin: 0, fontSize: '14px' }}>Preuzimanje sa Sajta (Auto-Kategorizacija + SEO)</h4>
-                    </div>
+                {/* Optimized Layout: 2 Columns */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)', gap: '24px', marginBottom: '32px' }}>
 
-                    <div className="form-group">
-                        <label className="form-label">Link ka sajtu hotela</label>
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            <input
-                                className="form-input"
-                                placeholder="https://www.hotel-website.com"
-                                value={websiteUrl}
-                                onChange={e => setWebsiteUrl(e.target.value)}
-                            />
-                            <button
-                                className="btn-primary-glow"
-                                onClick={handleFetchImages}
-                                disabled={isFetching}
-                                style={{ minWidth: '180px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                            >
-                                {isFetching ? <span style={{ fontSize: '12px' }}>Učitavanje...</span> : <Globe size={16} />}
-                                {isFetching ? '' : ' Preuzmi Slike'}
-                            </button>
-                        </div>
-                        <small style={{ color: 'var(--text-secondary)', display: 'block', marginBottom: '12px', marginTop: '8px' }}>
-                            Sistem će preuzeti slike, kategorisati ih i <strong>automatski dodati SEO tagove</strong> (Naziv Hotela + Kategorija).
-                        </small>
+                    {/* Column 1: Auto Fetch */}
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                    }}>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                                <div style={{ padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6' }}>
+                                    <Sparkles size={18} />
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '600' }}>Preuzimanje sa Sajta</h4>
+                            </div>
 
-                        <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '10px', borderRadius: '8px', fontSize: '12px', display: 'flex', gap: '8px', lineHeight: '1.4' }}>
-                            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-                            <span>
-                                <strong>Napomena (Demo Mod):</strong> Zbog sigurnosnih ograničenja browsera (CORS), aplikacija u ovom trenutku ne može direktno preuzeti slike sa eksternog sajta "{websiteUrl}".
-                                <br />Prikazane su <strong>demo slike</strong> kako bi se demonstriralo automatsko sortiranje i kategorizacija. U produkciji bi ovo radio backend servis.
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Manual Section Toggle */}
-                <div style={{ marginBottom: '24px' }}>
-                    {!showManual ? (
-                        <button className="btn-secondary" onClick={() => setShowManual(true)} style={{ width: '100%', border: '1px dashed var(--border)' }}>
-                            <Plus size={16} style={{ marginRight: 4 }} /> Dodaj Sliku Ručno (URL)
-                        </button>
-                    ) : (
-                        <div style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', position: 'relative' }}>
-                            <button onClick={() => setShowManual(false)} style={{ position: 'absolute', right: 12, top: 12, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                                <X size={16} />
-                            </button>
-                            <h4 style={{ margin: '0 0 16px 0', fontSize: '14px' }}>Ručni Unos</h4>
-
-                            <div className="form-grid">
-                                <div className="form-group span-2">
-                                    <label className="form-label">URL Slike</label>
-                                    <input type="url" className="form-input" placeholder="https://..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Kategorija</label>
-                                    <select className="form-select" value={imageCategory} onChange={e => setImageCategory(e.target.value as any)}>
-                                        <option value="Exterior">Exterior</option>
-                                        <option value="Lobby">Lobby</option>
-                                        <option value="Room">Room</option>
-                                        <option value="Bathroom">Bathroom</option>
-                                        <option value="Pool">Pool</option>
-                                        <option value="Restaurant">Restaurant</option>
-                                        <option value="Amenity">Amenity</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">Vezano za Sobu</label>
-                                    <select className="form-select" value={selectedRoomType} onChange={e => setSelectedRoomType(e.target.value)}>
-                                        <option value="">Opšta slika</option>
-                                        {data.roomTypes?.map(r => <option key={r.roomTypeId} value={r.roomTypeId}>{r.nameInternal || r.code}</option>)}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label className="form-label">SEO Tag (Alt Text)</label>
-                                    <input type="text" className="form-input" placeholder="Naziv Hotela - Kategorija" value={imageAlt} onChange={e => setImageAlt(e.target.value)} />
-                                </div>
-                                <div className="form-group span-2">
-                                    <button className="btn-secondary" onClick={addImage} disabled={!imageUrl}>Dodaj Sliku</button>
+                            <div className="form-group">
+                                <label className="form-label">Link ka sajtu hotela</label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                        className="form-input"
+                                        placeholder="https://www.hotel.com"
+                                        value={websiteUrl}
+                                        onChange={e => setWebsiteUrl(e.target.value)}
+                                        style={{ background: 'var(--bg-main)' }}
+                                    />
+                                    <button
+                                        className="btn-primary-glow"
+                                        onClick={handleFetchImages}
+                                        disabled={isFetching}
+                                        style={{ whiteSpace: 'nowrap', padding: '0 20px' }}
+                                    >
+                                        {isFetching ? '...' : 'Preuzmi'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    )}
+
+                        <div style={{ marginTop: '20px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '12px', borderRadius: '10px', fontSize: '12px', lineHeight: '1.5' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '4px', fontWeight: '600' }}>
+                                <AlertCircle size={14} style={{ marginTop: '1px' }} />
+                                Demo Mod Aktiviran
+                            </div>
+                            Sistem će koristiti demo slike zbog CORS ograničenja browsera. U produkciji bi ovo preuzimalo prave slike sa sajta.
+                        </div>
+                    </div>
+
+                    {/* Column 2: Quick Manual Add */}
+                    <div style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '16px',
+                        padding: '24px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <div style={{ padding: '8px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}>
+                                <Plus size={18} />
+                            </div>
+                            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '600' }}>Brzi Ručni Unos</h4>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <input type="url" className="form-input" placeholder="https://image-url.com..." value={imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ background: 'var(--bg-main)' }} />
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <select className="form-select" value={imageCategory} onChange={e => setImageCategory(e.target.value as any)} style={{ background: 'var(--bg-main)' }}>
+                                    <option value="Exterior">Exterior</option>
+                                    <option value="Lobby">Lobby</option>
+                                    <option value="Room">Room</option>
+                                    <option value="Pool">Pool</option>
+                                </select>
+                                <button className="btn-secondary" onClick={addImage} disabled={!imageUrl} style={{ justifyContent: 'center', background: 'var(--bg-main)' }}>Dodaj Sliku</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Gallery Grid */}
                 {data.images && data.images.length > 0 ? (
-                    <div className="image-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '16px' }}>
+                    <div className="image-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
                         {data.images.map((image, index) => (
                             <div
                                 key={index}

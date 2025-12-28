@@ -1,17 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-    Key,
-    RotateCcw,
+    LayoutDashboard,
+    Users,
+    Shield,
+    Activity,
     Save,
-    Plus,
-    Check,
-    AlertTriangle,
+    RotateCcw,
+    Search,
     ArrowLeft,
-    ShieldCheck
+    Plus,
+    X,
+    Check,
+    Globe,
+    Cpu,
+    Server,
+    Wifi,
+    Lock,
+    Trash2,
+    Mail,
+    Smartphone,
+    UserPlus,
+    AlertTriangle,
+    Key,
+    Database,
+    Zap
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../context/ConfigContext';
 import { translations, type Language } from '../../translations';
+import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
+
+// --- Types ---
+interface UserAccount {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    fixedPhone: string;
+    mobilePhone: string;
+    level: number;
+}
+
+interface Integration {
+    id: string;
+    name: string;
+    endpoint: string;
+    key: string;
+    status: 'active' | 'inactive' | 'connecting';
+    type: 'ai' | 'payment' | 'govt' | 'email' | 'db' | 'other';
+    iconName: string;
+    color: string;
+    metrics?: Record<string, string>;
+}
 
 interface Props {
     onBack: () => void;
@@ -20,145 +60,698 @@ interface Props {
     setUserLevel: (level: number) => void;
 }
 
+type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'backups';
+
+// --- KATANA STYLED COMPONENTS (Inline Styles) ---
+const styles = {
+    layout: {
+        display: 'flex',
+        height: '100vh',
+        background: '#0f172a', // Slate 900
+        color: '#e2e8f0',
+        fontFamily: "'Inter', sans-serif",
+        overflow: 'hidden'
+    },
+    sidebar: {
+        width: '260px',
+        background: '#020617', // Slate 950
+        borderRight: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        padding: '20px'
+    },
+    main: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column' as const,
+        overflow: 'hidden',
+        background: '#0f172a'
+    },
+    header: {
+        height: '70px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 30px',
+        background: 'rgba(15, 23, 42, 0.8)',
+        backdropFilter: 'blur(10px)'
+    },
+    contentArea: {
+        flex: 1,
+        overflowY: 'auto' as const,
+        padding: '30px',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        width: '100%'
+    },
+    navItem: (active: boolean) => ({
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px 16px',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        marginBottom: '4px',
+        fontSize: '14px',
+        fontWeight: 500,
+        color: active ? '#fff' : '#94a3b8',
+        background: active ? 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)' : 'transparent',
+        transition: 'all 0.2s ease',
+        boxShadow: active ? '0 4px 12px rgba(37, 99, 235, 0.3)' : 'none'
+    }),
+    card: {
+        background: 'rgba(30, 41, 59, 0.5)', // Slate 800 with opacity
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: '16px',
+        padding: '24px',
+        marginBottom: '20px'
+    },
+    input: {
+        width: '100%',
+        padding: '12px 16px',
+        borderRadius: '10px',
+        background: 'rgba(15, 23, 42, 0.6)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        color: '#fff',
+        outline: 'none',
+        fontSize: '13px'
+    },
+    button: {
+        padding: '10px 20px',
+        borderRadius: '10px',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '13px',
+        fontWeight: 600,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        transition: 'all 0.2s'
+    },
+    statusBadge: (status: 'active' | 'inactive' | 'warning') => ({
+        padding: '4px 10px',
+        borderRadius: '20px',
+        fontSize: '11px',
+        fontWeight: 700,
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        background: status === 'active' ? 'rgba(34, 197, 94, 0.1)' : status === 'warning' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+        color: status === 'active' ? '#4ade80' : status === 'warning' ? '#facc15' : '#f87171',
+        border: `1px solid ${status === 'active' ? 'rgba(34, 197, 94, 0.2)' : status === 'warning' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`
+    })
+};
+
 export default function SettingsModule({ onBack, lang, userLevel, setUserLevel }: Props) {
     const { config, updateConfig, createSnapshot, backups, restoreSnapshot } = useConfig();
     const t = translations[lang];
 
+    const [activeTab, setActiveTab] = useState<TabType>('connections'); // Default to connections as requested
+    const [searchQuery, setSearchQuery] = useState('');
     const [geminiKey, setGeminiKey] = useState(config.geminiKey);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Data States
+    const [users, setUsers] = useState<UserAccount[]>([]);
+    const [archivedUsers, setArchivedUsers] = useState<UserAccount[]>([]);
+    const [accessRules, setAccessRules] = useState<Record<number, string[]>>({});
+
+    // UI States
+    const [newUser, setNewUser] = useState<Partial<UserAccount>>({ level: 1 });
+    const [showUserForm, setShowUserForm] = useState(false);
+    const [showArchive, setShowArchive] = useState(false);
+    const [selectedUserForOverride, setSelectedUserForOverride] = useState<string>('');
+    const [pendingAction, setPendingAction] = useState<{ type: 'delete' | 'change', payload: any } | null>(null);
+    const [showIntegrationForm, setShowIntegrationForm] = useState(false);
+    const [integrationFormData, setIntegrationFormData] = useState<Partial<Integration>>({ name: '', endpoint: '', key: '' });
+
+    // Default Integrations (System)
+    const systemIntegrations: Integration[] = [
+        { id: 'gemini', name: 'Google Gemini AI', endpoint: 'https://generativelanguage.googleapis.com', key: 'sk-proj-...', status: 'active', type: 'ai', iconName: 'Cpu', color: '#3b82f6', metrics: { Latency: '45ms', Requests: '1.2k/day' } },
+        { id: 'bank', name: 'Bank Gateway', endpoint: 'https://api.bancaintesa.rs/v2', key: 'intesa-...', status: 'active', type: 'payment', iconName: 'Shield', color: '#22c55e', metrics: { Uptime: '99.9%', 'Last Sync': '2m ago' } },
+        { id: 'eturista', name: 'E-Turista Srbija', endpoint: 'https://eturista.gov.rs/api', key: 'cis-govt-...', status: 'connecting', type: 'govt', iconName: 'Globe', color: '#eab308', metrics: { Status: 'Certificate Validation Pending...' } },
+        { id: 'sendgrid', name: 'SendGrid Email', endpoint: 'https://api.sendgrid.com/v3', key: 'SG.2384...', status: 'active', type: 'email', iconName: 'Mail', color: '#a855f7', metrics: { Delivered: '8,432', 'Open Rate': '42%' } },
+        { id: 'supabase', name: 'Supabase Cloud', endpoint: 'https://xyz.supabase.co', key: 'sb-nectar...', status: 'active', type: 'db', iconName: 'Database', color: '#14b8a6', metrics: { Region: 'eu-central', Pool: '12/100' } }
+    ];
+
+    const [integrations, setIntegrations] = useState<Integration[]>(systemIntegrations);
+
+    useEffect(() => {
+        const loadIntegrations = async () => {
+            const { success, data } = await loadFromCloud('integrations');
+            if (success && data && data.length > 0) {
+                setIntegrations(data);
+            } else {
+                const saved = localStorage.getItem('olympic_hub_integrations');
+                if (saved) setIntegrations(JSON.parse(saved));
+            }
+        };
+        loadIntegrations();
+    }, []);
+
+    const handleSaveIntegration = () => {
+        let newIntegrations;
+        if (integrationFormData.id) {
+            // Edit
+            newIntegrations = integrations.map(i => i.id === integrationFormData.id ? { ...i, ...integrationFormData } as Integration : i);
+        } else {
+            // Create
+            const newInt: Integration = {
+                id: Math.random().toString(36).substr(2, 9),
+                name: integrationFormData.name || 'New Integration',
+                endpoint: integrationFormData.endpoint || '',
+                key: integrationFormData.key || '',
+                status: 'active',
+                type: 'other',
+                iconName: 'Server',
+                color: '#64748b',
+                metrics: { Status: 'Initialized' }
+            };
+            newIntegrations = [...integrations, newInt];
+        }
+        setIntegrations(newIntegrations);
+        localStorage.setItem('olympic_hub_integrations', JSON.stringify(newIntegrations));
+        saveToCloud('integrations', newIntegrations);
+        setShowIntegrationForm(false);
+    };
+
+    const getIcon = (name: string) => {
+        const icons: any = { Cpu, Shield, Globe, Mail, Database, Server, Zap, Lock, Wifi, Smartphone };
+        const Icon = icons[name] || Server;
+        return <Icon size={20} />;
+    };
+
+    const isMaster = userLevel === 6;
+
+    const modulesList = [
+        { id: 'dashboard', name: 'Dashboard' },
+        { id: 'production-hub', name: 'Production Hub' },
+        { id: 'mars-analysis', name: 'Mars Analysis' },
+        { id: 'suppliers', name: 'Dobavljači' },
+        { id: 'customers', name: 'Kupci' },
+        { id: 'settings', name: 'Podešavanja' },
+        { id: 'deep-archive', name: 'Deep Archive' },
+        { id: 'fortress', name: 'The Fortress' },
+        { id: 'katana', name: 'Project Katana' }
+    ];
+
+    // --- Data Loading & Sync (Same logic as before) ---
+    useEffect(() => {
+        const loadSettingsData = async () => {
+            const { success: s1, data: d1 } = await loadFromCloud('user_accounts');
+            if (s1 && d1 && d1.length > 0) setUsers(d1 as UserAccount[]);
+            else {
+                setUsers([{ id: '1', firstName: 'Nenad', lastName: 'Admin', email: 'nenad@example.com', fixedPhone: '', mobilePhone: '', level: 6 }]);
+            }
+            const { success: s2, data: d2 } = await loadFromCloud('archived_users');
+            if (s2 && d2) setArchivedUsers(d2 as UserAccount[]);
+            const { success: s3, data: d3 } = await loadFromCloud('access_rules');
+            if (s3 && d3) {
+                const rulesMap: Record<number, string[]> = {};
+                d3.forEach((item: any) => rulesMap[item.id] = item.modules);
+                setAccessRules(rulesMap);
+            } else {
+                setAccessRules({
+                    1: ['dashboard', 'search'],
+                    2: ['dashboard', 'search', 'customers'],
+                    3: ['dashboard', 'search', 'customers', 'suppliers', 'production-hub'],
+                    4: ['dashboard', 'search', 'customers', 'suppliers', 'production-hub', 'mars-analysis'],
+                    5: ['dashboard', 'search', 'customers', 'suppliers', 'production-hub', 'mars-analysis', 'settings'],
+                    6: ['dashboard', 'search', 'customers', 'suppliers', 'production-hub', 'mars-analysis', 'settings', 'master-access']
+                });
+            }
+        };
+        loadSettingsData();
+    }, []);
+
+    // Optimized Syncers
+    useEffect(() => { if (users.length > 0) saveToCloud('user_accounts', users); }, [users]);
+    useEffect(() => { if (archivedUsers.length > 0) saveToCloud('archived_users', archivedUsers); }, [archivedUsers]);
+    useEffect(() => {
+        const rulesArray = Object.entries(accessRules).map(([lvl, modules]) => ({ id: lvl, modules }));
+        if (rulesArray.length > 0) saveToCloud('access_rules', rulesArray);
+    }, [accessRules]);
+
+    // --- Handlers ---
     const handleSave = async () => {
         setIsSaving(true);
         await updateConfig({ geminiKey });
         setTimeout(() => setIsSaving(false), 800);
     };
 
-    const handleCreateSnapshot = async () => {
-        const now = new Date();
-        const note = `${now.toLocaleDateString('sr-RS')} ${now.toLocaleTimeString('sr-RS')}`;
-        await createSnapshot(note);
+    const handleCreateSnapshot = async () => createSnapshot(`${new Date().toLocaleString('sr-RS')}`);
+
+    const handleAddUser = () => {
+        if (!newUser.firstName || !newUser.email) return;
+
+        if (newUser.id) {
+            // Update existing user
+            setUsers(users.map(u => u.id === newUser.id ? { ...u, ...newUser as UserAccount } : u));
+        } else {
+            // Create New User
+            const user: UserAccount = {
+                id: Date.now().toString(),
+                firstName: newUser.firstName || '',
+                lastName: newUser.lastName || '',
+                email: newUser.email || '',
+                fixedPhone: newUser.fixedPhone || '',
+                mobilePhone: newUser.mobilePhone || '',
+                level: newUser.level || 1
+            };
+            setUsers([...users, user]);
+        }
+        setNewUser({ level: 1 });
+        setShowUserForm(false);
     };
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="settings-module"
-            style={{ display: 'flex', flexDirection: 'column', gap: '30px', maxWidth: '900px', margin: '0 auto' }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <button onClick={onBack} className="back-btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>
-                    <ArrowLeft size={18} />
+    const handleDeleteUser = (id: string) => setPendingAction({ type: 'delete', payload: id });
+
+    const confirmDeletion = () => {
+        if (!pendingAction) return;
+        const id = pendingAction.payload;
+        const user = users.find(u => u.id === id);
+        if (user) {
+            setArchivedUsers([...archivedUsers, user]);
+            setUsers(users.filter(u => u.id !== id));
+        }
+        setPendingAction(null);
+    };
+
+    const restoreUser = (id: string) => {
+        const user = archivedUsers.find(u => u.id === id);
+        if (user) { setUsers([...users, user]); setArchivedUsers(archivedUsers.filter(u => u.id !== id)); }
+    };
+
+    const toggleModuleAccess = (level: number, moduleId: string) => {
+        setAccessRules(prev => {
+            const levelRules = prev[level] || [];
+            return {
+                ...prev,
+                [level]: levelRules.includes(moduleId) ? levelRules.filter(id => id !== moduleId) : [...levelRules, moduleId]
+            };
+        });
+    };
+
+    const getOverrideState = (userId: string, type: 'module' | 'import' | 'export', id?: string) => {
+        const exceptions = config.userExceptions?.[userId] || {};
+        if (type === 'import') return exceptions.canImport === true ? 'allow' : exceptions.canImport === false ? 'deny' : 'auto';
+        if (type === 'export') return exceptions.canExport === true ? 'allow' : exceptions.canExport === false ? 'deny' : 'auto';
+        if (type === 'module' && id) return exceptions.allowedModules?.includes(id) ? 'allow' : exceptions.deniedModules?.includes(id) ? 'deny' : 'auto';
+        return 'auto';
+    };
+
+    const setOverride = (userId: string, type: 'module' | 'permission', id: string, value: 'allow' | 'deny' | 'auto') => {
+        const current = config.userExceptions?.[userId] || {};
+        let next = { ...current };
+
+        if (type === 'permission') {
+            if (value === 'auto') { if (id === 'import') delete next.canImport; if (id === 'export') delete next.canExport; }
+            else { if (id === 'import') next.canImport = (value === 'allow'); if (id === 'export') next.canExport = (value === 'allow'); }
+        } else {
+            next.allowedModules = (next.allowedModules || []).filter(m => m !== id);
+            next.deniedModules = (next.deniedModules || []).filter(m => m !== id);
+            if (value === 'allow') next.allowedModules.push(id);
+            if (value === 'deny') next.deniedModules.push(id);
+        }
+        updateConfig({ userExceptions: { ...config.userExceptions, [userId]: next } });
+    };
+
+
+    // --- Render Content ---
+
+    // 1. General Settings
+    const renderGeneral = () => (
+        <div className="fade-in">
+            <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '20px' }}>Sistemske Postavke</h3>
+
+            <div style={styles.card}>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                    <Cpu color="#3b82f6" />
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '16px' }}>AI Configuration (Gemini)</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>Ključ za pristup Google AI Modelima</p>
+                    </div>
+                </div>
+                <input type="password" value={geminiKey} onChange={e => setGeminiKey(e.target.value)} style={styles.input} />
+                <button onClick={handleSave} style={{ ...styles.button, background: '#3b82f6', color: '#fff', marginTop: '15px' }}>
+                    {isSaving ? 'Saving...' : 'Save Configuration'}
                 </button>
-                <h2 style={{ fontSize: '24px', fontWeight: '700' }}>{t.settings}</h2>
             </div>
 
-            <div className="settings-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '30px' }}>
+            <div style={styles.card}>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '15px' }}>
+                    <Zap color="#eab308" />
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '16px' }}>Simulacija Nivoa</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#94a3b8' }}>Privremeno preuzimanje privilegija drugog nivoa</p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {[1, 2, 3, 4, 5, 6].map(lvl => (
+                        <button key={lvl} onClick={() => setUserLevel(lvl)} style={{ ...styles.button, background: userLevel >= lvl ? (lvl === 6 ? '#7c3aed' : '#334155') : 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                            {lvl === 6 ? 'MASTER' : `LVL ${lvl}`}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                    {/* API Keys Section */}
-                    <section style={{ background: 'var(--bg-card)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '25px' }}>
-                            <Key className="text-accent" size={20} />
-                            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t.apiKeys}</h3>
+    // 2. Users Management
+    const renderUsers = () => (
+        <div className="fade-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Korisnički Nalozi</h3>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {isMaster && <button onClick={() => setShowArchive(!showArchive)} style={{ ...styles.button, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>Archive ({archivedUsers.length})</button>}
+                    <button onClick={() => setShowUserForm(!showUserForm)} style={{ ...styles.button, background: '#3b82f6', color: '#fff' }}><UserPlus size={16} /> New User</button>
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {showUserForm && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ ...styles.card, overflow: 'hidden' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                            <input placeholder="First Name" value={newUser.firstName || ''} onChange={e => setNewUser({ ...newUser, firstName: e.target.value })} style={styles.input} />
+                            <input placeholder="Last Name" value={newUser.lastName || ''} onChange={e => setNewUser({ ...newUser, lastName: e.target.value })} style={styles.input} />
+                            <select value={newUser.level || 1} onChange={e => setNewUser({ ...newUser, level: Number(e.target.value) })} style={styles.input}>
+                                {[1, 2, 3, 4, 5, 6].map(l => <option key={l} value={l}>{l === 6 ? 'MASTER (Level 6)' : `Level ${l}`}</option>)}
+                            </select>
+                            <input placeholder="Email" value={newUser.email || ''} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={styles.input} />
+                            <input placeholder="Mobile Phone" value={newUser.mobilePhone || ''} onChange={e => setNewUser({ ...newUser, mobilePhone: e.target.value })} style={styles.input} />
+                            <input placeholder="Fixed Phone" value={newUser.fixedPhone || ''} onChange={e => setNewUser({ ...newUser, fixedPhone: e.target.value })} style={styles.input} />
                         </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button onClick={handleAddUser} style={{ ...styles.button, background: '#22c55e', color: '#fff', flex: 1 }}>{newUser.id ? 'Update User' : 'Create Account'}</button>
+                            {newUser.id && <button onClick={() => { setNewUser({ level: 1 }); setShowUserForm(false); }} style={{ ...styles.button, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Cancel Edit</button>}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ display: 'grid', gap: '10px' }}>
+                {users.filter(u => u.firstName.toLowerCase().includes(searchQuery.toLowerCase())).map(u => (
+                    <div
+                        key={u.id}
+                        onClick={() => { setNewUser(u); setShowUserForm(true); }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(30, 41, 59, 0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'background 0.2s' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{u.firstName[0]}</div>
                             <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{t.geminiKey}</label>
-                                <input
-                                    type="password"
-                                    value={geminiKey}
-                                    onChange={e => setGeminiKey(e.target.value)}
-                                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                                />
+                                <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {u.firstName} {u.lastName}
+                                    {u.level === 6 && <span title="Master Account" style={{ fontSize: '16px' }}>🦅</span>}
+                                    <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>LVL {u.level}</span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#64748b' }}>{u.email}</div>
                             </div>
-
-                            <button
-                                onClick={handleSave}
-                                className="action-btn-hub primary"
-                                style={{ padding: '12px', width: '100%', justifyContent: 'center', marginTop: '10px' }}
-                            >
-                                {isSaving ? <Check size={18} /> : <Save size={18} />} {t.saveSettings}
-                            </button>
                         </div>
-                    </section>
+                        <button onClick={() => handleDeleteUser(u.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                    </div>
+                ))}
+            </div>
 
-                    {/* Access Level Section (Moved from Sidebar) */}
-                    <section style={{ background: 'var(--bg-card)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                            <ShieldCheck className="text-accent" size={20} />
-                            <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t.userLevel}</h3>
+            {showArchive && (
+                <div style={{ marginTop: '40px' }}>
+                    <h4 style={{ color: '#94a3b8', marginBottom: '15px' }}>Archive</h4>
+                    {archivedUsers.map(u => (
+                        <div key={u.id} style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#64748b' }}>{u.firstName} {u.lastName}</span>
+                            <button onClick={() => restoreUser(u.id)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '12px' }}>Restore</button>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            {[1, 2, 3, 4, 5].map(lvl => (
-                                <button
-                                    key={lvl}
-                                    onClick={() => setUserLevel(lvl)}
-                                    style={{
-                                        flex: 1, padding: '12px', border: 'none', borderRadius: '12px',
-                                        background: userLevel >= lvl ? 'var(--accent)' : 'var(--border)',
-                                        color: '#fff', fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: '0.2s',
-                                        boxShadow: userLevel === lvl ? '0 4px 12px var(--accent-glow)' : 'none'
-                                    }}
-                                >
-                                    {lvl}
-                                </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+
+    // 3. Permissions Matrix
+    const renderPermissions = () => (
+        <div className="fade-in">
+            <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '20px' }}>Sistemske Dozvole</h3>
+
+            <div style={{ ...styles.card, overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+                    <thead>
+                        <tr>
+                            <th style={{ textAlign: 'left', color: '#94a3b8', padding: '10px' }}>Module</th>
+                            {[1, 2, 3, 4, 5, 6].map(l => <th key={l} style={{ color: '#94a3b8', fontSize: '12px' }}>LVL {l}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {modulesList.map(mod => (
+                            <tr key={mod.id} style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                <td style={{ padding: '12px', borderRadius: '8px 0 0 8px' }}>{mod.name}</td>
+                                {[1, 2, 3, 4, 5, 6].map(l => (
+                                    <td key={l} style={{ textAlign: 'center', padding: '10px', borderRadius: l === 6 ? '0 8px 8px 0' : 0 }}>
+                                        <button onClick={() => toggleModuleAccess(l, mod.id)}
+                                            style={{
+                                                width: '20px', height: '20px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
+                                                background: accessRules[l]?.includes(mod.id) ? '#3b82f6' : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                                            }}>
+                                            {accessRules[l]?.includes(mod.id) && <Check size={12} color="#fff" />}
+                                        </button>
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style={styles.card}>
+                <h4 style={{ margin: '0 0 15px 0' }}>User Specific Overrides</h4>
+                <select value={selectedUserForOverride} onChange={e => setSelectedUserForOverride(e.target.value)} style={styles.input}>
+                    <option value="">Select User to Override Rules...</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
+                </select>
+
+                {selectedUserForOverride && (
+                    <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px' }}>MODULE ACCESS</div>
+                            {modulesList.map(mod => {
+                                const s = getOverrideState(selectedUserForOverride, 'module', mod.id);
+                                return (
+                                    <div key={mod.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <span>{mod.name}</span>
+                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                            {['auto', 'allow', 'deny'].map(v => (
+                                                <button key={v} onClick={() => setOverride(selectedUserForOverride, 'module', mod.id, v as any)}
+                                                    style={{
+                                                        padding: '2px 6px', borderRadius: '4px', fontSize: '10px', border: 'none', cursor: 'pointer',
+                                                        background: s === v ? (v === 'allow' ? '#22c55e' : v === 'deny' ? '#ef4444' : '#fff') : 'rgba(255,255,255,0.1)',
+                                                        color: s === v ? (v === 'auto' ? '#000' : '#fff') : '#94a3b8'
+                                                    }}>
+                                                    {v.toUpperCase()}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    // 4. API Connections (Requested Layout)
+    const renderConnections = () => (
+        <div className="fade-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Aktivne Konekcije</h3>
+                <div style={styles.statusBadge('active')}>
+                    <Activity size={12} />
+                    SYSTEM ONLINE
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                {integrations.map(integration => (
+                    <div
+                        key={integration.id}
+                        onClick={() => { setIntegrationFormData(integration); setShowIntegrationForm(true); }}
+                        style={{ ...styles.card, cursor: 'pointer' }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <div style={{ padding: '10px', background: `rgba(${parseInt(integration.color.slice(1, 3), 16)}, ${parseInt(integration.color.slice(3, 5), 16)}, ${parseInt(integration.color.slice(5, 7), 16)}, 0.1)`, borderRadius: '10px', color: integration.color }}>
+                                    {getIcon(integration.iconName)}
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 700 }}>{integration.name}</div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>{integration.type.toUpperCase()} Protocol</div>
+                                </div>
+                            </div>
+                            <div style={styles.statusBadge(integration.status === 'active' ? 'active' : 'warning')}>
+                                {integration.status === 'active' ? 'Active' : 'Connecting'}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '20px', fontSize: '12px', color: '#64748b' }}>
+                            {integration.metrics && Object.entries(integration.metrics).map(([k, v]) => (
+                                <div key={k}>{k}: <span style={{ color: '#fff' }}>{v}</span></div>
                             ))}
                         </div>
-                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '15px' }}>
-                            {userLevel >= 3 ? "Imate puna prava uređivanja." : "Trenutno ste u modu 'Samo gledanje'."}
-                        </p>
-                    </section>
+                        <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', marginTop: '15px', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: integration.status === 'active' ? '100%' : '30%', background: integration.color, height: '100%' }}></div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Add New Connection Placeholder */}
+                <div onClick={() => { setIntegrationFormData({ name: '', endpoint: '', key: '' }); setShowIntegrationForm(true); }} style={{ ...styles.card, border: '1px dashed rgba(255,255,255,0.1)', background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', minHeight: '160px' }}>
+                    <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', marginBottom: '10px' }}>
+                        <Plus color="#94a3b8" />
+                    </div>
+                    <span style={{ fontSize: '13px', color: '#64748b' }}>Add New Integration</span>
                 </div>
+            </div>
 
-                {/* Point of Return Section */}
-                <section style={{ background: 'var(--bg-card)', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)', height: 'fit-content' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                        <RotateCcw className="text-accent" size={20} />
-                        <h3 style={{ fontSize: '18px', fontWeight: '600' }}>{t.pointOfReturn}</h3>
-                    </div>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '25px' }}>
-                        Napravite kopiju trenutnog stanja svih API ključeva i podešavanja kako biste mogli da se vratite ako nešto krene po zlu.
-                    </p>
-
-                    <div style={{ marginBottom: '30px' }}>
-                        <button onClick={handleCreateSnapshot} className="action-btn-hub success" style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>
-                            <Plus size={18} /> Kreiraj Tačku Povratka
-                        </button>
-                    </div>
-
-                    <div className="backup-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
-                        <h4 style={{ fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>{t.backupHistory}</h4>
-                        {backups.map(b => (
-                            <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: 'var(--bg-sidebar)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                                <div>
-                                    <div style={{ fontSize: '14px', fontWeight: '600' }}>{b.note}</div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{new Date(b.created_at).toLocaleString()}</div>
-                                </div>
-                                <button
-                                    onClick={() => restoreSnapshot(b)}
-                                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--border)', color: 'var(--accent)', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
-                                >
-                                    {t.restore}
-                                </button>
+            <AnimatePresence>
+                {showIntegrationForm && (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.5)' }}>
+                        <div style={{ ...styles.card, width: '400px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0 }}>{integrationFormData.name ? 'Edit Integration' : 'New Integration'}</h3>
+                                <button onClick={() => setShowIntegrationForm(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={18} /></button>
                             </div>
-                        ))}
-                    </div>
-                </section>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <input
+                                    placeholder="Integration Name"
+                                    style={styles.input}
+                                    value={integrationFormData.name}
+                                    onChange={e => setIntegrationFormData({ ...integrationFormData, name: e.target.value })}
+                                />
+                                <input
+                                    placeholder="API Endpoint"
+                                    style={styles.input}
+                                    value={integrationFormData.endpoint}
+                                    onChange={e => setIntegrationFormData({ ...integrationFormData, endpoint: e.target.value })}
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="API Key / Token"
+                                    style={styles.input}
+                                    value={integrationFormData.key}
+                                    onChange={e => setIntegrationFormData({ ...integrationFormData, key: e.target.value })}
+                                />
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                    <button onClick={() => setShowIntegrationForm(false)} style={{ ...styles.button, flex: 1, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Cancel</button>
+                                    <button onClick={handleSaveIntegration} style={{ ...styles.button, flex: 1, background: '#3b82f6', color: '#fff' }}>
+                                        {integrationFormData.name ? 'Save Changes' : 'Connect'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 
+    // 5. Backups
+    const renderBackups = () => (
+        <div className="fade-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Snapshots & Backups</h3>
+                <button onClick={handleCreateSnapshot} style={{ ...styles.button, background: '#3b82f6', color: '#fff' }}><Plus size={16} /> Create Snapshot</button>
             </div>
 
-            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '20px', borderRadius: '16px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <AlertTriangle color="#ef4444" />
-                <div>
-                    <h4 style={{ color: '#ef4444', fontSize: '14px', fontWeight: '700' }}>{t.dangerZone}</h4>
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        Promena API ključeva može prekinuti rad AI asistenta. Uvek napravite snapshot pre promene.
-                    </p>
+            {backups.map(b => (
+                <div key={b.id} style={{ ...styles.card, padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}><RotateCcw size={18} /></div>
+                        <div>
+                            <div style={{ fontWeight: 600 }}>{b.note}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>ID: {b.id}</div>
+                        </div>
+                    </div>
+                    <button onClick={() => restoreSnapshot(b)} style={{ ...styles.button, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>RESTORE</button>
+                </div>
+            ))}
+        </div>
+    );
+
+    return (
+        <div style={styles.layout}>
+            {/* LEFT SIDEBAR */}
+            <div style={styles.sidebar}>
+                <div style={{ marginBottom: '40px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SYSTEM CORE</h2>
+                    <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>Admin Panel v2.0</p>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '10px', paddingLeft: '10px' }}>MAIN MENU</div>
+                    <div onClick={() => setActiveTab('connections')} style={styles.navItem(activeTab === 'connections')}><Activity size={18} /> Active Connections</div>
+                    <div onClick={() => setActiveTab('general')} style={styles.navItem(activeTab === 'general')}><LayoutDashboard size={18} /> General Settings</div>
+                    <div onClick={() => setActiveTab('users')} style={styles.navItem(activeTab === 'users')}><Users size={18} /> Users & Accounts</div>
+                    <div onClick={() => setActiveTab('permissions')} style={styles.navItem(activeTab === 'permissions')}><Lock size={18} /> Access Permissions</div>
+                    <div onClick={() => setActiveTab('backups')} style={styles.navItem(activeTab === 'backups')}><RotateCcw size={18} /> System Snapshots</div>
+                </div>
+
+                <div style={{ marginTop: 'auto' }}>
+                    <button onClick={onBack} style={{ ...styles.button, width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
+                        <ArrowLeft size={16} /> Exit to Menu
+                    </button>
                 </div>
             </div>
 
-        </motion.div>
+            {/* MAIN CONTENT */}
+            <div style={styles.main}>
+                {/* HEADER */}
+                <div style={styles.header}>
+                    <div style={{ fontSize: '14px', color: '#64748b' }}>
+                        Settings / <span style={{ color: '#fff', fontWeight: 600 }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <Search size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                            <input
+                                placeholder="Search settings..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                style={{ ...styles.input, paddingLeft: '36px', width: '240px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)' }}
+                            />
+                        </div>
+                        <button style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <AlertTriangle size={18} />
+                        </button>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px' }}>
+                            A
+                        </div>
+                    </div>
+                </div>
+
+                {/* CONTENT AREA */}
+                <div style={styles.contentArea}>
+                    {activeTab === 'general' && renderGeneral()}
+                    {activeTab === 'users' && renderUsers()}
+                    {activeTab === 'permissions' && renderPermissions()}
+                    {activeTab === 'connections' && renderConnections()}
+                    {activeTab === 'backups' && renderBackups()}
+                </div>
+            </div>
+
+            {/* Confirmation Modal */}
+            <AnimatePresence>
+                {pendingAction && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ ...styles.card, width: '400px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <h3 style={{ marginTop: 0 }}>Confirm Action</h3>
+                            <p style={{ color: '#94a3b8' }}>This action is irreversible. Required authentication level: MASTER.</p>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                <button onClick={() => setPendingAction(null)} style={{ ...styles.button, flex: 1, background: 'rgba(255,255,255,0.1)', color: '#fff' }}>Cancel</button>
+                                <button onClick={confirmDeletion} style={{ ...styles.button, flex: 1, background: '#ef4444', color: '#fff' }}>Confirm</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

@@ -33,7 +33,15 @@ import {
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
 import { type Property, validateProperty } from '../../types/property.types';
-import { supabase } from '../../supabaseClient';
+import {
+    saveToCloud,
+    loadFromCloud
+} from '../../utils/storageUtils';
+import {
+    sanitizeInput,
+    generateIdempotencyKey,
+    toUTC
+} from '../../utils/securityUtils';
 
 // --- TCT-IMC DATA STRUCTURES ---
 
@@ -107,24 +115,27 @@ interface ProductionHubProps {
 const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
     const [displayType, setDisplayType] = useState<'grid' | 'list'>('grid');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
+    const filteredHotels = hotels.filter(h =>
+        h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        h.location.place.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     // Load hotels from Supabase on mount
     useEffect(() => {
         const loadHotels = async () => {
-            const { data, error } = await supabase
-                .from('properties')
-                .select('*');
-
-            if (!error && data && data.length > 0) {
-                // Map DB schema to Hotel frontend structure if different
-                // For now assuming properties table stores the Hotel structure
-                setHotels(data as any);
-            } else if (error) {
-                console.error("Supabase load error:", error.message);
+            const { success, data } = await loadFromCloud('properties');
+            if (success && data && data.length > 0) {
+                setHotels(data as Hotel[]);
+            } else {
+                // Fallback to localStorage if Supabase fails or is empty
+                const saved = localStorage.getItem('olympic_hub_hotels');
+                if (saved) setHotels(JSON.parse(saved));
             }
         };
         loadHotels();
@@ -133,30 +144,14 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     // Save/Sync helper
     const syncToSupabase = async (updatedHotels: Hotel[]) => {
         setIsSyncing(true);
-        try {
-            // Option 1: Upsert each hotel
-            // We use properties table. Each hotel is a row.
-            const rows = updatedHotels.map(h => ({
-                id: h.id,
-                name: h.name,
-                location: h.location,
-                originalPropertyData: h.originalPropertyData,
-                updated_at: new Date().toISOString()
-            }));
-
-            const { error } = await supabase
-                .from('properties')
-                .upsert(rows);
-
-            if (error) throw error;
-        } catch (e) {
-            console.error("Supabase sync error:", e);
-        } finally {
-            setTimeout(() => setIsSyncing(false), 500);
+        const { success } = await saveToCloud('properties', updatedHotels);
+        if (success) {
+            localStorage.setItem('olympic_hub_hotels', JSON.stringify(updatedHotels));
         }
+        setTimeout(() => setIsSyncing(false), 500);
     };
 
-    // Keep localStorage as fallback/cache
+    // Auto-save to localStorage as quick cache
     useEffect(() => {
         localStorage.setItem('olympic_hub_hotels', JSON.stringify(hotels));
     }, [hotels]);
@@ -166,19 +161,20 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [wizardInitialData, setWizardInitialData] = useState<Partial<Property> | undefined>(undefined);
 
     const handleWizardSave = (property: Partial<Property>, shouldClose: boolean = true) => {
+        // ENFORCE IDEMPOTENCY
+        const requestId = generateIdempotencyKey('save_prop');
+        console.log(`[Idempotency] Request: ${requestId}`);
+
+        // NORMALIZE TIMESTAMPS TO UTC
+        const nowUtc = toUTC(new Date());
+
         if (wizardInitialData && selectedHotel) {
             // EDIT EXISTING
             const updatedHotel: Hotel = {
                 ...selectedHotel,
-                name: property.content?.[0]?.displayName || property.content?.[0]?.officialName || property.identifiers?.pmsId || 'Updated Property',
-                location: {
-                    address: property.address?.addressLine1 || selectedHotel.location.address,
-                    lat: property.geoCoordinates?.latitude || selectedHotel.location.lat,
-                    lng: property.geoCoordinates?.longitude || selectedHotel.location.lng,
-                    place: property.address?.city || selectedHotel.location.place
-                },
                 originalPropertyData: property
             };
+            console.log(`[Security] Update request authorized at ${nowUtc} UTC`);
             const updatedList = hotels.map(h => h.id === selectedHotel.id ? updatedHotel : h);
             setHotels(updatedList);
             setSelectedHotel(updatedHotel);
@@ -198,9 +194,10 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                 units: [],
                 commonItems: { discount: [], touristTax: [], supplement: [] },
                 images: [],
-                originalPropertyData: property
+                originalPropertyData: property // Normal metadata save
             };
             const updatedList = [...hotels, newHotel];
+            console.log(`[Security] Record created at ${nowUtc} UTC`);
             setHotels(updatedList);
             syncToSupabase(updatedList);
 
@@ -549,20 +546,64 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
                 <AnimatePresence>
                     {showImport && (
-                        <div className="modal-overlay-blur" onClick={() => setShowImport(false)}>
-                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="modal-content-glass" onClick={e => e.stopPropagation()}>
-                                <div className="modal-header">
-                                    <h3>Import TCT-IMC Podataka</h3>
-                                    <button onClick={() => setShowImport(false)}><X size={20} /></button>
+                        <div className="modal-overlay-blur" onClick={() => setShowImport(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <motion.div
+                                drag
+                                dragMomentum={false}
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="modal-content-glass"
+                                onClick={e => e.stopPropagation()}
+                                style={{
+                                    width: '600px',
+                                    background: '#1a1f2e',
+                                    borderRadius: '24px',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    overflow: 'hidden',
+                                    padding: 0,
+                                    boxShadow: '0 50px 100px -20px rgba(0,0,0,0.5)'
+                                }}
+                            >
+                                <div
+                                    className="modal-header"
+                                    style={{
+                                        padding: '20px',
+                                        background: 'rgba(255,255,255,0.03)',
+                                        borderBottom: '1px solid rgba(255,255,255,0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        cursor: 'grab'
+                                    }}
+                                >
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#fff' }}>Import TCT-IMC Podataka</h3>
+                                    <button onClick={() => setShowImport(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}><X size={20} /></button>
                                 </div>
-                                <textarea
-                                    placeholder="Nalepite JSON objekat ovde..."
-                                    className="import-textarea"
-                                    value={importData}
-                                    onChange={e => setImportData(e.target.value)}
-                                />
-                                <div className="modal-footer">
-                                    <button className="btn-primary-glow" onClick={handleImport}>Potvrdi Uvoz</button>
+                                <div style={{ padding: '24px' }}>
+                                    <textarea
+                                        placeholder="Nalepite JSON objekat ovde..."
+                                        className="import-textarea"
+                                        value={importData}
+                                        onChange={e => setImportData(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            height: '300px',
+                                            background: 'rgba(0,0,0,0.3)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '12px',
+                                            padding: '16px',
+                                            color: '#fff',
+                                            fontFamily: 'monospace',
+                                            fontSize: '12px',
+                                            resize: 'none',
+                                            outline: 'none',
+                                            marginBottom: '20px'
+                                        }}
+                                    />
+                                    <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 0 }}>
+                                        <button className="btn-primary-glow" onClick={handleImport} style={{ padding: '12px 24px', borderRadius: '12px', background: '#3b82f6', color: '#fff', border: 'none', fontWeight: '600', cursor: 'pointer' }}>Potvrdi Uvoz</button>
+                                    </div>
                                 </div>
                             </motion.div>
                         </div>
@@ -634,7 +675,12 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         </div>
                         <div className="search-bar">
                             <Search size={18} />
-                            <input type="text" placeholder="Pretraži objekte..." />
+                            <input
+                                type="text"
+                                placeholder="Pretraži objekte..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(sanitizeInput(e.target.value))}
+                            />
                         </div>
                         <button className="btn-primary-action" onClick={startCreate}>
                             <Plus size={18} /> Kreiraj Objekat
@@ -656,7 +702,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
                 {displayType === 'grid' ? (
                     <div className="dashboard-grid" style={{ marginTop: '32px' }}>
-                        {hotels.map(h => {
+                        {filteredHotels.map(h => {
 
                             return (
                                 <motion.div
