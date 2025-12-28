@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { GeometricBrain } from '../../components/icons/GeometricBrain';
 import { motion, AnimatePresence } from 'framer-motion';
+import { restoreItem } from '../../utils/storageUtils';
 
 interface ArchiveItem {
     id: string;
@@ -298,7 +299,14 @@ export default function DeepArchive({ onBack }: Props) {
                                                 <button style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                                     <FileJson size={14} /> Copy JSON
                                                 </button>
-                                                <button style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: 'var(--gradient-blue)', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm("Da li ste sigurni da želite da vratite ovaj podatak?")) {
+                                                            restoreItem(selectedItem).then(() => alert("Podatak uspešno vraćen! Proverite odgovarajući modul."));
+                                                        }
+                                                    }}
+                                                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: 'var(--gradient-blue)', color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                                >
                                                     <RefreshCcw size={14} /> Restore
                                                 </button>
                                             </div>

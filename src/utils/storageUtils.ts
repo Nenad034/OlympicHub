@@ -76,3 +76,24 @@ export const archiveItem = async (
         return { success: true, localOnly: true };
     }
 };
+
+export const restoreItem = async (item: any) => {
+    // 1. Restore to LocalStorage
+    try {
+        if (item.entityType === 'Supplier') {
+            const currentSuppliers = JSON.parse(localStorage.getItem('olympic_hub_suppliers') || '[]');
+            // Check if already exists to prevent duplicates
+            if (!currentSuppliers.find((s: any) => s.id === item.entityId)) {
+                // Restore logic: Use oldData as the source of truth
+                const restored = { ...item.oldData };
+                currentSuppliers.push(restored);
+                localStorage.setItem('olympic_hub_suppliers', JSON.stringify(currentSuppliers));
+            }
+        }
+    } catch (e) {
+        console.error("Local Restore Error:", e);
+        return { success: false, error: "Local restore failed" };
+    }
+
+    return { success: true };
+};
