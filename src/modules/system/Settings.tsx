@@ -21,13 +21,15 @@ import {
     UserPlus,
     AlertTriangle,
     Database,
-    Zap
+    Zap,
+    ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../context/ConfigContext';
 import { type Language } from '../../translations';
 import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
 import SystemPulse from './SystemPulse';
+import DeepArchive from './DeepArchive';
 
 // --- Types ---
 interface UserAccount {
@@ -59,7 +61,7 @@ interface Props {
     setUserLevel: (level: number) => void;
 }
 
-type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'pulse' | 'backups';
+type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'pulse' | 'backups' | 'archive';
 
 // --- KATANA STYLED COMPONENTS (Inline Styles) ---
 const styles = {
@@ -691,6 +693,12 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                     <div onClick={() => setActiveTab('users')} style={styles.navItem(activeTab === 'users')}><Users size={18} /> Users & Accounts</div>
                     <div onClick={() => setActiveTab('permissions')} style={styles.navItem(activeTab === 'permissions')}><Lock size={18} /> Access Permissions</div>
                     <div onClick={() => setActiveTab('backups')} style={styles.navItem(activeTab === 'backups')}><RotateCcw size={18} /> System Snapshots</div>
+                    <div onClick={() => setActiveTab('pulse')} style={styles.navItem(activeTab === 'pulse')}><Activity size={18} /> System Pulse</div>
+                    {userLevel >= 6 && (
+                        <div onClick={() => setActiveTab('archive')} style={{ ...styles.navItem(activeTab === 'archive'), borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '10px', paddingTop: '10px' }}>
+                            <ShieldAlert size={18} /> Deep Archive
+                        </div>
+                    )}
                 </div>
 
                 <div style={{ marginTop: 'auto' }}>
@@ -734,6 +742,7 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                     {activeTab === 'connections' && renderConnections()}
                     {activeTab === 'pulse' && <SystemPulse />}
                     {activeTab === 'backups' && renderBackups()}
+                    {activeTab === 'archive' && <DeepArchive onBack={() => setActiveTab('general')} lang={'sr'} />}
                 </div>
             </div>
 
