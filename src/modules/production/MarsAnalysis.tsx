@@ -77,7 +77,7 @@ export default function MarsAnalysis({ onBack, lang, userLevel, onOpenChat, onDa
 
                 if (data && data.length > 0) {
                     const tablesMap: any = {};
-                    data.forEach(f => {
+                    data.forEach((f: any) => {
                         const content = typeof f.content === 'string' ? JSON.parse(f.content) : f.content;
                         if (content.length > 0) {
                             tablesMap[f.id] = {
