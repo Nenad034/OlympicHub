@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building2,
@@ -28,7 +28,13 @@ import {
     Globe,
     Power,
     CloudCheck,
-    RefreshCw
+    RefreshCw,
+    Users,
+    User,
+    Ship,
+    Train,
+    Ticket,
+    Anchor
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
@@ -37,6 +43,7 @@ import {
     saveToCloud,
     loadFromCloud
 } from '../../utils/storageUtils';
+import { useSecurity } from '../../hooks/useSecurity';
 import {
     sanitizeInput,
     generateIdempotencyKey,
@@ -116,6 +123,9 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
     const [displayType, setDisplayType] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeModuleTab, setActiveModuleTab] = useState('all');
+
+    const { trackAction, isAnomalyDetected } = useSecurity();
 
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
@@ -214,6 +224,16 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
         }
     };
 
+    const handleBulkExport = () => {
+        if (isAnomalyDetected) {
+            alert("BEZBEDNOSNO BLOKIRANJE: Detektovana anomalija u izvozu. Sačekajte audit administratora.");
+            return;
+        }
+
+        trackAction('bulk_export');
+        exportToJSON(hotels, `Olympic_Hotels_Export_${new Date().toISOString().split('T')[0]}.json`);
+    };
+
     const handlePublicPreview = (e: React.MouseEvent, hotel: Hotel) => {
         e.stopPropagation();
         const content = hotel.originalPropertyData?.content?.[0];
@@ -221,7 +241,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
         const title = hotel.name;
         const mainImage = hotel.images?.[0]?.url || 'https://placehold.co/1200x800?text=Hotel+Image';
         const stars = hotel.originalPropertyData?.starRating || 0;
-        const starStr = 'Γÿà'.repeat(stars);
+        const starStr = '★'.repeat(stars);
 
         const html = `
             <!DOCTYPE html>
@@ -305,7 +325,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
                 <div class="container">
                     <div class="breadcrumbs">
-                        Po─ìetna <span>&rsaquo;</span> ZIMOVANJE <span>&rsaquo;</span> ${hotel.location.place} <span>&rsaquo;</span> ${title}
+                        Početna <span>&rsaquo;</span> ZIMOVANJE <span>&rsaquo;</span> ${hotel.location.place} <span>&rsaquo;</span> ${title}
                     </div>
 
                     <div class="hotel-header">
@@ -328,17 +348,17 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         <div class="main-col">
                             <div class="tabs">
                                 <div class="tab active">Pregled</div>
-                                <div class="tab">Sadr┼╛aj</div>
+                                <div class="tab">Sadržaj</div>
                                 <div class="tab">Sobe</div>
                                 <div class="tab">Galerija</div>
                                 <div class="tab">Lokacija</div>
                             </div>
                             
                             <div class="amenities-preview">
-                                <div class="amenity-pill">Γ£¿ Wellness Centar</div>
-                                <div class="amenity-pill">≡ƒô╢ Besplatan WiFi</div>
-                                <div class="amenity-pill">≡ƒà┐∩╕Å Parking</div>
-                                <div class="amenity-pill">Γ¥ä∩╕Å Ski Oprema</div>
+                                <div class="amenity-pill">✨ Wellness Centar</div>
+                                <div class="amenity-pill">📶 Besplatan WiFi</div>
+                                <div class="amenity-pill">🅿️ Parking</div>
+                                <div class="amenity-pill">❄️ Ski Oprema</div>
                             </div>
 
                             <div class="description-content">
@@ -348,13 +368,13 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
                         <div class="sidebar">
                             <div class="booking-card">
-                                <div class="price-label">Ve─ç od</div>
-                                <div class="price-val">Γé¼ 150 <span style="font-size:16px;font-weight:400;color:#666">/ osoba</span></div>
-                                <button class="btn-book">Po┼íaljite Upit</button>
+                                <div class="price-label">Već od</div>
+                                <div class="price-val">€ 150 <span style="font-size:16px;font-weight:400;color:#666">/ osoba</span></div>
+                                <button class="btn-book">Pošaljite Upit</button>
                                 <div class="sidebar-info">
-                                    <div class="info-row"><span>Tip Sme┼ítaja:</span> <b>${hotel.originalPropertyData?.propertyType || 'Hotel'}</b></div>
+                                    <div class="info-row"><span>Tip Smeštaja:</span> <b>${hotel.originalPropertyData?.propertyType || 'Hotel'}</b></div>
                                     <div class="info-row"><span>Destinacija:</span> <b>${hotel.location.place}</b></div>
-                                    <div class="info-row"><span>Dr┼╛ava:</span> <b>${hotel.originalPropertyData?.address?.countryCode || 'Slovenija'}</b></div>
+                                    <div class="info-row"><span>Država:</span> <b>${hotel.originalPropertyData?.address?.countryCode || 'Slovenija'}</b></div>
                                     <div class="info-row"><span>Usluga:</span> <b>Polupansion</b></div>
                                 </div>
                             </div>
@@ -475,9 +495,9 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
             syncToSupabase(updatedList);
             setShowImport(false);
             setImportData('');
-            alert(`Uspe┼íno uvezeno ${data.length} objekata!`);
+            alert(`Uspešno uvezeno ${data.length} objekata!`);
         } catch (e) {
-            alert('Gre┼íka u formatu JSON-a.');
+            alert('Greška u formatu JSON-a.');
         }
     };
 
@@ -501,38 +521,99 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         <button onClick={onBack} className="btn-icon circle"><ArrowLeft size={20} /></button>
                         <div>
                             <h2 className="title-gradient">ERP Produkcija</h2>
-                            <p className="subtitle">Centralni sistem za upravljanje turisti─ìkim inventarom</p>
+                            <p className="subtitle">Centralni sistem za upravljanje turističkim inventarom</p>
                         </div>
                     </div>
-                    <div className="header-actions">
-                        <button className="btn-glass" onClick={() => setShowImport(true)}><Download size={18} /> Import JSON</button>
+                    <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+                        <button className="btn-glass" onClick={handleBulkExport}><Download size={18} /> Bulk Export</button>
+                        <button className="btn-glass" onClick={() => setShowImport(true)}><RefreshCw size={18} /> Import JSON</button>
                     </div>
                 </div>
 
 
+                {/* TAB FILTRIRANJE */}
+                <div className="hub-tabs-container" style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginBottom: '32px',
+                    background: 'var(--bg-card)',
+                    padding: '6px',
+                    borderRadius: '16px',
+                    width: 'fit-content',
+                    border: '1px solid var(--border)'
+                }}>
+                    {[
+                        { id: 'all', label: 'Sve', icon: <LayoutGrid size={16} /> },
+                        { id: 'accommodation', label: 'Smeštaj', icon: <Building2 size={16} /> },
+                        { id: 'trips', label: 'Putovanja', icon: <Globe size={16} /> },
+                        { id: 'transport', label: 'Prevoz', icon: <Car size={16} /> },
+                        { id: 'amenities', label: 'Dodatne usluge', icon: <Plus size={16} /> }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveModuleTab(tab.id)}
+                            className={`hub-tab-btn ${activeModuleTab === tab.id ? 'active' : ''}`}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 20px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: activeModuleTab === tab.id ? 'var(--accent)' : 'transparent',
+                                color: activeModuleTab === tab.id ? '#fff' : 'var(--text-secondary)',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                transition: '0.2s'
+                            }}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="dashboard-grid">
                     {[
-                        { id: 'accommodation', name: 'Sme┼ítaj', desc: 'Hoteli, apartmani i sme┼ítajni objekti.', icon: <Building2 />, color: '#10b981', count: hotels.length, badge: 'LIVE' },
-                        { id: 'flights', name: 'Avio Karte', desc: 'Letovi i avio prevoz putnika.', icon: <Navigation />, color: '#3b82f6', count: 0, badge: 'USKORO' },
-                        { id: 'bus', name: 'Prevoz', desc: 'Autobuski i drugi vid prevoza.', icon: <Car />, color: '#f59e0b', count: 0, badge: 'USKORO' },
-                        { id: 'trips', name: 'Izleti', desc: 'Organizovani izleti i ture.', icon: <Waves />, color: '#8b5cf6', count: 0, badge: 'USKORO' }
-                    ].map(s => (
+                        // SMEŠTAJ
+                        { id: 'accommodation', category: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, apartmani i smeštajni objekti.', icon: <Building2 />, color: '#10b981', badge: 'LIVE' },
+
+                        // PUTOVANJA
+                        { id: 'group_trips', category: 'trips', name: 'Grupna Putovanja', desc: 'Organizovana grupna putovanja sa vodičem.', icon: <Users />, color: '#ec4899', badge: 'USKORO' },
+                        { id: 'ind_trips', category: 'trips', name: 'Individualna Putovanja', desc: 'Putovanja krojena po meri pojedinca.', icon: <User />, color: '#6366f1', badge: 'USKORO' },
+                        { id: 'cruises', category: 'trips', name: 'Krstarenja', desc: 'Luksuzna krstarenja svetskim morima.', icon: <Ship />, color: '#06b6d4', badge: 'USKORO' },
+
+                        // PREVOZ
+                        { id: 'flights', category: 'transport', name: 'Avion', desc: 'Prodaja avio karata i čarter letovi.', icon: <Navigation />, color: '#3b82f6', badge: 'USKORO' },
+                        { id: 'bus', category: 'transport', name: 'Autobus', desc: 'Autobuski prevoz i linijski transferi.', icon: <Car />, color: '#f59e0b', badge: 'USKORO' },
+                        { id: 'train', category: 'transport', name: 'Voz', desc: 'Železnički prevoz i karte.', icon: <Train />, color: '#64748b', badge: 'USKORO' },
+                        { id: 'ferry', category: 'transport', name: 'Brod', desc: 'Trajekti i brodski prevoz putnika.', icon: <Anchor />, color: '#0ea5e9', badge: 'USKORO' },
+
+                        // DODATNE USLUGE
+                        { id: 'trips', category: 'amenities', name: 'Izleti', desc: 'Lokalni izleti i fakultativne ture.', icon: <Waves />, color: '#8b5cf6', badge: 'USKORO' },
+                        { id: 'tickets', category: 'amenities', name: 'Ulaznice', desc: 'Karte za muzeje, parkove i događaje.', icon: <Ticket />, color: '#f43f5e', badge: 'USKORO' }
+                    ].filter(s => activeModuleTab === 'all' || s.category === activeModuleTab).map(s => (
                         <motion.div
                             key={s.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ y: -4, scale: 1.02 }}
                             className="module-card"
                             onClick={() => { if (s.id === 'accommodation') setViewMode('list'); }}
-                            style={{ cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed', opacity: s.id === 'accommodation' ? 1 : 0.6 }}
+                            style={{
+                                cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed',
+                                opacity: s.id === 'accommodation' ? 1 : 0.8,
+                                border: s.id === 'accommodation' ? '1px solid var(--accent)' : '1px solid var(--border)'
+                            }}
                         >
-                            <div className="module-icon" style={{ background: `linear - gradient(135deg, ${s.color}, ${s.color}dd)` }}>
+                            <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
                                 {s.icon}
                             </div>
-
-                            <div className={`module - badge ${s.badge === 'LIVE' ? 'live' : 'new'} `}>{s.badge}</div>
-
+                            <div className={`module-badge ${s.badge === 'LIVE' ? 'live' : 'new'}`}>{s.badge}</div>
                             <h3 className="module-title">{s.name}</h3>
                             <p className="module-desc">{s.desc}</p>
-
                             {s.id === 'accommodation' && (
                                 <button className="module-action">
                                     Otvori Modul
@@ -621,7 +702,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         <button onClick={() => setViewMode('hub')} className="btn-icon circle"><ArrowLeft size={20} /></button>
                         <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Baza Sme┼ítaja</h1>
+                                <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Baza Smeštaja</h1>
                                 {isSyncing ? (
                                     <div className="sync-badge syncing">
                                         <RefreshCw size={14} className="spin" /> Syncing...
@@ -632,7 +713,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                     </div>
                                 )}
                             </div>
-                            <p className="subtitle">Upravljanje hotelima i sme┼ítajnim objektima</p>
+                            <p className="subtitle">Upravljanje hotelima i smeštajnim objektima</p>
                         </div>
                     </div>
                     <style>{`
@@ -677,7 +758,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             <Search size={18} />
                             <input
                                 type="text"
-                                placeholder="Pretra┼╛i objekte..."
+                                placeholder="Pretraži objekte..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(sanitizeInput(e.target.value))}
                             />
@@ -773,7 +854,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                             className="module-action"
                                             style={{ marginTop: 0, width: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             onClick={(e) => handlePublicPreview(e, h)}
-                                            title="Prika┼╛i Web Stranicu"
+                                            title="Prikaži Web Stranicu"
                                         >
                                             <Globe size={18} />
                                         </div>
@@ -821,11 +902,11 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                             <td style={{ padding: '16px' }}>
                                                 {isComplete ?
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontSize: '13px', fontWeight: 'bold' }}>
-                                                        <CheckCircle2 size={18} /> Zavr┼íeno
+                                                        <CheckCircle2 size={18} /> Završeno
                                                     </div>
                                                     :
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b', fontSize: '13px', fontWeight: 'bold' }}>
-                                                        <AlertCircle size={18} /> Nezavr┼íeno
+                                                        <AlertCircle size={18} /> Nezavršeno
                                                     </div>
                                                 }
                                             </td>
@@ -871,7 +952,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
             <div className="module-container fade-in detail-view">
                 <div className="detail-top-bar">
                     <button onClick={() => setViewMode('list')} className="btn-back-circle"><ArrowLeft size={20} /></button>
-                    <div className="breadcrumb">Produkcija / Sme┼ítaj / {selectedHotel.name}</div>
+                    <div className="breadcrumb">Produkcija / Smeštaj / {selectedHotel.name}</div>
                     <div className="detail-actions">
                         <button className="btn-export" onClick={() => exportToJSON(selectedHotel, `hotel_${selectedHotel.id} `)}>EXPORT</button>
                     </div>
@@ -953,7 +1034,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         </section >
 
                         <section className="amenities-section">
-                            <h2 className="section-title"><Shield size={18} /> Sadr┼╛aji Objekta</h2>
+                            <h2 className="section-title"><Shield size={18} /> Sadržaji Objekta</h2>
                             <div className="amenity-groups">
                                 <div className="amenity-group">
                                     <h4><Maximize size={16} /> Karakteristike</h4>
@@ -968,7 +1049,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                     <h4><MapPin size={16} /> Udaljenosti</h4>
                                     <div className="distance-grid">
                                         <div className="dist-item"><span>Centar</span><strong>{getDistance('Center')}</strong></div>
-                                        <div className="dist-item"><span>Pla┼╛a</span><strong>{getDistance('Beach')}</strong></div>
+                                        <div className="dist-item"><span>Plaža</span><strong>{getDistance('Beach')}</strong></div>
                                         <div className="dist-item"><span>Prodavnica</span><strong>{getDistance('Shop')}</strong></div>
                                         <div className="dist-item"><span>Restoran</span><strong>{getDistance('Restaurant')}</strong></div>
                                     </div>
@@ -985,7 +1066,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                     < div className="logic-panel" >
                         <section className="units-section">
                             <div className="section-header">
-                                <h2><Bed size={20} /> Sme┼ítajne Jedinice</h2>
+                                <h2><Bed size={20} /> Smeštajne Jedinice</h2>
                                 <span className="unit-count">{selectedHotel.units.length} Jedinica</span>
                             </div>
 
@@ -998,7 +1079,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
 
                                     <div className="unit-stats-grid">
                                         <div className="stat-box"><Bed size={14} /> {unit.basicBeds} osnovnih</div>
-                                        <div className="stat-box"><Plus size={14} /> {unit.extraBeds} pomo─çnih</div>
+                                        <div className="stat-box"><Plus size={14} /> {unit.extraBeds} pomoćnih</div>
                                         <div className="stat-box"><Clock size={14} /> Min. {unit.minOccupancy} osobe</div>
                                         <div className="stat-box"><UserCheck size={14} /> Instant Booking</div>
                                     </div>
@@ -1010,7 +1091,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                             <thead>
                                                 <tr>
                                                     <th>Period</th>
-                                                    <th>No─çenje</th>
+                                                    <th>Noćenje</th>
                                                     <th>Min. Stay</th>
                                                     <th>Dolasci / Odlasci</th>
                                                 </tr>
@@ -1041,7 +1122,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         </section>
 
                         <section className="common-rules-section">
-                            <h2><CheckCircle2 size={18} /> Zajedni─ìka pravila i doplate</h2>
+                            <h2><CheckCircle2 size={18} /> Zajednička pravila i doplate</h2>
                             <div className="common-items-cards">
                                 {selectedHotel.commonItems.supplement.map((s, i) => (
                                     <div key={i} className="common-rule-card">
