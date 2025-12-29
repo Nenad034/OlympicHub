@@ -1,5 +1,23 @@
 # Project To-Do List & Reminders
 
+## ⚠️ IMPORTANT: Documentation Rules
+
+**Always update documentation when making changes:**
+
+| Change Type | Update Required |
+|-------------|-----------------|
+| New API endpoint | `docs/API.md` |
+| New component | `docs/COMPONENTS.md` |
+| New hook | `docs/COMPONENTS.md` |
+| New store | `docs/COMPONENTS.md` |
+| Architecture change | `docs/ARCHITECTURE.md` |
+| New route | `docs/ARCHITECTURE.md` |
+| New constant | `src/constants/index.ts` |
+
+**Workflows:** See `.agent/workflows/` for detailed instructions.
+
+---
+
 ## 🎉 Major Refactoring - 2025-12-29
 
 ### ✅ Completed Architecture Improvements
