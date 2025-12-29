@@ -8,6 +8,9 @@ import { Sidebar, TopBar, HorizontalNav } from '../components/layout';
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const HotelsList = React.lazy(() => import('../pages/HotelsList'));
 const HotelDetail = React.lazy(() => import('../pages/HotelDetail'));
+const HotelEdit = React.lazy(() => import('../pages/HotelEdit'));
+const SupplierDetail = React.lazy(() => import('../pages/SupplierDetail'));
+
 
 const MarsAnalysis = React.lazy(() => import('../modules/production/MarsAnalysis'));
 const ProductionHub = React.lazy(() => import('../modules/production/ProductionHub'));
@@ -128,6 +131,12 @@ export const router = createBrowserRouter([
                         path: 'hotels/:hotelSlug',
                         element: <HotelDetail />,
                     },
+                    // Edit Hotel
+                    // Example: /production/hotels/iberostar-bellevue/edit
+                    {
+                        path: 'hotels/:hotelSlug/edit',
+                        element: <HotelEdit />,
+                    },
                     // New Hotel Creation
                     {
                         path: 'hotels/new',
@@ -144,7 +153,11 @@ export const router = createBrowserRouter([
                         index: true,
                         element: <SuppliersModule onBack={() => window.history.back()} />,
                     },
-                    // Future: /suppliers/:supplierId for individual supplier
+                    // Individual Supplier Detail
+                    {
+                        path: ':supplierId',
+                        element: <SupplierDetail />,
+                    },
                 ],
             },
 

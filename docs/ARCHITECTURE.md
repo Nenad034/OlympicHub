@@ -258,24 +258,28 @@ User Action → Zustand Store → React Re-render → UI Update
 
 ```typescript
 // Flat routes
-/                           → Dashboard
-/mars-analysis              → Mars Analysis
+/                               → Dashboard
+/mars-analysis                  → Mars Analysis
 
 // Nested routes (Production)
-/production                 → Production Hub
-/production/hotels          → Hotels List
-/production/hotels/:slug    → Hotel Detail
-/production/hotels/new      → Create Hotel
+/production                     → Production Hub
+/production/hotels              → Hotels List
+/production/hotels/:slug        → Hotel Detail
+/production/hotels/:slug/edit   → Edit Hotel ✨ NEW
+/production/hotels/new          → Create Hotel
+
+// Nested routes (Suppliers)
+/suppliers                      → Suppliers List
+/suppliers/:supplierId          → Supplier Detail ✨ NEW
 
 // Nested routes (Other)
-/suppliers                  → Suppliers List
-/customers                  → Customers List
-/settings                   → Settings
-/katana                     → Task Manager
+/customers                      → Customers List
+/settings                       → Settings
+/katana                         → Task Manager
 
 // Protected routes (Level 6+)
-/deep-archive               → Deep Archive
-/fortress                   → Security Fortress
+/deep-archive                   → Deep Archive
+/fortress                       → Security Fortress
 ```
 
 ### Route Protection

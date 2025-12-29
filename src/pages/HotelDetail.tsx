@@ -207,7 +207,11 @@ const HotelDetail: React.FC = () => {
                     <button className="btn-glass" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Globe size={18} /> Web Pregled
                     </button>
-                    <button className="btn-primary-action" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        className="btn-primary-action"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                        onClick={() => navigate(`/production/hotels/${hotelSlug}/edit`)}
+                    >
                         <Edit size={18} /> Uredi
                     </button>
                 </div>
