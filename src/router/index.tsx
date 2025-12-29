@@ -6,6 +6,9 @@ import { Sidebar, TopBar, HorizontalNav } from '../components/layout';
 
 // Page Components - Lazy loaded for performance
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
+const HotelsList = React.lazy(() => import('../pages/HotelsList'));
+const HotelDetail = React.lazy(() => import('../pages/HotelDetail'));
+
 const MarsAnalysis = React.lazy(() => import('../modules/production/MarsAnalysis'));
 const ProductionHub = React.lazy(() => import('../modules/production/ProductionHub'));
 const SuppliersModule = React.lazy(() => import('../modules/production/Suppliers'));
@@ -87,40 +90,89 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, minLevel }) =
     return <>{children}</>;
 };
 
-// Create router configuration
+// Create router configuration with nested routes
 export const router = createBrowserRouter([
     {
         path: '/',
         element: <MainLayout />,
         children: [
+            // Dashboard
             {
                 index: true,
                 element: <Dashboard />,
             },
+
+            // Mars Analysis
             {
                 path: 'mars-analysis',
                 element: <MarsAnalysis onBack={() => window.history.back()} lang="sr" userLevel={6} onOpenChat={() => { }} onDataUpdate={() => { }} />,
             },
+
+            // Production Module with nested routes
             {
                 path: 'production',
-                element: <ProductionHub onBack={() => window.history.back()} />,
+                children: [
+                    // Production Hub (index)
+                    {
+                        index: true,
+                        element: <ProductionHub onBack={() => window.history.back()} />,
+                    },
+                    // Hotels List
+                    {
+                        path: 'hotels',
+                        element: <HotelsList />,
+                    },
+                    // Individual Hotel Detail - deep link by slug
+                    // Example: /production/hotels/iberostar-bellevue
+                    {
+                        path: 'hotels/:hotelSlug',
+                        element: <HotelDetail />,
+                    },
+                    // New Hotel Creation
+                    {
+                        path: 'hotels/new',
+                        element: <ProductionHub onBack={() => window.history.back()} />,
+                    },
+                ],
             },
+
+            // Suppliers
             {
                 path: 'suppliers',
-                element: <SuppliersModule onBack={() => window.history.back()} />,
+                children: [
+                    {
+                        index: true,
+                        element: <SuppliersModule onBack={() => window.history.back()} />,
+                    },
+                    // Future: /suppliers/:supplierId for individual supplier
+                ],
             },
+
+            // Customers
             {
                 path: 'customers',
-                element: <CustomersModule onBack={() => window.history.back()} />,
+                children: [
+                    {
+                        index: true,
+                        element: <CustomersModule onBack={() => window.history.back()} />,
+                    },
+                    // Future: /customers/:customerId for individual customer
+                ],
             },
+
+            // Settings
             {
                 path: 'settings',
                 element: <SettingsModule onBack={() => window.history.back()} lang="sr" userLevel={6} setUserLevel={() => { }} />,
             },
+
+            // Katana Task Manager
             {
                 path: 'katana',
                 element: <Katana onBack={() => window.history.back()} />,
             },
+
+            // Deep Archive (Level 6+)
             {
                 path: 'deep-archive',
                 element: (
@@ -129,6 +181,8 @@ export const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+
+            // Fortress Security (Level 6+)
             {
                 path: 'fortress',
                 element: (
@@ -147,3 +201,4 @@ export const AppRouter: React.FC = () => {
 };
 
 export default AppRouter;
+
