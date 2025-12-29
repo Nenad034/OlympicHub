@@ -31,7 +31,10 @@ import {
     RefreshCw,
     Users,
     User,
-    Ship
+    Ship,
+    Train,
+    Ticket,
+    Anchor
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
@@ -120,6 +123,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
     const [displayType, setDisplayType] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeModuleTab, setActiveModuleTab] = useState('all');
 
     const { trackAction, isAnomalyDetected } = useSecurity();
 
@@ -527,28 +531,80 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                 </div>
 
 
-                {/* OSNOVNI INVENTAR */}
-                <div style={{ marginTop: '32px', marginBottom: '16px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: '12px', height: '2px', background: 'var(--accent)' }}></span>
-                        Osnovni Inventar
-                    </h3>
+                {/* TAB FILTRIRANJE */}
+                <div className="hub-tabs-container" style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginBottom: '32px',
+                    background: 'var(--bg-card)',
+                    padding: '6px',
+                    borderRadius: '16px',
+                    width: 'fit-content',
+                    border: '1px solid var(--border)'
+                }}>
+                    {[
+                        { id: 'all', label: 'Sve', icon: <LayoutGrid size={16} /> },
+                        { id: 'accommodation', label: 'Smeštaj', icon: <Building2 size={16} /> },
+                        { id: 'trips', label: 'Putovanja', icon: <Globe size={16} /> },
+                        { id: 'transport', label: 'Prevoz', icon: <Car size={16} /> },
+                        { id: 'amenities', label: 'Dodatne usluge', icon: <Plus size={16} /> }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveModuleTab(tab.id)}
+                            className={`hub-tab-btn ${activeModuleTab === tab.id ? 'active' : ''}`}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 20px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: activeModuleTab === tab.id ? 'var(--accent)' : 'transparent',
+                                color: activeModuleTab === tab.id ? '#fff' : 'var(--text-secondary)',
+                                fontWeight: '600',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                transition: '0.2s'
+                            }}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
+
                 <div className="dashboard-grid">
                     {[
-                        { id: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, apartmani i smeštajni objekti.', icon: <Building2 />, color: '#10b981', count: hotels.length, badge: 'LIVE' },
-                        { id: 'flights', name: 'Avio Karte', desc: 'Letovi i avio prevoz putnika.', icon: <Navigation />, color: '#3b82f6', count: 0, badge: 'USKORO' },
-                        { id: 'bus', name: 'Prevoz', desc: 'Autobuski i drugi vid prevoza.', icon: <Car />, color: '#f59e0b', count: 0, badge: 'USKORO' },
-                        { id: 'trips', name: 'Izleti', desc: 'Organizovani izleti i ture.', icon: <Waves />, color: '#8b5cf6', count: 0, badge: 'USKORO' }
-                    ].map(s => (
+                        // SMEŠTAJ
+                        { id: 'accommodation', category: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, apartmani i smeštajni objekti.', icon: <Building2 />, color: '#10b981', badge: 'LIVE' },
+
+                        // PUTOVANJA
+                        { id: 'group_trips', category: 'trips', name: 'Grupna Putovanja', desc: 'Organizovana grupna putovanja sa vodičem.', icon: <Users />, color: '#ec4899', badge: 'USKORO' },
+                        { id: 'ind_trips', category: 'trips', name: 'Individualna Putovanja', desc: 'Putovanja krojena po meri pojedinca.', icon: <User />, color: '#6366f1', badge: 'USKORO' },
+                        { id: 'cruises', category: 'trips', name: 'Krstarenja', desc: 'Luksuzna krstarenja svetskim morima.', icon: <Ship />, color: '#06b6d4', badge: 'USKORO' },
+
+                        // PREVOZ
+                        { id: 'flights', category: 'transport', name: 'Avion', desc: 'Prodaja avio karata i čarter letovi.', icon: <Navigation />, color: '#3b82f6', badge: 'USKORO' },
+                        { id: 'bus', category: 'transport', name: 'Autobus', desc: 'Autobuski prevoz i linijski transferi.', icon: <Car />, color: '#f59e0b', badge: 'USKORO' },
+                        { id: 'train', category: 'transport', name: 'Voz', desc: 'Železnički prevoz i karte.', icon: <Train />, color: '#64748b', badge: 'USKORO' },
+                        { id: 'ferry', category: 'transport', name: 'Brod', desc: 'Trajekti i brodski prevoz putnika.', icon: <Anchor />, color: '#0ea5e9', badge: 'USKORO' },
+
+                        // DODATNE USLUGE
+                        { id: 'trips', category: 'amenities', name: 'Izleti', desc: 'Lokalni izleti i fakultativne ture.', icon: <Waves />, color: '#8b5cf6', badge: 'USKORO' },
+                        { id: 'tickets', category: 'amenities', name: 'Ulaznice', desc: 'Karte za muzeje, parkove i događaje.', icon: <Ticket />, color: '#f43f5e', badge: 'USKORO' }
+                    ].filter(s => activeModuleTab === 'all' || s.category === activeModuleTab).map(s => (
                         <motion.div
                             key={s.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ y: -4, scale: 1.02 }}
                             className="module-card"
                             onClick={() => { if (s.id === 'accommodation') setViewMode('list'); }}
                             style={{
                                 cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed',
-                                opacity: s.id === 'accommodation' ? 1 : 0.7,
+                                opacity: s.id === 'accommodation' ? 1 : 0.8,
                                 border: s.id === 'accommodation' ? '1px solid var(--accent)' : '1px solid var(--border)'
                             }}
                         >
@@ -564,35 +620,6 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                     <ChevronRight size={16} />
                                 </button>
                             )}
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* PUTOVANJA SECTION */}
-                <div style={{ marginTop: '48px', marginBottom: '16px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#ec4899', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: '12px', height: '2px', background: '#ec4899' }}></span>
-                        Putovanja
-                    </h3>
-                </div>
-                <div className="dashboard-grid">
-                    {[
-                        { id: 'group_trips', name: 'Grupna Putovanja', desc: 'Organizovana grupna putovanja sa vodičem.', icon: <Users />, color: '#ec4899', count: 0, badge: 'USKORO' },
-                        { id: 'ind_trips', name: 'Individualna Putovanja', desc: 'Putovanja krojena po meri pojedinca.', icon: <User />, color: '#6366f1', count: 0, badge: 'USKORO' },
-                        { id: 'cruises', name: 'Krstarenja', desc: 'Luksuzna krstarenja svetskim morima.', icon: <Ship />, color: '#06b6d4', count: 0, badge: 'USKORO' }
-                    ].map(s => (
-                        <motion.div
-                            key={s.id}
-                            whileHover={{ y: -4, scale: 1.02 }}
-                            className="module-card"
-                            style={{ cursor: 'not-allowed', opacity: 0.9, border: '1px solid rgba(255,255,255,0.05)' }}
-                        >
-                            <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
-                                {s.icon}
-                            </div>
-                            <div className={`module-badge new`}>USKORO</div>
-                            <h3 className="module-title">{s.name}</h3>
-                            <p className="module-desc">{s.desc}</p>
                         </motion.div>
                     ))}
                 </div>
