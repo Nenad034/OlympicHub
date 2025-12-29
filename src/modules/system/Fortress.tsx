@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
     Castle,
-    Zap,
     Activity,
     Lock,
     ShieldCheck,
@@ -19,6 +18,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { GeometricBrain } from '../../components/icons/GeometricBrain';
 import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
+
+import { useSecurity } from '../../hooks/useSecurity';
 
 interface SecurityMetric {
     label: string;
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export default function Fortress({ onBack }: Props) {
+    const { isAnomalyDetected, ipStatus, trackAction } = useSecurity();
     const [logs, setLogs] = useState<SecurityLog[]>([]);
     const [messages, setMessages] = useState<{ role: 'master' | 'ai', text: string }[]>([]);
     const [chatInput, setChatInput] = useState('');
@@ -55,20 +57,20 @@ export default function Fortress({ onBack }: Props) {
     // Load data from Cloud
     useEffect(() => {
         const loadFortressData = async () => {
-            const { success: s1, data: d1 } = await loadFromCloud('fortress_logs');
-            if (s1 && d1 && d1.length > 0) setLogs(d1 as SecurityLog[]);
+            const { data: d1 } = await loadFromCloud('fortress_logs');
+            if (d1 && d1.length > 0) setLogs(d1 as SecurityLog[]);
             else {
                 setLogs([
                     { id: '1', timestamp: new Date().toLocaleTimeString(), event: 'Konekcija sa Bankovnim Gateway-om stabilna.', type: 'api', severity: 'low' },
                     { id: '2', timestamp: new Date().toLocaleTimeString(), event: 'Pokušaj pristupa Arhivi sa nivoa 2 blokiran.', type: 'auth', severity: 'medium' },
                     { id: '3', timestamp: new Date().toLocaleTimeString(), event: 'AI Integrity Monitor: Svi sistemi u balansu.', type: 'threat', severity: 'low' },
-                    { id: '4', timestamp: new Date().toLocaleTimeString(), event: 'IP Whitelist verifikovana (84.14.x.x)', type: 'system', severity: 'low' },
+                    { id: '4', timestamp: new Date().toLocaleTimeString(), event: `IP Verifikacija uspešna (${ipStatus.ip})`, type: 'system', severity: 'low' },
                     { id: '5', timestamp: new Date().toLocaleTimeString(), event: 'Synchronizacija sa 14 B2B partnera uspešna.', type: 'api', severity: 'low' },
                 ]);
             }
 
-            const { success: s2, data: d2 } = await loadFromCloud('sentinel_messages');
-            if (s2 && d2 && d2.length > 0) setMessages(d2 as any[]);
+            const { data: d2 } = await loadFromCloud('sentinel_messages');
+            if (d2 && d2.length > 0) setMessages(d2 as any[]);
             else {
                 setMessages([
                     { role: 'ai', text: 'Sentinel Online. Acting as Senior #security Architect & #audit Expert. Dashboard calibrated for Travel Tech protocols.' },
@@ -80,7 +82,7 @@ export default function Fortress({ onBack }: Props) {
             }
         };
         loadFortressData();
-    }, []);
+    }, [ipStatus.ip]);
 
     // Sync to Cloud
     useEffect(() => {
@@ -98,6 +100,7 @@ export default function Fortress({ onBack }: Props) {
     const handleSend = () => {
         if (!chatInput.trim()) return;
         setMessages(prev => [...prev, { role: 'master', text: chatInput }]);
+        trackAction(`sentinel_query: ${chatInput}`);
         setChatInput('');
         setIsThinking(true);
 
@@ -110,6 +113,10 @@ export default function Fortress({ onBack }: Props) {
                 response = "PROTOCOL UPDATE: Funkcija brisanja #PII podataka je ONEMOGUĆENA. Podaci se čuvaju u Deep Vault-u (#encryption Level 6).";
             } else if (input.includes('status') || input.includes('sistem')) {
                 response = "Sistemski izveštaj: Svi #api kanali stabilni. Deep Archive monitoring online.";
+            } else if (input.includes('export') || input.includes('anomal')) {
+                response = isAnomalyDetected
+                    ? "ALERT: Detektovana anomalija u izvozu podataka! Bulk Export protokol aktiviran. Pristup je PRIVREMENO ZAKLJUČAN."
+                    : "Anomaly Monitor: Bulk Export aktivnost u granicama normale. Nema detektovanih pretnji.";
             } else {
                 const responses = [
                     "Security Status: Idempotency-Key logika aktivna. #security",
@@ -126,10 +133,10 @@ export default function Fortress({ onBack }: Props) {
     };
 
     const metrics: SecurityMetric[] = [
-        { label: 'GDPR Compliance', value: '100%', status: 'good', icon: <ShieldCheck size={20} /> },
-        { label: 'Deep Archive Policy', value: '90 Days', status: 'good', icon: <RefreshCcw size={20} /> },
-        { label: 'Rate Limiting', value: 'Active', status: 'good', icon: <Lock size={20} /> },
-        { label: 'UTC Sync Status', value: 'Verified', status: 'good', icon: <Zap size={20} /> }
+        { label: 'AI Anomaly Monitor', value: isAnomalyDetected ? 'DETECTED' : 'NORMAL', status: isAnomalyDetected ? 'critical' : 'good', icon: <Cpu size={20} /> },
+        { label: 'IP Whitelist', value: ipStatus.isWhitelisted ? 'VERIFIED' : 'OUTSIDER', status: ipStatus.isWhitelisted ? 'good' : 'warning', icon: <Globe size={20} /> },
+        { label: 'API Guardian', value: 'ENCRYPTED', status: 'good', icon: <Lock size={20} /> },
+        { label: 'GDPR Compliance', value: '100%', status: 'good', icon: <ShieldCheck size={20} /> }
     ];
 
     return (
@@ -142,6 +149,7 @@ export default function Fortress({ onBack }: Props) {
                 gridTemplateColumns: '1fr 400px',
                 gap: '25px',
                 maxWidth: '1500px',
+                padding: '24px',
                 margin: '0 auto'
             }}
         >

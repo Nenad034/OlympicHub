@@ -118,7 +118,7 @@ export default function DeepArchive({ onBack }: Props) {
                         ))}
                     </div>
 
-                    <div style={{ padding: '20px', borderTop: '1px solid var(--border)', marginTop: 'auto' }}>
+                    <div className="wizard-sidebar-footer" style={{ padding: '20px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div style={{ background: 'rgba(34, 197, 94, 0.05)', border: '1px solid rgba(34, 197, 94, 0.2)', padding: '15px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <h4 style={{ fontSize: '12px', fontWeight: '700', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }}></div>
@@ -130,6 +130,39 @@ export default function DeepArchive({ onBack }: Props) {
                                 <span>• Encryption: AES-256</span>
                             </div>
                         </div>
+
+                        <button
+                            onClick={onBack}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px',
+                                padding: '14px 20px',
+                                borderRadius: '12px',
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--text-secondary)',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                width: '100%',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'var(--accent)';
+                                e.currentTarget.style.color = '#fff';
+                                e.currentTarget.style.borderColor = 'var(--accent)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                e.currentTarget.style.color = 'var(--text-secondary)';
+                                e.currentTarget.style.borderColor = 'var(--border)';
+                            }}
+                        >
+                            <LogOut size={16} style={{ transform: 'rotate(180deg)' }} />
+                            Nazad u Podešavanja
+                        </button>
                     </div>
                 </div>
 
@@ -143,12 +176,12 @@ export default function DeepArchive({ onBack }: Props) {
                                 {filteredItems.length} zapisa • Poslednji unos: {items[0]?.timestamp.split(' ')[0]}
                             </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                            <div style={{ position: 'relative', width: '300px' }}>
+                        <div className="topbar-actions">
+                            <div className="topbar-search">
                                 <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={16} />
                                 <input
                                     type="text"
-                                    placeholder="Pretraži arhivu (subjekat, ID, entitet)..."
+                                    placeholder="Pretraži arhivu..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                     style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '100px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none', fontSize: '13px' }}
@@ -166,10 +199,11 @@ export default function DeepArchive({ onBack }: Props) {
                                     borderRadius: '100px',
                                     cursor: 'pointer',
                                     fontSize: '13px',
-                                    fontWeight: 700
+                                    fontWeight: 700,
+                                    whiteSpace: 'nowrap'
                                 }}
                             >
-                                <Download size={16} /> Export
+                                <Download size={16} /><span className="btn-text">Export</span>
                             </button>
                             <button
                                 onClick={onBack}
@@ -184,19 +218,20 @@ export default function DeepArchive({ onBack }: Props) {
                                     cursor: 'pointer',
                                     color: 'var(--text-primary)',
                                     fontSize: '13px',
-                                    fontWeight: 600
+                                    fontWeight: 600,
+                                    whiteSpace: 'nowrap'
                                 }}
                             >
-                                <LogOut size={16} /> Exit
+                                <LogOut size={16} /><span className="btn-text">Exit</span>
                             </button>
                         </div>
                     </div>
 
                     {/* SCROLLABLE CONTENT */}
                     <div className="wizard-content-wrapper" style={{ padding: '0' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', height: '100%' }}>
+                        <div className="archive-grid">
                             {/* Left Panel: Table */}
-                            <div style={{ overflowY: 'auto', padding: '30px', borderRight: '1px solid var(--border)' }}>
+                            <div className="archive-table-panel">
                                 {items.some(i => isOlderThanYear(i.timestamp)) && (
                                     <div style={{ background: 'rgba(52, 152, 219, 0.1)', border: '1px solid var(--accent)', padding: '15px 20px', borderRadius: '16px', display: 'flex', gap: '15px', alignItems: 'center', marginBottom: '20px' }}>
                                         <GeometricBrain size={24} color="#FFD700" />
@@ -248,7 +283,7 @@ export default function DeepArchive({ onBack }: Props) {
                             </div>
 
                             {/* Right Panel: Inspector */}
-                            <div style={{ background: 'var(--bg-main)', borderLeft: '1px solid var(--border)', padding: '30px', overflowY: 'auto' }}>
+                            <div className="archive-detail-panel">
                                 <AnimatePresence mode="wait">
                                     {selectedItem ? (
                                         <motion.div
@@ -363,12 +398,12 @@ export default function DeepArchive({ onBack }: Props) {
                 }
 
                 .wizard-steps-list {
-                    flex: 1;
                     overflow-y: auto;
                     padding: 16px;
                     display: flex;
                     flex-direction: column;
                     gap: 4px;
+                    flex-shrink: 0;
                 }
 
                 .step-item-row {
@@ -418,6 +453,7 @@ export default function DeepArchive({ onBack }: Props) {
                     flex-direction: column;
                     height: 100%;
                     background: var(--bg-dark);
+                    min-width: 0;
                 }
 
                 .wizard-topbar {
@@ -429,6 +465,7 @@ export default function DeepArchive({ onBack }: Props) {
                     align-items: center;
                     background: var(--bg-card);
                     flex-shrink: 0;
+                    gap: 15px;
                 }
 
                 .topbar-title h3 {
@@ -445,6 +482,181 @@ export default function DeepArchive({ onBack }: Props) {
                 .wizard-content-wrapper {
                     flex: 1;
                     overflow: hidden;
+                }
+
+                .archive-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 400px;
+                    height: 100%;
+                }
+
+                .archive-table-panel {
+                    overflow-y: auto;
+                    padding: 30px;
+                    border-right: 1px solid var(--border);
+                }
+
+                .archive-detail-panel {
+                    background: var(--bg-main);
+                    border-left: 1px solid var(--border);
+                    padding: 30px;
+                    overflow-y: auto;
+                }
+
+                .topbar-actions {
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                }
+
+                .topbar-search {
+                    position: relative;
+                    width: 300px;
+                }
+
+                /* Tablet Responsive */
+                @media (max-width: 1024px) {
+                    .wizard-sidebar {
+                        width: 220px;
+                    }
+
+                    .wizard-topbar {
+                        padding: 0 20px;
+                        height: 70px;
+                    }
+
+                    .topbar-title h3 {
+                        font-size: 18px;
+                    }
+
+                    .topbar-search {
+                        width: 200px;
+                    }
+
+                    .archive-grid {
+                        grid-template-columns: 1fr 300px;
+                    }
+
+                    .archive-table-panel,
+                    .archive-detail-panel {
+                        padding: 20px;
+                    }
+                }
+
+                /* Mobile Responsive */
+                @media (max-width: 768px) {
+                    .wizard-container {
+                        flex-direction: column;
+                    }
+
+                    .wizard-sidebar {
+                        width: 100%;
+                        height: auto;
+                        max-height: 200px;
+                        border-right: none;
+                        border-bottom: 1px solid var(--border);
+                    }
+
+                    .wizard-sidebar-header {
+                        padding: 16px;
+                    }
+
+                    .wizard-sidebar-header h2 {
+                        font-size: 16px !important;
+                    }
+
+                    .wizard-steps-list {
+                        flex-direction: row;
+                        overflow-x: auto;
+                        overflow-y: hidden;
+                        padding: 12px;
+                        gap: 8px;
+                    }
+
+                    .step-item-row {
+                        padding: 10px 14px;
+                        white-space: nowrap;
+                        flex-shrink: 0;
+                        border-right: none !important;
+                    }
+
+                    .step-item-row.active {
+                        border-bottom: 3px solid var(--accent);
+                        border-right: none;
+                    }
+
+                    .wizard-sidebar-footer {
+                        display: none;
+                    }
+
+                    .wizard-topbar {
+                        height: auto;
+                        min-height: 60px;
+                        padding: 15px;
+                        flex-wrap: wrap;
+                    }
+
+                    .topbar-title {
+                        flex: 1;
+                        min-width: 100%;
+                        margin-bottom: 10px;
+                    }
+
+                    .topbar-title h3 {
+                        font-size: 16px;
+                    }
+
+                    .topbar-actions {
+                        width: 100%;
+                        justify-content: space-between;
+                    }
+
+                    .topbar-search {
+                        flex: 1;
+                        width: auto;
+                        min-width: 120px;
+                    }
+
+                    .archive-grid {
+                        grid-template-columns: 1fr;
+                        grid-template-rows: 1fr auto;
+                    }
+
+                    .archive-table-panel {
+                        padding: 15px;
+                        border-right: none;
+                        border-bottom: 1px solid var(--border);
+                    }
+
+                    .archive-detail-panel {
+                        padding: 15px;
+                        max-height: 300px;
+                        border-left: none;
+                    }
+                }
+
+                /* Small Mobile */
+                @media (max-width: 480px) {
+                    .wizard-sidebar-header {
+                        padding: 12px;
+                    }
+
+                    .step-item-row span:not(.step-icon-small) {
+                        font-size: 12px;
+                    }
+
+                    .wizard-topbar {
+                        padding: 10px;
+                    }
+
+                    .topbar-title h3 {
+                        font-size: 14px;
+                    }
+
+                    .archive-table-panel,
+                    .archive-detail-panel {
+                        padding: 10px;
+                    }
                 }
             `}</style>
         </div>

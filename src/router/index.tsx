@@ -9,7 +9,10 @@ const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const HotelsList = React.lazy(() => import('../pages/HotelsList'));
 const HotelDetail = React.lazy(() => import('../pages/HotelDetail'));
 const HotelEdit = React.lazy(() => import('../pages/HotelEdit'));
+const HotelNew = React.lazy(() => import('../pages/HotelNew'));
+const HotelRooms = React.lazy(() => import('../pages/HotelRooms'));
 const SupplierDetail = React.lazy(() => import('../pages/SupplierDetail'));
+const CustomerDetail = React.lazy(() => import('../pages/CustomerDetail'));
 
 
 const MarsAnalysis = React.lazy(() => import('../modules/production/MarsAnalysis'));
@@ -43,14 +46,14 @@ const MainLayout: React.FC = () => {
 
     return (
         <div className={`hub-container ${navMode}-mode`}>
+            {/* If horizontal mode, show menu at the very top, outside main-content */}
+            {navMode === 'horizontal' && <HorizontalNav />}
+
             {/* Sidebar - only if navMode is sidebar */}
             {navMode === 'sidebar' && <Sidebar />}
 
             {/* Main Content Area */}
             <main className="main-content">
-                {/* Horizontal Menu if enabled */}
-                {navMode === 'horizontal' && <HorizontalNav />}
-
                 <TopBar />
 
                 <section className="fade-in">
@@ -125,6 +128,11 @@ export const router = createBrowserRouter([
                         path: 'hotels',
                         element: <HotelsList />,
                     },
+                    // New Hotel Creation
+                    {
+                        path: 'hotels/new',
+                        element: <HotelNew />,
+                    },
                     // Individual Hotel Detail - deep link by slug
                     // Example: /production/hotels/iberostar-bellevue
                     {
@@ -132,15 +140,14 @@ export const router = createBrowserRouter([
                         element: <HotelDetail />,
                     },
                     // Edit Hotel
-                    // Example: /production/hotels/iberostar-bellevue/edit
                     {
                         path: 'hotels/:hotelSlug/edit',
                         element: <HotelEdit />,
                     },
-                    // New Hotel Creation
+                    // Room Management for Hotel
                     {
-                        path: 'hotels/new',
-                        element: <ProductionHub onBack={() => window.history.back()} />,
+                        path: 'hotels/:hotelSlug/rooms',
+                        element: <HotelRooms />,
                     },
                 ],
             },
@@ -169,7 +176,11 @@ export const router = createBrowserRouter([
                         index: true,
                         element: <CustomersModule onBack={() => window.history.back()} />,
                     },
-                    // Future: /customers/:customerId for individual customer
+                    // Individual Customer Detail
+                    {
+                        path: ':customerId',
+                        element: <CustomerDetail />,
+                    },
                 ],
             },
 

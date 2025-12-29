@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     LayoutDashboard,
     Users,
@@ -22,7 +22,8 @@ import {
     AlertTriangle,
     Database,
     Zap,
-    ShieldAlert
+    ShieldAlert,
+    Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../context/ConfigContext';
@@ -167,6 +168,23 @@ const styles = {
 export default function SettingsModule({ onBack, userLevel, setUserLevel }: Props) {
     const { config, updateConfig, createSnapshot, backups, restoreSnapshot } = useConfig();
 
+    // Responsive state
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+
+    // Window resize handler
+    const handleResize = useCallback(() => {
+        const width = window.innerWidth;
+        setIsMobile(width < 768);
+        setIsTablet(width >= 768 && width < 1024);
+        setSidebarOpen(width >= 768);
+    }, []);
+
+    useEffect(() => {
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [handleResize]);
 
     const [activeTab, setActiveTab] = useState<TabType>('connections'); // Default to connections as requested
     const [searchQuery, setSearchQuery] = useState('');
@@ -186,6 +204,12 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
     const [pendingAction, setPendingAction] = useState<{ type: 'delete' | 'change', payload: any } | null>(null);
     const [showIntegrationForm, setShowIntegrationForm] = useState(false);
     const [integrationFormData, setIntegrationFormData] = useState<Partial<Integration>>({ name: '', endpoint: '', key: '' });
+
+    // Handle tab change and close sidebar on mobile
+    const handleTabChange = (tab: TabType) => {
+        setActiveTab(tab);
+        if (isMobile) setSidebarOpen(false);
+    };
 
     // Default Integrations (System)
     const systemIntegrations: Integration[] = [
@@ -678,51 +702,128 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
     );
 
     return (
-        <div style={styles.layout}>
-            {/* LEFT SIDEBAR */}
-            <div style={styles.sidebar}>
-                <div style={{ marginBottom: '40px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SYSTEM CORE</h2>
-                    <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>Admin Panel v2.0</p>
+        <div style={{ ...styles.layout, flexDirection: isMobile ? 'column' : 'row' }}>
+            {/* MOBILE HEADER with Menu Toggle */}
+            {isMobile && (
+                <div style={{
+                    height: '60px',
+                    background: '#020617',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0 20px',
+                    flexShrink: 0
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                border: 'none',
+                                borderRadius: '10px',
+                                width: '40px',
+                                height: '40px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: '#94a3b8'
+                            }}
+                        >
+                            <Menu size={20} />
+                        </button>
+                        <h2 style={{ fontSize: '16px', fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SYSTEM CORE</h2>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                    </div>
                 </div>
+            )}
 
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '10px', paddingLeft: '10px' }}>MAIN MENU</div>
-                    <div onClick={() => setActiveTab('connections')} style={styles.navItem(activeTab === 'connections')}><Activity size={18} /> Active Connections</div>
-                    <div onClick={() => setActiveTab('general')} style={styles.navItem(activeTab === 'general')}><LayoutDashboard size={18} /> General Settings</div>
-                    <div onClick={() => setActiveTab('users')} style={styles.navItem(activeTab === 'users')}><Users size={18} /> Users & Accounts</div>
-                    <div onClick={() => setActiveTab('permissions')} style={styles.navItem(activeTab === 'permissions')}><Lock size={18} /> Access Permissions</div>
-                    <div onClick={() => setActiveTab('backups')} style={styles.navItem(activeTab === 'backups')}><RotateCcw size={18} /> System Snapshots</div>
-                    <div onClick={() => setActiveTab('pulse')} style={styles.navItem(activeTab === 'pulse')}><Activity size={18} /> System Pulse</div>
-                    {userLevel >= 6 && (
-                        <div onClick={() => setActiveTab('archive')} style={{ ...styles.navItem(activeTab === 'archive'), borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '10px', paddingTop: '10px' }}>
-                            <ShieldAlert size={18} /> Deep Archive
+            {/* LEFT SIDEBAR - Responsive */}
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <motion.div
+                        initial={isMobile ? { x: -280 } : false}
+                        animate={{ x: 0 }}
+                        exit={isMobile ? { x: -280 } : undefined}
+                        transition={{ type: 'tween', duration: 0.2 }}
+                        style={{
+                            ...styles.sidebar,
+                            width: isTablet ? '220px' : '260px',
+                            position: isMobile ? 'fixed' : 'relative',
+                            top: isMobile ? '60px' : 0,
+                            left: 0,
+                            bottom: 0,
+                            zIndex: isMobile ? 100 : 1,
+                            height: isMobile ? 'calc(100vh - 60px)' : '100vh'
+                        }}
+                    >
+                        {!isMobile && (
+                            <div style={{ marginBottom: '40px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <h2 style={{ fontSize: isTablet ? '16px' : '18px', fontWeight: 800, margin: 0, background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SYSTEM CORE</h2>
+                                <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>Admin Panel v2.0</p>
+                            </div>
+                        )}
+
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '10px', paddingLeft: '10px' }}>MAIN MENU</div>
+                            <div onClick={() => handleTabChange('connections')} style={styles.navItem(activeTab === 'connections')}><Activity size={18} /> Active Connections</div>
+                            <div onClick={() => handleTabChange('general')} style={styles.navItem(activeTab === 'general')}><LayoutDashboard size={18} /> General Settings</div>
+                            <div onClick={() => handleTabChange('users')} style={styles.navItem(activeTab === 'users')}><Users size={18} /> Users & Accounts</div>
+                            <div onClick={() => handleTabChange('permissions')} style={styles.navItem(activeTab === 'permissions')}><Lock size={18} /> Access Permissions</div>
+                            <div onClick={() => handleTabChange('backups')} style={styles.navItem(activeTab === 'backups')}><RotateCcw size={18} /> System Snapshots</div>
+                            <div onClick={() => handleTabChange('pulse')} style={styles.navItem(activeTab === 'pulse')}><Activity size={18} /> System Pulse</div>
+                            {userLevel >= 6 && (
+                                <div onClick={() => handleTabChange('archive')} style={{ ...styles.navItem(activeTab === 'archive'), borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '10px', paddingTop: '10px' }}>
+                                    <ShieldAlert size={18} /> Deep Archive
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                <div style={{ marginTop: 'auto' }}>
-                    <button onClick={onBack} style={{ ...styles.button, width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
-                        <ArrowLeft size={16} /> Exit to Menu
-                    </button>
-                </div>
-            </div>
+                        <div style={{ marginTop: 'auto' }}>
+                            <button onClick={onBack} style={{ ...styles.button, width: '100%', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
+                                <ArrowLeft size={16} /> Exit to Menu
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Mobile Overlay */}
+            {isMobile && sidebarOpen && (
+                <div
+                    onClick={() => setSidebarOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        top: '60px',
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 99
+                    }}
+                />
+            )}
 
             {/* MAIN CONTENT */}
-            <div style={styles.main}>
-                {/* HEADER */}
-                <div style={styles.header}>
-                    <div style={{ fontSize: '14px', color: '#64748b' }}>
-                        Settings / <span style={{ color: '#fff', fontWeight: 600 }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ position: 'relative' }}>
+            <div style={{ ...styles.main, flex: 1 }}>
+                {/* HEADER - Hide breadcrumb on mobile */}
+                <div style={{ ...styles.header, padding: isMobile ? '0 15px' : isTablet ? '0 20px' : '0 30px', height: isMobile ? '60px' : '70px' }}>
+                    {!isMobile && (
+                        <div style={{ fontSize: '14px', color: '#64748b' }}>
+                            Settings / <span style={{ color: '#fff', fontWeight: 600 }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
+                        </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '15px', marginLeft: isMobile ? 'auto' : 0, width: isMobile ? '100%' : 'auto' }}>
+                        <div style={{ position: 'relative', flex: isMobile ? 1 : 'none' }}>
                             <Search size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                             <input
                                 placeholder="Search settings..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                style={{ ...styles.input, paddingLeft: '36px', width: '240px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)' }}
+                                style={{ ...styles.input, paddingLeft: '36px', width: isMobile ? '100%' : isTablet ? '180px' : '240px', borderRadius: '20px', background: 'rgba(255,255,255,0.03)' }}
                             />
                         </div>
                         <button style={{ background: 'rgba(59, 130, 246, 0.1)', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -735,7 +836,7 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                 </div>
 
                 {/* CONTENT AREA */}
-                <div style={styles.contentArea}>
+                <div style={{ ...styles.contentArea, padding: isMobile ? '15px' : isTablet ? '20px' : '30px' }}>
                     {activeTab === 'general' && renderGeneral()}
                     {activeTab === 'users' && renderUsers()}
                     {activeTab === 'permissions' && renderPermissions()}

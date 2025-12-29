@@ -37,6 +37,7 @@ import {
     saveToCloud,
     loadFromCloud
 } from '../../utils/storageUtils';
+import { useSecurity } from '../../hooks/useSecurity';
 import {
     sanitizeInput,
     generateIdempotencyKey,
@@ -116,6 +117,8 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
     const [displayType, setDisplayType] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
+
+    const { trackAction, isAnomalyDetected } = useSecurity();
 
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
@@ -212,6 +215,16 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
             setShowWizard(false);
             setWizardInitialData(undefined);
         }
+    };
+
+    const handleBulkExport = () => {
+        if (isAnomalyDetected) {
+            alert("BEZBEDNOSNO BLOKIRANJE: Detektovana anomalija u izvozu. Sačekajte audit administratora.");
+            return;
+        }
+
+        trackAction('bulk_export');
+        exportToJSON(hotels, `Olympic_Hotels_Export_${new Date().toISOString().split('T')[0]}.json`);
     };
 
     const handlePublicPreview = (e: React.MouseEvent, hotel: Hotel) => {
@@ -504,8 +517,9 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             <p className="subtitle">Centralni sistem za upravljanje turističkim inventarom</p>
                         </div>
                     </div>
-                    <div className="header-actions">
-                        <button className="btn-glass" onClick={() => setShowImport(true)}><Download size={18} /> Import JSON</button>
+                    <div className="header-actions" style={{ display: 'flex', gap: '10px' }}>
+                        <button className="btn-glass" onClick={handleBulkExport}><Download size={18} /> Bulk Export</button>
+                        <button className="btn-glass" onClick={() => setShowImport(true)}><RefreshCw size={18} /> Import JSON</button>
                     </div>
                 </div>
 

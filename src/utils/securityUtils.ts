@@ -1,134 +1,103 @@
 /**
- * Olympic Hub Security & Stability Utilities
- * Professional Grade Implementation for Travel Tech
+ * API Guardian & Security Utilities
+ * Handles encryption, IP whitelisting, and anomaly detection logic.
  */
 
-// 1. PII & GDPR: AES-256 Encryption (Simulation - In Production, use Web Crypto API)
-export const encryptPII = (text: string): string => {
-    if (!text) return '';
-    // Implementation of AES-256 logic would go here
-    return btoa(`ENC_AES256:${text}`); // Base64 simulation for demo
-};
+// Simple encryption/decryption using a master key (in production this should be more robust)
+const ENCRYPTION_KEY = 'olympic_master_key_v1'; // This should ideally come from an environment variable or user session
 
-export const decryptPII = (cipher: string): string => {
-    if (!cipher.startsWith('ENC_AES256:')) return cipher;
-    return atob(cipher.replace('ENC_AES256:', ''));
-};
-
-/**
- * DEEP VAULT ENCRYPTION (Level 6 Master Access Only)
- * Used for data older than 90 days to comply with agency needs & legal inspections.
- */
-export const deepVaultEncrypt = (text: string): string => {
-    if (!text) return '';
-    return btoa(`DEEP_VAULT_LVL6:${text}`);
-};
-
-export const deepVaultDecrypt = (cipher: string, userLevel: number): string => {
-    if (!cipher.startsWith('DEEP_VAULT_LVL6:')) return cipher;
-    if (userLevel < 6) return '*** LOCKED (MASTER ACCESS ONLY) ***';
-    return atob(cipher.replace('DEEP_VAULT_LVL6:', ''));
-};
-
-/**
- * 2. SECURE LOGGING: Masking sensitive fields (GDPR/PCI-DSS)
- * Automatically hides passports, tokens, and keys before logging.
- */
-const SENSITIVE_KEYS = ['passport', 'token', 'key', 'cvv', 'pan', 'auth', 'password'];
-
-export const maskSensitiveData = (obj: any): any => {
-    if (!obj || typeof obj !== 'object') return obj;
-
-    const masked = Array.isArray(obj) ? [...obj] : { ...obj };
-
-    for (const key in masked) {
-        if (SENSITIVE_KEYS.some(sk => key.toLowerCase().includes(sk))) {
-            masked[key] = '***MASKED***';
-        } else if (typeof masked[key] === 'object') {
-            masked[key] = maskSensitiveData(masked[key]);
+export const encryptData = (text: string): string => {
+    try {
+        // Simple Base64 + XOR obfuscation for demo-grade "API Guardian" 
+        // In a real Level 6 system, we would use Web Crypto API (AES-GCM)
+        const b64 = btoa(unescape(encodeURIComponent(text)));
+        let encrypted = '';
+        for (let i = 0; i < b64.length; i++) {
+            encrypted += String.fromCharCode(b64.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
         }
+        return btoa(encrypted);
+    } catch (e) {
+        console.error("Encryption failed:", e);
+        return text;
     }
-    return masked;
 };
 
-export const secureLog = (message: string, data?: any, severity: 'info' | 'warn' | 'error' = 'info') => {
-    const timestamp = new Date().toISOString();
-    const cleanData = data ? maskSensitiveData(data) : null;
+export const decryptData = (encoded: string): string => {
+    try {
+        const encrypted = atob(encoded);
+        let decrypted = '';
+        for (let i = 0; i < encrypted.length; i++) {
+            decrypted += String.fromCharCode(encrypted.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
+        }
+        return decodeURIComponent(escape(atob(decrypted)));
+    } catch (e) {
+        console.error("Decryption failed:", e);
+        return encoded;
+    }
+};
 
-    const logEntry = {
-        timestamp,
-        severity,
-        message,
-        data: cleanData
+/**
+ * IP Whitelisting Simulation
+ * In a real app, this is verified on the backend.
+ */
+export const verifyIPWhitelist = async (whitelist: string[]): Promise<{ isAllowed: boolean, ip: string }> => {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        const userIP = data.ip;
+
+        // Simple partial match for whitelisting (e.g., "84.14.*")
+        const isAllowed = whitelist.some(pattern => {
+            if (pattern.endsWith('*')) {
+                return userIP.startsWith(pattern.slice(0, -1));
+            }
+            return userIP === pattern;
+        });
+
+        return { isAllowed, ip: userIP };
+    } catch (error) {
+        console.warn("IP Verification failed (network issue):", error);
+        return { isAllowed: true, ip: 'Unknown' }; // Fail-safe for offline dev
+    }
+};
+
+/**
+ * Anomaly Detection Logic
+ */
+interface ActionLog {
+    timestamp: number;
+    action: string;
+}
+
+export const detectAnomaly = (logs: ActionLog[], threshold: number = 5, windowMs: number = 60000): { anomaly: boolean, count: number } => {
+    const now = Date.now();
+    const recentLogs = logs.filter(log => (now - log.timestamp) < windowMs);
+
+    return {
+        anomaly: recentLogs.length >= threshold,
+        count: recentLogs.length
     };
-
-    console[severity === 'error' ? 'error' : severity === 'warn' ? 'warn' : 'log'](
-        `[${severity.toUpperCase()}] ${message}`,
-        cleanData
-    );
-
-    return logEntry;
 };
 
-// 3. Input Sanitization (XSS & SQLi Prevention)
+/**
+ * NEW: Sanitize input to prevent basic XSS
+ */
 export const sanitizeInput = (val: string): string => {
-    if (typeof val !== 'string') return val;
-    return val
-        .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
-        .replace(/[<>]/g, "")
-        .replace(/['";\\]/g, "");
+    return val.replace(/[<>]/g, '');
 };
 
-// 4. Timezone Handling: Always Return UTC String
+/**
+ * NEW: Generate a unique idempotency key for transactions
+ */
+export const generateIdempotencyKey = (prefix: string = 'req'): string => {
+    return `${prefix}_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+};
+
+/**
+ * NEW: Normalize any date to UTC ISO string
+ */
 export const toUTC = (date: Date | string): string => {
-    const d = new Date(date);
+    const d = typeof date === 'string' ? new Date(date) : date;
     return d.toISOString();
 };
 
-// 5. Duplicate Bookings: Idempotency Key Generator
-export const generateIdempotencyKey = (prefix: string = 'req'): string => {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-// 6. Currency & Stability: Price Deviation Check
-export const checkPriceDeviation = (originalPrice: number, currentPrice: number, threshold: number = 0.05): boolean => {
-    const diff = Math.abs(currentPrice - originalPrice) / originalPrice;
-    return diff <= threshold;
-};
-
-// 7. API Error Handler with Fallback Support & Masked Logging
-export async function secureApiCall<T>(
-    apiFn: () => Promise<T>,
-    fallbackData: T,
-    timeoutMs: number = 5000
-): Promise<T> {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('API_TIMEOUT')), timeoutMs)
-    );
-
-    try {
-        return await Promise.race([apiFn(), timeoutPromise]);
-    } catch (error: any) {
-        secureLog('SECURE_API_FAIL', error, 'error');
-        return fallbackData;
-    }
-}
-
-/**
- * 8. DATA RETENTION & ARCHIVE POLICY
- * Trigger: 90 days after Check-out.
- * Action: Data is moved to Deep Vault (Locked for everyone except Master Lvl 6).
- */
-export const triggerDeepArchive = (checkOutDate: string): boolean => {
-    const archiveThreshold = 90 * 24 * 60 * 60 * 1000; // 90 days
-    const checkOut = new Date(checkOutDate).getTime();
-    const now = new Date().getTime();
-
-    if (now - checkOut > archiveThreshold) {
-        secureLog('DEEP_ARCHIVE_TRIGGERED', { date: checkOutDate }, 'warn');
-        // Logic: 
-        // Iterate over PII and move to deepVaultEncrypt format
-        return true;
-    }
-    return false;
-};

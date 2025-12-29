@@ -159,7 +159,9 @@ olympichub034/
 │   ├── pages/                 # Route pages
 │   │   ├── Dashboard.tsx
 │   │   ├── HotelsList.tsx
-│   │   └── HotelDetail.tsx
+│   │   ├── HotelDetail.tsx
+│   │   ├── HotelEdit.tsx
+│   │   └── SupplierDetail.tsx
 │   │
 │   ├── router/                # Router configuration
 │   │   └── index.tsx
