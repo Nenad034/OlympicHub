@@ -1,5 +1,67 @@
 # Project To-Do List & Reminders
 
+## 🎉 Major Refactoring - 2025-12-29
+
+### ✅ Completed Architecture Improvements
+
+1. **React Router Integration**
+   - Implemented `react-router-dom` for proper SPA routing
+   - Added deep linking support (e.g., `/suppliers`, `/production`)
+   - Browser history now works (back/forward buttons)
+   - Protected routes for Level 6+ modules
+
+2. **Zustand State Management**
+   - Created `authStore.ts` - User level and permissions
+   - Created `themeStore.ts` - Theme, language, navigation mode
+   - Created `appStore.ts` - Global app state (chat, search, status)
+   - Replaced scattered `useState` calls with centralized stores
+
+3. **Component Architecture**
+   - Split `App.tsx` from 532 lines to ~100 lines
+   - Created `Sidebar.tsx` - Navigation component
+   - Created `TopBar.tsx` - Header with controls
+   - Created `HorizontalNav.tsx` - Alternative navigation
+   - Created `Dashboard.tsx` - Extracted dashboard page
+
+4. **Code Organization**
+   - Created `src/stores/` - Zustand stores
+   - Created `src/hooks/` - Custom React hooks
+   - Created `src/router/` - Router configuration
+   - Created `src/pages/` - Page components
+   - Created `src/components/layout/` - Layout components
+
+5. **Performance Improvements**
+   - Lazy loading for all module pages
+   - Suspense fallback for loading states
+
+### 📁 New File Structure
+```
+src/
+├── stores/
+│   ├── authStore.ts
+│   ├── themeStore.ts
+│   ├── appStore.ts
+│   └── index.ts
+├── hooks/
+│   ├── useTheme.ts
+│   ├── useNavigation.ts
+│   └── index.ts
+├── router/
+│   └── index.tsx
+├── pages/
+│   └── Dashboard.tsx
+├── components/
+│   └── layout/
+│       ├── Sidebar.tsx
+│       ├── TopBar.tsx
+│       ├── HorizontalNav.tsx
+│       └── index.ts
+└── App.tsx (refactored)
+```
+
+---
+
+
 ## Future Tasks (Pending)
 - [x] **Master Administrator Role**: 
     - [x] Define a role above Level 5 (Master Level 6).
