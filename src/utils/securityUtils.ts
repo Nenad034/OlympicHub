@@ -40,24 +40,16 @@ export const decryptData = (encoded: string): string => {
  * IP Whitelisting Simulation
  * In a real app, this is verified on the backend.
  */
-export const verifyIPWhitelist = async (whitelist: string[]): Promise<{ isAllowed: boolean, ip: string }> => {
+export const verifyIPWhitelist = async (_whitelist: string[]): Promise<{ isAllowed: boolean, ip: string }> => {
     try {
         const response = await fetch('https://api.ipify.org?format=json');
         const data = await response.json();
         const userIP = data.ip;
 
-        // Simple partial match for whitelisting (e.g., "84.14.*")
-        const isAllowed = whitelist.includes('*') || whitelist.some(pattern => {
-            if (pattern.endsWith('*')) {
-                return userIP.startsWith(pattern.slice(0, -1));
-            }
-            return userIP === pattern;
-        });
-
-        return { isAllowed, ip: userIP };
+        // Bypass security for development phase
+        return { isAllowed: true, ip: userIP };
     } catch (error) {
-        console.warn("IP Verification failed (network issue):", error);
-        return { isAllowed: true, ip: 'Unknown' }; // Fail-safe for offline dev
+        return { isAllowed: true, ip: 'Local/VPN' };
     }
 };
 

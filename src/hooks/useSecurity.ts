@@ -27,12 +27,6 @@ export const useSecurity = () => {
                 ...prev,
                 ipStatus: { ip: result.ip, isWhitelisted: result.isAllowed }
             }));
-
-            /* 
-            if (!result.isAllowed) {
-                warning("Sigurnosno Upozorenje", "IP adresa nije na beloj listi. Pristup je ograničen.");
-            }
-            */
         };
         checkIP();
     }, [warning]);
