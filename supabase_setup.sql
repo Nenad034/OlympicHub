@@ -100,6 +100,26 @@ INSERT INTO access_rules (id, modules) VALUES
 (6, '["dashboard", "search", "customers", "suppliers", "production-hub", "mars-analysis", "settings", "master-access"]')
 ON CONFLICT (id) DO UPDATE SET modules = EXCLUDED.modules;
 
--- Enable RLS (Row Level Security) - Optional but recommended
--- ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
--- Add policies as needed for your specific security requirements
+-- 8. Tours Table (Group Travels, Cruises, etc.)
+CREATE TABLE IF NOT EXISTS tours (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    category TEXT CHECK (category IN ('Grupno', 'Individualno', 'Krstarenje', 'StayAndCruise')),
+    status TEXT DEFAULT 'Draft' CHECK (status IN ('Draft', 'Published', 'Archived')),
+    startDate DATE,
+    endDate DATE,
+    durationDays INTEGER,
+    basePrice NUMERIC(12, 2),
+    currency TEXT DEFAULT 'EUR',
+    shortDescription TEXT,
+    longDescription TEXT,
+    highlights JSONB,
+    mainImage JSONB,
+    gallery JSONB,
+    itinerary JSONB, -- The dynamic timeline
+    supplements JSONB,
+    logistics JSONB, -- Seats, occupancy, transport info
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
