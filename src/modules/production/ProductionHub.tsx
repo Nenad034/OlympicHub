@@ -28,7 +28,10 @@ import {
     Globe,
     Power,
     CloudCheck,
-    RefreshCw
+    RefreshCw,
+    Users,
+    User,
+    Ship
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
@@ -524,6 +527,13 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                 </div>
 
 
+                {/* OSNOVNI INVENTAR */}
+                <div style={{ marginTop: '32px', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '12px', height: '2px', background: 'var(--accent)' }}></span>
+                        Osnovni Inventar
+                    </h3>
+                </div>
                 <div className="dashboard-grid">
                     {[
                         { id: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, apartmani i smeštajni objekti.', icon: <Building2 />, color: '#10b981', count: hotels.length, badge: 'LIVE' },
@@ -536,23 +546,53 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             whileHover={{ y: -4, scale: 1.02 }}
                             className="module-card"
                             onClick={() => { if (s.id === 'accommodation') setViewMode('list'); }}
-                            style={{ cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed', opacity: s.id === 'accommodation' ? 1 : 0.6 }}
+                            style={{
+                                cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed',
+                                opacity: s.id === 'accommodation' ? 1 : 0.7,
+                                border: s.id === 'accommodation' ? '1px solid var(--accent)' : '1px solid var(--border)'
+                            }}
                         >
-                            <div className="module-icon" style={{ background: `linear - gradient(135deg, ${s.color}, ${s.color}dd)` }}>
+                            <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
                                 {s.icon}
                             </div>
-
-                            <div className={`module - badge ${s.badge === 'LIVE' ? 'live' : 'new'} `}>{s.badge}</div>
-
+                            <div className={`module-badge ${s.badge === 'LIVE' ? 'live' : 'new'}`}>{s.badge}</div>
                             <h3 className="module-title">{s.name}</h3>
                             <p className="module-desc">{s.desc}</p>
-
                             {s.id === 'accommodation' && (
                                 <button className="module-action">
                                     Otvori Modul
                                     <ChevronRight size={16} />
                                 </button>
                             )}
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* PUTOVANJA SECTION */}
+                <div style={{ marginTop: '48px', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#ec4899', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '12px', height: '2px', background: '#ec4899' }}></span>
+                        Putovanja
+                    </h3>
+                </div>
+                <div className="dashboard-grid">
+                    {[
+                        { id: 'group_trips', name: 'Grupna Putovanja', desc: 'Organizovana grupna putovanja sa vodičem.', icon: <Users />, color: '#ec4899', count: 0, badge: 'USKORO' },
+                        { id: 'ind_trips', name: 'Individualna Putovanja', desc: 'Putovanja krojena po meri pojedinca.', icon: <User />, color: '#6366f1', count: 0, badge: 'USKORO' },
+                        { id: 'cruises', name: 'Krstarenja', desc: 'Luksuzna krstarenja svetskim morima.', icon: <Ship />, color: '#06b6d4', count: 0, badge: 'USKORO' }
+                    ].map(s => (
+                        <motion.div
+                            key={s.id}
+                            whileHover={{ y: -4, scale: 1.02 }}
+                            className="module-card"
+                            style={{ cursor: 'not-allowed', opacity: 0.9, border: '1px solid rgba(255,255,255,0.05)' }}
+                        >
+                            <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
+                                {s.icon}
+                            </div>
+                            <div className={`module-badge new`}>USKORO</div>
+                            <h3 className="module-title">{s.name}</h3>
+                            <p className="module-desc">{s.desc}</p>
                         </motion.div>
                     ))}
                 </div>

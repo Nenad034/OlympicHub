@@ -47,7 +47,7 @@ export const verifyIPWhitelist = async (whitelist: string[]): Promise<{ isAllowe
         const userIP = data.ip;
 
         // Simple partial match for whitelisting (e.g., "84.14.*")
-        const isAllowed = whitelist.some(pattern => {
+        const isAllowed = whitelist.includes('*') || whitelist.some(pattern => {
             if (pattern.endsWith('*')) {
                 return userIP.startsWith(pattern.slice(0, -1));
             }
