@@ -1,4 +1,4 @@
-import { Property } from '../../types/property.types';
+import type { Property } from '../../types/property.types';
 
 export interface PropertyWizardProps {
     onClose: () => void;
