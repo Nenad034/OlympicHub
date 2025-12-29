@@ -301,9 +301,18 @@ const ProductionHub: FC<ProductionHubProps> = ({ onBack }) => {
                 <div className="dashboard-grid">
                     {[
                         { id: 'accommodation', name: 'Smeštaj', cat: 'accommodation', icon: <Building2 />, color: '#10b981' },
-                        { id: 'trips', name: 'Grupna Putovanja', cat: 'trips', icon: <Users />, color: '#3b82f6' }
+                        { id: 'trips', name: 'Grupna Putovanja', cat: 'trips', icon: <Users />, color: '#3b82f6' },
+                        { id: 'transport', name: 'Prevoz', cat: 'transport', icon: <Globe />, color: '#f59e0b' },
+                        { id: 'services', name: 'Usluge', cat: 'services', icon: <DollarSign />, color: '#8b5cf6' }
                     ].filter(s => activeModuleTab === 'all' || s.cat === activeModuleTab).map(s => (
-                        <div key={s.id} className="module-card" onClick={() => { setActiveModule(s.cat as any); setViewMode('list'); }}>
+                        <div key={s.id} className="module-card" onClick={() => {
+                            if (s.cat === 'transport' || s.cat === 'services') {
+                                alert('Modul uskoro dostupan!'); // Placeholder until implemented
+                            } else {
+                                setActiveModule(s.cat as any);
+                                setViewMode('list');
+                            }
+                        }}>
                             <div className="module-icon" style={{ background: s.color }}>{s.icon}</div>
                             <h3>{s.name}</h3>
                         </div>
