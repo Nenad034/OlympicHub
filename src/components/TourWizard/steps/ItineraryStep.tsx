@@ -36,29 +36,48 @@ const ItineraryStep: FC<StepProps> = ({ data, onChange }) => {
     };
 
     return (
-        <div className="tour-itinerary-builder">
-            <div className="itinerary-header">
-                <div>
-                    <h3>Vremenska Linija</h3>
-                    <p>Definišite dnevne aktivnosti i program putovanja</p>
+        <div>
+            <div className="form-section">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div>
+                        <h3 className="form-section-title" style={{ marginBottom: '4px' }}>Vremenska Linija</h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0 }}>Definišite dnevne aktivnosti i program putovanja</p>
+                    </div>
+                    <button className="btn-primary" onClick={addDay} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Plus size={16} /> Dodaj Dan
+                    </button>
                 </div>
-                <button className="btn-add-day" onClick={addDay}>
-                    <Plus size={16} /> Dodaj Dan
-                </button>
-            </div>
 
-            <div className="timeline">
-                {itinerary.map((day, dIdx) => (
-                    <div key={day.dayNumber} className="timeline-day">
-                        <div className="day-sidebar">
-                            <div className="day-number">{day.dayNumber}</div>
-                            <div className="day-line" />
-                        </div>
-                        <div className="day-content">
-                            <div className="day-header">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {itinerary.map((day, dIdx) => (
+                        <div key={day.dayNumber} style={{
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            position: 'relative'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                <div style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '50%',
+                                    background: 'var(--accent)',
+                                    color: '#fff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: '700',
+                                    fontSize: '16px',
+                                    flexShrink: 0
+                                }}>
+                                    {day.dayNumber}
+                                </div>
                                 <input
                                     type="text"
-                                    className="day-title-input"
+                                    className="form-input"
+                                    style={{ flex: 1 }}
+                                    placeholder="Naslov dana..."
                                     value={day.title}
                                     onChange={e => {
                                         const next = [...itinerary];
@@ -66,32 +85,55 @@ const ItineraryStep: FC<StepProps> = ({ data, onChange }) => {
                                         onChange({ itinerary: next });
                                     }}
                                 />
-                                <button className="btn-remove" onClick={() => removeDay(dIdx)}>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => removeDay(dIdx)}
+                                    style={{ padding: '10px', minWidth: 'auto' }}
+                                >
                                     <Trash2 size={16} />
                                 </button>
                             </div>
+
                             <textarea
-                                className="day-desc-input"
+                                className="form-textarea"
                                 placeholder="Opis dana..."
+                                rows={2}
                                 value={day.description}
                                 onChange={e => {
                                     const next = [...itinerary];
                                     next[dIdx].description = e.target.value;
                                     onChange({ itinerary: next });
                                 }}
+                                style={{ marginBottom: '16px', minHeight: '60px' }}
                             />
 
-                            <div className="activities-list">
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label className="form-label">Aktivnosti</label>
                                 {day.activities.map((act, aIdx) => (
-                                    <div key={act.id} className="activity-slot">
-                                        <div className="slot-icon">
-                                            {act.type === 'Sightseeing' && <MapPin size={14} />}
-                                            {act.type === 'Meal' && <Coffee size={14} />}
-                                            {act.type === 'Transit' && <Car size={14} />}
-                                            {act.type === 'FreeTime' && <Sun size={14} />}
+                                    <div key={act.id} style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '40px 1fr 150px',
+                                        gap: '12px',
+                                        alignItems: 'center'
+                                    }}>
+                                        <div style={{
+                                            width: '40px',
+                                            height: '40px',
+                                            borderRadius: '8px',
+                                            background: 'var(--glass-bg)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'var(--accent)'
+                                        }}>
+                                            {act.type === 'Sightseeing' && <MapPin size={18} />}
+                                            {act.type === 'Meal' && <Coffee size={18} />}
+                                            {act.type === 'Transit' && <Car size={18} />}
+                                            {act.type === 'FreeTime' && <Sun size={18} />}
                                         </div>
                                         <input
                                             type="text"
+                                            className="form-input"
                                             placeholder="Naziv aktivnosti..."
                                             value={act.title}
                                             onChange={e => {
@@ -101,6 +143,7 @@ const ItineraryStep: FC<StepProps> = ({ data, onChange }) => {
                                             }}
                                         />
                                         <select
+                                            className="form-select"
                                             value={act.type}
                                             onChange={e => {
                                                 const next = [...itinerary];
@@ -115,21 +158,31 @@ const ItineraryStep: FC<StepProps> = ({ data, onChange }) => {
                                         </select>
                                     </div>
                                 ))}
-                                <button className="btn-add-activity" onClick={() => addActivity(dIdx)}>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => addActivity(dIdx)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginTop: '8px' }}
+                                >
                                     <Plus size={14} /> Dodaj Aktivnost
                                 </button>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
 
-                {itinerary.length === 0 && (
-                    <div className="empty-itinerary">
-                        <MapPin size={48} />
-                        <p>Vaš itinerer je prazan. Počnite tako što ćete dodati prvi dan.</p>
-                        <button onClick={addDay} className="btn-primary">Dodaj Dan 1</button>
-                    </div>
-                )}
+                    {itinerary.length === 0 && (
+                        <div style={{
+                            padding: '60px 20px',
+                            textAlign: 'center',
+                            background: 'var(--bg-card)',
+                            border: '2px dashed var(--border)',
+                            borderRadius: '12px'
+                        }}>
+                            <MapPin size={48} style={{ color: 'var(--text-secondary)', marginBottom: '16px' }} />
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>Vaš itinerer je prazan. Počnite tako što ćete dodati prvi dan.</p>
+                            <button onClick={addDay} className="btn-primary">Dodaj Dan 1</button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

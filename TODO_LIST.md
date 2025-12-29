@@ -86,7 +86,7 @@ src/
     - [x] `/production/hotels/:slug/edit` - Edit hotel ✅
     - [x] `/production/hotels/:slug/rooms` - Room management ✅
     - [ ] `/production/hotels/:slug/rooms/:roomId` - Individual room detail
-    - [ ] `/production/hotels/:slug/prices` - Price management
+    - [x] `/production/hotels/:slug/prices` - Price management ✅
 - [x] **Supplier Routes**:
     - [x] `/suppliers/:supplierId` - Supplier detail page ✅
     - [ ] `/suppliers/:supplierId/contracts` - Contract management

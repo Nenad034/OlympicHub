@@ -38,7 +38,9 @@ import {
 } from 'lucide-react';
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
+import TourWizard from '../../components/TourWizard/TourWizard';
 import { type Property, validateProperty } from '../../types/property.types';
+import { type Tour, validateTour } from '../../types/tour.types';
 import {
     saveToCloud,
     loadFromCloud
@@ -131,6 +133,12 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
     const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
+    // Tour Management State
+    const [tours, setTours] = useState<Tour[]>([]);
+    const [selectedTour, setSelectedTour] = useState<Tour | null>(null);
+    const [showTourWizard, setShowTourWizard] = useState(false);
+    const [tourWizardInitialData, setTourWizardInitialData] = useState<Partial<Tour> | undefined>(undefined);
+
     const filteredHotels = hotels.filter(h =>
         h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         h.location.place.toLowerCase().includes(searchQuery.toLowerCase())
@@ -149,6 +157,17 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
             }
         };
         loadHotels();
+
+        const loadTours = async () => {
+            const { success, data } = await loadFromCloud('tours');
+            if (success && data && data.length > 0) {
+                setTours(data as Tour[]);
+            } else {
+                const saved = localStorage.getItem('olympic_hub_tours');
+                if (saved) setTours(JSON.parse(saved));
+            }
+        };
+        loadTours();
     }, []);
 
     // Save/Sync helper
@@ -501,6 +520,75 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
         }
     };
 
+    // Tour Management Handlers
+    const syncToursToSupabase = async (updatedTours: Tour[]) => {
+        setIsSyncing(true);
+        const { success } = await saveToCloud('tours', updatedTours);
+        if (success) {
+            localStorage.setItem('olympic_hub_tours', JSON.stringify(updatedTours));
+        }
+        setTimeout(() => setIsSyncing(false), 500);
+    };
+
+    const handleTourWizardSave = (tour: Partial<Tour>) => {
+        const requestId = generateIdempotencyKey('save_tour');
+        console.log(`[Idempotency] Tour Request: ${requestId}`);
+
+        const nowUtc = toUTC(new Date());
+
+        if (tourWizardInitialData && selectedTour) {
+            // EDIT EXISTING TOUR
+            const updatedTour: Tour = {
+                ...selectedTour,
+                ...tour,
+                updatedAt: nowUtc
+            } as Tour;
+            console.log(`[Security] Tour update authorized at ${nowUtc} UTC`);
+            const updatedList = tours.map(t => t.id === selectedTour.id ? updatedTour : t);
+            setTours(updatedList);
+            setSelectedTour(updatedTour);
+            syncToursToSupabase(updatedList);
+        } else {
+            // CREATE NEW TOUR
+            const newTour: Tour = {
+                id: Math.random().toString(36).substr(2, 9),
+                title: tour.title || 'Nova Tura',
+                slug: (tour.title || 'nova-tura').toLowerCase().replace(/\s+/g, '-'),
+                category: tour.category || 'Grupno',
+                status: tour.status || 'Draft',
+                shortDescription: tour.shortDescription || '',
+                longDescription: tour.longDescription || '',
+                highlights: tour.highlights || [],
+                gallery: tour.gallery || [],
+                startDate: tour.startDate || '',
+                endDate: tour.endDate || '',
+                durationDays: tour.durationDays || 1,
+                totalSeats: tour.totalSeats || 0,
+                availableSeats: tour.availableSeats || 0,
+                itinerary: tour.itinerary || [],
+                basePrice: tour.basePrice || 0,
+                currency: tour.currency || 'EUR',
+                supplements: tour.supplements || [],
+                createdAt: nowUtc,
+                updatedAt: nowUtc,
+                ...tour
+            } as Tour;
+            const updatedList = [...tours, newTour];
+            console.log(`[Security] Tour created at ${nowUtc} UTC`);
+            setTours(updatedList);
+            syncToursToSupabase(updatedList);
+        }
+
+        setShowTourWizard(false);
+        setTourWizardInitialData(undefined);
+    };
+
+    const startCreateTour = () => {
+        setTourWizardInitialData(undefined);
+        setSelectedTour(null);
+        setShowTourWizard(true);
+    };
+
     const getDistance = (name: string) => {
         const item = selectedHotel?.amenities.find(a => a.name === name);
         return item ? `${item.values} m` : 'N/A';
@@ -580,7 +668,7 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                         { id: 'accommodation', category: 'accommodation', name: 'Smeštaj', desc: 'Hoteli, apartmani i smeštajni objekti.', icon: <Building2 />, color: '#10b981', badge: 'LIVE' },
 
                         // PUTOVANJA
-                        { id: 'group_trips', category: 'trips', name: 'Grupna Putovanja', desc: 'Organizovana grupna putovanja sa vodičem.', icon: <Users />, color: '#ec4899', badge: 'USKORO' },
+                        { id: 'group_trips', category: 'trips', name: 'Grupna Putovanja', desc: 'Organizovana grupna putovanja sa vodičem.', icon: <Users />, color: '#ec4899', badge: 'LIVE' },
                         { id: 'ind_trips', category: 'trips', name: 'Individualna Putovanja', desc: 'Putovanja krojena po meri pojedinca.', icon: <User />, color: '#6366f1', badge: 'USKORO' },
                         { id: 'cruises', category: 'trips', name: 'Krstarenja', desc: 'Luksuzna krstarenja svetskim morima.', icon: <Ship />, color: '#06b6d4', badge: 'USKORO' },
 
@@ -601,11 +689,14 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ y: -4, scale: 1.02 }}
                             className="module-card"
-                            onClick={() => { if (s.id === 'accommodation') setViewMode('list'); }}
+                            onClick={() => {
+                                if (s.id === 'accommodation') setViewMode('list');
+                                if (s.id === 'group_trips') startCreateTour();
+                            }}
                             style={{
-                                cursor: s.id === 'accommodation' ? 'pointer' : 'not-allowed',
-                                opacity: s.id === 'accommodation' ? 1 : 0.8,
-                                border: s.id === 'accommodation' ? '1px solid var(--accent)' : '1px solid var(--border)'
+                                cursor: (s.id === 'accommodation' || s.id === 'group_trips') ? 'pointer' : 'not-allowed',
+                                opacity: (s.id === 'accommodation' || s.id === 'group_trips') ? 1 : 0.8,
+                                border: (s.id === 'accommodation' || s.id === 'group_trips') ? '1px solid var(--accent)' : '1px solid var(--border)'
                             }}
                         >
                             <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
@@ -614,9 +705,9 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             <div className={`module-badge ${s.badge === 'LIVE' ? 'live' : 'new'}`}>{s.badge}</div>
                             <h3 className="module-title">{s.name}</h3>
                             <p className="module-desc">{s.desc}</p>
-                            {s.id === 'accommodation' && (
+                            {(s.id === 'accommodation' || s.id === 'group_trips') && (
                                 <button className="module-action">
-                                    Otvori Modul
+                                    {s.id === 'accommodation' ? 'Otvori Modul' : 'Kreiraj Turu'}
                                     <ChevronRight size={16} />
                                 </button>
                             )}
@@ -688,6 +779,17 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                                 </div>
                             </motion.div>
                         </div>
+                    )}
+                </AnimatePresence>
+
+                {/* Tour Wizard - Available from Hub */}
+                <AnimatePresence>
+                    {showTourWizard && (
+                        <TourWizard
+                            onClose={() => { setShowTourWizard(false); setTourWizardInitialData(undefined); }}
+                            onSave={handleTourWizardSave}
+                            initialData={tourWizardInitialData}
+                        />
                     )}
                 </AnimatePresence>
             </div>
@@ -1147,6 +1249,13 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             onClose={() => { setShowWizard(false); setWizardInitialData(undefined); }}
                             onSave={handleWizardSave}
                             initialData={wizardInitialData}
+                        />
+                    )}
+                    {showTourWizard && (
+                        <TourWizard
+                            onClose={() => { setShowTourWizard(false); setTourWizardInitialData(undefined); }}
+                            onSave={handleTourWizardSave}
+                            initialData={tourWizardInitialData}
                         />
                     )}
                 </AnimatePresence>

@@ -10,7 +10,6 @@ import {
     Edit,
     Globe,
     ChevronRight,
-    Calendar,
     DollarSign,
     Users,
     Coffee,
@@ -441,13 +440,40 @@ const HotelDetail: React.FC = () => {
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border)',
                     borderRadius: '16px',
-                    padding: '24px',
+                    padding: '40px 24px',
                     textAlign: 'center',
-                    color: 'var(--text-secondary)'
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '20px'
                 }}>
-                    <Calendar size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
-                    <h3 style={{ marginBottom: '8px' }}>Cenovnik</h3>
-                    <p>Prikaz cenovnika dolazi uskoro...</p>
+                    <div style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '24px',
+                        background: 'rgba(139, 92, 246, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#8b5cf6',
+                        marginBottom: '8px'
+                    }}>
+                        <DollarSign size={40} />
+                    </div>
+                    <div>
+                        <h3 style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>Price AI Management</h3>
+                        <p style={{ maxWidth: '400px', margin: '0 auto', fontSize: '14px', lineHeight: '1.6' }}>
+                            Aktivirajte pametni asistent za upravljanje cenovnicima, analizu tržišta i automatsko predviđanje prihoda.
+                        </p>
+                    </div>
+                    <button
+                        className="btn-primary-action"
+                        style={{ background: 'var(--gradient-purple)', border: 'none' }}
+                        onClick={() => navigate(`/production/hotels/${hotelSlug}/prices`)}
+                    >
+                        Pristupi AI Cenovniku <ChevronRight size={18} />
+                    </button>
                 </div>
             )}
 

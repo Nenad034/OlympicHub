@@ -9,17 +9,19 @@ import {
     ChevronRight,
     ChevronLeft,
     Save,
-    X,
+    LogOut,
     Globe
 } from 'lucide-react';
 import type { Tour } from '../../types/tour.types';
-import './TourWizard.styles.css';
 
 // Steps (will create these next)
 import BasicInfoStep from './steps/BasicInfoStep';
 import ItineraryStep from './steps/ItineraryStep';
 import LogisticsStep from './steps/LogisticsStep';
 import CommercialStep from './steps/CommercialStep';
+
+// Use PropertyWizard styles
+import '../PropertyWizard/PropertyWizard.styles.css';
 
 interface TourWizardProps {
     onClose: () => void;
@@ -57,6 +59,11 @@ const TourWizard: React.FC<TourWizardProps> = ({ onClose, onSave, initialData })
         if (currentStep > 0) setCurrentStep(currentStep - 1);
     };
 
+    const handleSave = (shouldClose: boolean = false) => {
+        onSave(tourData);
+        if (shouldClose) onClose();
+    };
+
     const renderStep = () => {
         const props = { data: tourData, onChange: updateTour };
         switch (steps[currentStep].id) {
@@ -69,81 +76,102 @@ const TourWizard: React.FC<TourWizardProps> = ({ onClose, onSave, initialData })
     };
 
     return (
-        <div className="tour-wizard-overlay">
+        <div className="wizard-overlay">
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="tour-wizard-container"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="wizard-container"
             >
-                {/* Header */}
-                <div className="tour-wizard-header">
-                    <div className="header-left">
-                        <div className="tour-icon-badge">
-                            <Globe size={24} className="pulse" />
+                {/* SIDEBAR NAVIGATION */}
+                <div className="wizard-sidebar">
+                    <div className="wizard-sidebar-header">
+                        <h2>Grupna Putovanja</h2>
+                    </div>
+
+                    <div className="wizard-steps-list">
+                        {steps.map((step, index) => (
+                            <div
+                                key={step.id}
+                                className={`step-item-row ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
+                                onClick={() => setCurrentStep(index)}
+                            >
+                                <div className="step-icon-small">
+                                    {index < currentStep ? <Check size={16} /> : (index + 1)}
+                                </div>
+                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{step.title}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* MAIN CONTENT AREA */}
+                <div className="wizard-main-area">
+                    {/* TOPBAR */}
+                    <div className="wizard-topbar">
+                        <div className="topbar-title">
+                            <h3>{steps[currentStep].title}</h3>
+                            <span className="topbar-subtitle">Korak {currentStep + 1} od {steps.length} • Musashi Strategija</span>
                         </div>
-                        <div>
-                            <h2>Grand Tour Architect</h2>
-                            <p>Kreiranje grupnog aranžmana • Musashi Strategija</p>
+                        <button
+                            onClick={onClose}
+                            className="exit-button"
+                        >
+                            <LogOut size={16} /> Exit
+                        </button>
+                    </div>
+
+                    {/* SCROLLABLE CONTENT */}
+                    <div className="wizard-content-wrapper">
+                        <div className="content-center-limit">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={currentStep}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    {renderStep()}
+                                </motion.div>
+                            </AnimatePresence>
                         </div>
                     </div>
-                    <button className="close-btn" onClick={onClose}><X size={20} /></button>
-                </div>
 
-                {/* Progress Stepper */}
-                <div className="tour-stepper">
-                    {steps.map((step, idx) => (
-                        <div
-                            key={step.id}
-                            className={`step-item ${idx === currentStep ? 'active' : ''} ${idx < currentStep ? 'completed' : ''}`}
-                            onClick={() => setCurrentStep(idx)}
+                    {/* ACTION FOOTER */}
+                    <div className="wizard-action-footer">
+                        <button
+                            onClick={handlePrev}
+                            disabled={currentStep === 0}
+                            className={`footer-btn-prev ${currentStep === 0 ? 'disabled' : ''}`}
                         >
-                            <div className="step-point">
-                                {idx < currentStep ? <Check size={14} /> : step.icon}
-                            </div>
-                            <span>{step.title}</span>
-                            {idx < steps.length - 1 && <div className="step-line" />}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Content Area */}
-                <div className="tour-wizard-content">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentStep}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            {renderStep()}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="tour-wizard-footer">
-                    <button
-                        className="btn-back"
-                        onClick={handlePrev}
-                        disabled={currentStep === 0}
-                    >
-                        <ChevronLeft size={18} /> Nazad
-                    </button>
-
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn-secondary" onClick={() => onSave(tourData)}>
-                            <Save size={18} /> Sačuvaj Draft
+                            <ChevronLeft size={18} /> Nazad
                         </button>
-                        {currentStep < steps.length - 1 ? (
-                            <button className="btn-primary" onClick={handleNext}>
-                                Dalje <ChevronRight size={18} />
-                            </button>
-                        ) : (
-                            <button className="btn-finish" onClick={() => onSave(tourData)}>
-                                <Check size={18} /> Objavi Putovanje
-                            </button>
-                        )}
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            {currentStep < steps.length - 1 ? (
+                                <>
+                                    <button
+                                        onClick={() => handleSave(false)}
+                                        className="footer-btn-save"
+                                    >
+                                        <Save size={18} /> Sačuvaj Draft
+                                    </button>
+                                    <button
+                                        onClick={handleNext}
+                                        className="footer-btn-next"
+                                    >
+                                        Sledeće <ChevronRight size={18} />
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => handleSave(true)}
+                                    className="footer-btn-finish"
+                                >
+                                    <Check size={18} /> Objavi Putovanje
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </motion.div>

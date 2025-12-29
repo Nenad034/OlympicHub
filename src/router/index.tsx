@@ -11,6 +11,7 @@ const HotelDetail = React.lazy(() => import('../pages/HotelDetail'));
 const HotelEdit = React.lazy(() => import('../pages/HotelEdit'));
 const HotelNew = React.lazy(() => import('../pages/HotelNew'));
 const HotelRooms = React.lazy(() => import('../pages/HotelRooms'));
+const HotelPrices = React.lazy(() => import('../pages/HotelPrices'));
 const SupplierDetail = React.lazy(() => import('../pages/SupplierDetail'));
 const CustomerDetail = React.lazy(() => import('../pages/CustomerDetail'));
 
@@ -23,6 +24,7 @@ const SettingsModule = React.lazy(() => import('../modules/system/Settings'));
 const DeepArchive = React.lazy(() => import('../modules/system/DeepArchive'));
 const Katana = React.lazy(() => import('../modules/system/Katana'));
 const Fortress = React.lazy(() => import('../modules/system/Fortress'));
+const PricingIntelligence = React.lazy(() => import('../modules/pricing/PricingIntelligence'));
 
 // Stores
 import { useThemeStore, useAuthStore } from '../stores';
@@ -149,6 +151,11 @@ export const router = createBrowserRouter([
                         path: 'hotels/:hotelSlug/rooms',
                         element: <HotelRooms />,
                     },
+                    // Price Management for Hotel
+                    {
+                        path: 'hotels/:hotelSlug/prices',
+                        element: <HotelPrices />,
+                    },
                 ],
             },
 
@@ -214,6 +221,10 @@ export const router = createBrowserRouter([
                         <Fortress onBack={() => window.history.back()} />
                     </ProtectedRoute>
                 ),
+            },
+            {
+                path: 'pricing-intelligence',
+                element: <PricingIntelligence />,
             },
         ],
     },
