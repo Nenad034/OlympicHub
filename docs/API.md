@@ -1,6 +1,6 @@
 # Olympic Hub API Documentation
 
-> **Version:** 1.0.0  
+> **Version:** 1.1.0  
 > **Last Updated:** 2025-12-29  
 > **Base URL:** `https://your-supabase-url.supabase.co/rest/v1`
 
@@ -13,10 +13,12 @@
 3. [Properties API](#properties-api)
 4. [Suppliers API](#suppliers-api)
 5. [Customers API](#customers-api)
-6. [Configuration API](#configuration-api)
-7. [Error Handling](#error-handling)
-8. [Rate Limiting](#rate-limiting)
-9. [Webhooks](#webhooks)
+6. [Gemini AI API](#gemini-ai-api) ✨ NEW
+7. [Configuration API](#configuration-api)
+8. [Error Handling](#error-handling)
+9. [Rate Limiting](#rate-limiting)
+10. [Webhooks](#webhooks)
+
 
 ---
 
@@ -329,6 +331,86 @@ interface Customer {
   updated_at: string;
 }
 ```
+
+---
+
+## Gemini AI API
+
+Securely interact with Google Gemini AI through the Edge Function proxy.
+
+### Edge Function Endpoint
+
+```http
+POST /functions/v1/gemini-proxy
+```
+
+### Request Body
+
+```json
+{
+  "prompt": "What is the capital of France?",
+  "model": "gemini-1.5-flash",
+  "maxTokens": 2048,
+  "temperature": 0.7,
+  "context": "Optional conversation context"
+}
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "response": "The capital of France is Paris.",
+  "model": "gemini-1.5-flash",
+  "usage": {
+    "promptTokenCount": 10,
+    "candidatesTokenCount": 8
+  }
+}
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `prompt` | string | required | User's question or request |
+| `model` | string | `gemini-1.5-flash` | Model to use |
+| `maxTokens` | number | 2048 | Maximum response tokens |
+| `temperature` | number | 0.7 | Creativity (0.0-1.0) |
+| `context` | string | - | Conversation history |
+
+### Available Models
+
+| Model | Best For |
+|-------|----------|
+| `gemini-1.5-flash` | Fast responses, general use |
+| `gemini-1.5-pro` | Complex reasoning, longer context |
+| `gemini-1.0-pro` |Legacy compatibility |
+
+### Frontend Service Usage
+
+```typescript
+import { askGemini, chatWithGemini } from '@/services/gemini';
+
+// Simple query
+const result = await askGemini('Explain hotel pricing');
+
+// With options
+const result = await askGemini('Create description for hotel', {
+  model: 'gemini-1.5-pro',
+  temperature: 0.8,
+});
+
+// Multi-turn chat
+const result = await chatWithGemini([
+  { role: 'user', content: 'Hello!' },
+  { role: 'assistant', content: 'Hi! How can I help?' },
+  { role: 'user', content: 'Tell me about Montenegro hotels' },
+]);
+```
+
+> 🔒 **Security:** See [docs/SECURITY.md](./SECURITY.md) for API key configuration.
 
 ---
 
