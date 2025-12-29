@@ -62,7 +62,27 @@ src/
 ---
 
 
+## 🚀 Deep Linking - TODO (Phase 2)
+- [ ] **Hotel Routes Expansion**:
+    - [ ] `/production/hotels/new` - Create new hotel wizard
+    - [ ] `/production/hotels/:slug/edit` - Edit hotel
+    - [ ] `/production/hotels/:slug/rooms` - Room management
+    - [ ] `/production/hotels/:slug/rooms/:roomId` - Individual room detail
+    - [ ] `/production/hotels/:slug/prices` - Price management
+- [ ] **Supplier Routes**:
+    - [ ] `/suppliers/:supplierId` - Supplier detail page
+    - [ ] `/suppliers/:supplierId/contracts` - Contract management
+- [ ] **Customer Routes**:
+    - [ ] `/customers/:customerId` - Customer detail page
+    - [ ] `/customers/:customerId/bookings` - Customer booking history
+- [ ] **Booking Routes** (Future):
+    - [ ] `/bookings/:bookingId` - Booking detail
+    - [ ] `/bookings/new` - New booking wizard
+
+---
+
 ## Future Tasks (Pending)
+
 - [x] **Master Administrator Role**: 
     - [x] Define a role above Level 5 (Master Level 6).
     - [x] Master Admin is the only one who can permanently delete data and access system source code.
