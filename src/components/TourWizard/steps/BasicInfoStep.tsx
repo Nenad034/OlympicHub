@@ -1,6 +1,5 @@
 import type { FC } from 'react';
 import type { StepProps } from '../types';
-import { Type, Calendar, AlignLeft, BarChart } from 'lucide-react';
 
 const BasicInfoStep: FC<StepProps> = ({ data, onChange }) => {
     return (

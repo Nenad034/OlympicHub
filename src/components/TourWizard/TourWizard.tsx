@@ -9,8 +9,7 @@ import {
     ChevronRight,
     ChevronLeft,
     Save,
-    LogOut,
-    Globe
+    LogOut
 } from 'lucide-react';
 import type { Tour } from '../../types/tour.types';
 

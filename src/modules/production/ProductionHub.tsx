@@ -40,7 +40,7 @@ import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
 import TourWizard from '../../components/TourWizard/TourWizard';
 import { type Property, validateProperty } from '../../types/property.types';
-import { type Tour, validateTour } from '../../types/tour.types';
+import { type Tour } from '../../types/tour.types';
 import {
     saveToCloud,
     loadFromCloud

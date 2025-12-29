@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { StepProps } from '../types';
-import { DollarSign, Plus, Trash2, Users, Info } from 'lucide-react';
+import { Plus, Trash2, Info } from 'lucide-react';
 
 const CommercialStep: FC<StepProps> = ({ data, onChange }) => {
     const supplements = data.supplements || [];
