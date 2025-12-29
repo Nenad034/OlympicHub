@@ -514,3 +514,23 @@
     --pricing-input-border: rgba(255, 255, 255, 0.1);
     --pricing-hover: rgba(255, 255, 255, 0.05);
 }
+
+/* Animate Spin for Loading */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Pricing Main - relative positioning for modal overlays */
+.pricing-main {
+    position: relative;
+}

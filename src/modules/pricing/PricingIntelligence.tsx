@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Bot,
     Send,
     Settings,
     FileSpreadsheet,
-    Link,
     Zap,
     Save,
     Calendar,
@@ -16,11 +15,22 @@ import {
     Trash2,
     Plus,
     Download,
-    AlertCircle
+    AlertCircle,
+    FolderOpen,
+    Loader2,
+    CheckCircle2
 } from 'lucide-react';
 import './PricingModule.styles.css';
 import { HOTEL_SERVICES } from '../../data/services/hotelServices';
 import { ROOM_PREFIXES, ROOM_VIEWS, ROOM_TYPES } from '../../data/rooms/roomTypes';
+import {
+    createPricelist,
+    getPricelists,
+    getPricelistWithDetails,
+    type Pricelist,
+    type PricePeriod,
+    type PriceRule
+} from './pricelistService';
 
 const PricingIntelligence: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'setup' | 'grid' | 'rules' | 'mapping'>('setup');
@@ -101,11 +111,163 @@ const PricingIntelligence: React.FC = () => {
         }
     ]);
 
+    // Pricelist Management State
+    const [pricelistId, setPricelistId] = useState<string | null>(null);
+    const [pricelistTitle, setPricelistTitle] = useState('Novi Cenovnik');
+    const [savedPricelists, setSavedPricelists] = useState<Pricelist[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showLoadModal, setShowLoadModal] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+
+    // Load saved pricelists on mount
+    useEffect(() => {
+        loadSavedPricelists();
+    }, []);
+
+    const loadSavedPricelists = async () => {
+        const { data, error } = await getPricelists();
+        if (!error && data) {
+            setSavedPricelists(data);
+        }
+    };
+
+    // Save current pricelist to Supabase
+    const handleSavePricelist = async (activate: boolean = false) => {
+        if (validationIssues.length > 0 && activate) {
+            alert('Ispravite greške pre aktiviranja cenovnika.');
+            return;
+        }
+
+        setIsSaving(true);
+        setSaveSuccess(false);
+
+        // Transform local state to API format
+        const pricelistData: Pricelist = {
+            title: pricelistTitle,
+            product: productState,
+            status: activate ? 'active' : 'draft'
+        };
+
+        const periodsData: PricePeriod[] = pricePeriods.map(p => ({
+            date_from: p.dateFrom,
+            date_to: p.dateTo,
+            basis: p.basis as 'PER_PERSON_DAY' | 'PER_ROOM_DAY' | 'PER_UNIT_STAY',
+            net_price: p.netPrice,
+            provision_percent: p.provisionPercent,
+            min_stay: p.minStay,
+            max_stay: p.maxStay,
+            release_days: p.releaseDays,
+            min_adults: p.minAdults,
+            max_adults: p.maxAdults,
+            min_children: p.minChildren,
+            max_children: p.maxChildren,
+            arrival_days: p.arrivalDays
+        }));
+
+        const rulesData: PriceRule[] = supplements.map((s: any) => ({
+            rule_type: s.type as 'SUPPLEMENT' | 'DISCOUNT',
+            title: s.title,
+            net_price: s.netPrice,
+            provision_percent: s.provisionPercent,
+            percent_value: s.percentValue,
+            days_before_arrival: s.daysBeforeArrival,
+            child_age_from: s.childAgeFrom,
+            child_age_to: s.childAgeTo,
+            min_adults: s.minAdults,
+            min_children: s.minChildren
+        }));
+
+        const { data, error } = await createPricelist(pricelistData, periodsData, rulesData);
+
+        setIsSaving(false);
+
+        if (error) {
+            console.error('Error saving pricelist:', error);
+            alert('Greška pri čuvanju: ' + (error.message || 'Nepoznata greška'));
+        } else if (data) {
+            setPricelistId(data.id || null);
+            setSaveSuccess(true);
+            loadSavedPricelists(); // Refresh list
+
+            // Auto-hide success indicator
+            setTimeout(() => setSaveSuccess(false), 3000);
+
+            if (activate) {
+                setMessages(prev => [...prev, {
+                    role: 'ai',
+                    content: `✅ Cenovnik "${pricelistTitle}" je aktiviran i sačuvan u bazi!`
+                }]);
+            }
+        }
+    };
+
+    // Load a pricelist from Supabase
+    const handleLoadPricelist = async (id: string) => {
+        setIsLoading(true);
+        setShowLoadModal(false);
+
+        const { pricelist, periods, rules, error } = await getPricelistWithDetails(id);
+
+        if (error || !pricelist) {
+            alert('Greška pri učitavanju cenovnika.');
+            setIsLoading(false);
+            return;
+        }
+
+        // Update state with loaded data
+        setPricelistId(pricelist.id || null);
+        setPricelistTitle(pricelist.title);
+        setProductState(pricelist.product || { service: '', prefix: '', type: '', view: '', name: '' });
+
+        // Transform periods
+        setPricePeriods(periods.map((p, idx) => ({
+            id: p.id || String(idx + 1),
+            dateFrom: p.date_from,
+            dateTo: p.date_to,
+            basis: p.basis,
+            netPrice: p.net_price,
+            provisionPercent: p.provision_percent,
+            releaseDays: p.release_days,
+            minStay: p.min_stay,
+            maxStay: p.max_stay ?? null,
+            minAdults: p.min_adults,
+            maxAdults: p.max_adults,
+            minChildren: p.min_children,
+            maxChildren: p.max_children,
+            arrivalDays: p.arrival_days
+        })));
+
+        // Transform rules
+        setSupplements(rules.map((r, idx) => ({
+            id: r.id || String(idx + 1),
+            type: r.rule_type,
+            title: r.title,
+            netPrice: r.net_price || 0,
+            provisionPercent: r.provision_percent || 20,
+            percentValue: r.percent_value || 0,
+            daysBeforeArrival: r.days_before_arrival || 0,
+            childAgeFrom: r.child_age_from ?? null,
+            childAgeTo: r.child_age_to ?? null,
+            minAdults: r.min_adults ?? null,
+            minChildren: r.min_children ?? null
+        })) as any);
+
+        setIsLoading(false);
+        setActiveTab('setup');
+
+        setMessages(prev => [...prev, {
+            role: 'ai',
+            content: `📂 Učitan cenovnik: "${pricelist.title}"`
+        }]);
+    };
+
     // Export Configuration to JSON
     const exportToJSON = () => {
         const config = {
             pricelist: {
-                id: 119,
+                id: pricelistId || 'draft',
+                title: pricelistTitle,
                 product: productState,
                 baseRates: pricePeriods.map(p => ({
                     ...p,
@@ -223,6 +385,24 @@ const PricingIntelligence: React.FC = () => {
                                 {validationIssues.length} problema
                             </div>
                         )}
+
+                        {/* Save Success Indicator */}
+                        {saveSuccess && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                borderRadius: '8px',
+                                color: '#10b981',
+                                fontSize: '12px'
+                            }}>
+                                <CheckCircle2 size={14} />
+                                Sačuvano!
+                            </div>
+                        )}
+
                         <button
                             className="btn-secondary"
                             onClick={() => setIsDarkMode(!isDarkMode)}
@@ -231,16 +411,74 @@ const PricingIntelligence: React.FC = () => {
                         >
                             {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
                         </button>
+
+                        {/* Load Pricelist Button */}
+                        <button
+                            className="btn-secondary"
+                            onClick={() => setShowLoadModal(true)}
+                            title="Učitaj sačuvani cenovnik"
+                        >
+                            <FolderOpen size={16} /> Učitaj
+                        </button>
+
                         <button className="btn-secondary"><FileSpreadsheet size={16} /> Import Excel</button>
                         <button className="btn-secondary" onClick={exportToJSON} title="Izvezi konfiguraciju u JSON">
                             <Download size={16} /> Export JSON
                         </button>
-                        <button className="btn-secondary"><Link size={16} /> API MARS Sync</button>
-                        <button className="btn-primary" disabled={validationIssues.length > 0}>
-                            <Save size={16} /> Aktiviraj Cenovnik
+
+                        {/* Save Draft Button */}
+                        <button
+                            className="btn-secondary"
+                            onClick={() => handleSavePricelist(false)}
+                            disabled={isSaving}
+                            title="Sačuvaj kao nacrt"
+                        >
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {' '}Sačuvaj
+                        </button>
+
+                        {/* Activate Button */}
+                        <button
+                            className="btn-primary"
+                            disabled={validationIssues.length > 0 || isSaving}
+                            onClick={() => handleSavePricelist(true)}
+                        >
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {' '}Aktiviraj Cenovnik
                         </button>
                     </div>
                 </header>
+
+                {/* Pricelist Title Bar */}
+                <div style={{
+                    padding: '12px 24px',
+                    background: 'var(--pricing-card)',
+                    borderBottom: '1px solid var(--pricing-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                }}>
+                    <Database size={18} style={{ color: 'var(--pricing-accent)' }} />
+                    <input
+                        type="text"
+                        value={pricelistTitle}
+                        onChange={e => setPricelistTitle(e.target.value)}
+                        placeholder="Naziv cenovnika..."
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: 'var(--pricing-text)',
+                            flex: 1
+                        }}
+                    />
+                    {pricelistId && (
+                        <span style={{ fontSize: '11px', color: 'var(--pricing-text-dim)' }}>
+                            ID: {pricelistId.slice(0, 8)}...
+                        </span>
+                    )}
+                </div>
 
                 <div className="pricing-content">
                     {activeTab === 'setup' && <PricelistSetupView productState={productState} setProductState={setProductState} />}
@@ -248,6 +486,100 @@ const PricingIntelligence: React.FC = () => {
                     {activeTab === 'rules' && <RulesView supplements={supplements} setSupplements={setSupplements} productName={productState.name} />}
                     {activeTab === 'mapping' && <MappingView />}
                 </div>
+
+                {/* Loading Overlay */}
+                {isLoading && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 100
+                    }}>
+                        <div style={{ color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                            <Loader2 size={48} className="animate-spin" />
+                            <span>Učitavanje...</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Load Modal */}
+                {showLoadModal && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.7)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 100
+                    }} onClick={() => setShowLoadModal(false)}>
+                        <div
+                            style={{
+                                background: 'var(--pricing-card)',
+                                borderRadius: '16px',
+                                padding: '24px',
+                                width: '500px',
+                                maxHeight: '70vh',
+                                overflow: 'auto'
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <FolderOpen size={20} /> Učitaj Cenovnik
+                            </h3>
+
+                            {savedPricelists.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--pricing-text-dim)' }}>
+                                    Nema sačuvanih cenovnika.
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {savedPricelists.map(pl => (
+                                        <div
+                                            key={pl.id}
+                                            onClick={() => handleLoadPricelist(pl.id!)}
+                                            style={{
+                                                padding: '16px',
+                                                background: 'var(--pricing-bg)',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                border: '1px solid var(--pricing-border)',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--pricing-accent)')}
+                                            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--pricing-border)')}
+                                        >
+                                            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{pl.title}</div>
+                                            <div style={{ fontSize: '12px', color: 'var(--pricing-text-dim)', display: 'flex', gap: '12px' }}>
+                                                <span>📦 {pl.product?.name || 'Bez proizvoda'}</span>
+                                                <span style={{
+                                                    padding: '2px 8px',
+                                                    borderRadius: '4px',
+                                                    background: pl.status === 'active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                                    color: pl.status === 'active' ? '#10b981' : '#f59e0b'
+                                                }}>
+                                                    {pl.status === 'active' ? 'Aktivan' : 'Nacrt'}
+                                                </span>
+                                                <span>📅 {pl.updated_at ? new Date(pl.updated_at).toLocaleDateString('sr-RS') : '-'}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <button
+                                className="btn-secondary"
+                                style={{ marginTop: '16px', width: '100%' }}
+                                onClick={() => setShowLoadModal(false)}
+                            >
+                                Zatvori
+                            </button>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );
