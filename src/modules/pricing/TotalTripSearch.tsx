@@ -1,24 +1,30 @@
 import React, { useState } from 'react';
 import {
-    Search,
-    Plane,
-    Home,
-    MapPin,
-    Calendar,
-    Users,
-    Sparkles,
-    Bus,
-    Compass,
-    Ticket,
-    Loader2,
-    CheckCircle2,
-    Hotel,
-    Info
+    Search, Plane, Home, MapPin, Calendar, Users, Sparkles,
+    Bus, Compass, Ticket, Loader2, CheckCircle2, Hotel,
+    Info, CarFront, Ship, TrainFront, Utensils, Waves,
+    Castle, Users2, ChevronRight, PlusCircle, Trash2
 } from 'lucide-react';
 import { searchOffers, type OfferInquiry } from '../../services/aiOfferService';
 import './TotalTripSearch.css';
 
+const TRIP_CATEGORIES = [
+    { id: 'hotel', label: 'Hotel', icon: <Hotel size={18} /> },
+    { id: 'flight', label: 'Avio', icon: <Plane size={18} /> },
+    { id: 'bus', label: 'Autobus', icon: <Bus size={18} /> },
+    { id: 'car', label: 'Rent-a-car', icon: <CarFront size={18} /> },
+    { id: 'ship', label: 'Brod/Krstarenje', icon: <Ship size={18} /> },
+    { id: 'train', label: 'Voz', icon: <TrainFront size={18} /> },
+    { id: 'excursion', label: 'Izleti', icon: <Compass size={18} /> },
+    { id: 'ticket', label: 'Ulaznice', icon: <Ticket size={18} /> },
+    { id: 'disney', label: 'Disneyland', icon: <Castle size={18} /> },
+    { id: 'waterpark', label: 'Aquapark', icon: <Waves size={18} /> },
+    { id: 'food', label: 'Restorani', icon: <Utensils size={18} /> },
+    { id: 'group', label: 'Grupe', icon: <Users2 size={18} /> },
+];
+
 const TotalTripSearch: React.FC = () => {
+    const [selectedComponents, setSelectedComponents] = useState<string[]>(['hotel']);
     const [inquiry, setInquiry] = useState<OfferInquiry>({
         hotelName: '',
         checkIn: '',
@@ -38,7 +44,12 @@ const TotalTripSearch: React.FC = () => {
         setIsLoading(true);
         setSearchPerformed(true);
         try {
-            const data = await searchOffers(inquiry);
+            const updatedInquiry = {
+                ...inquiry,
+                transportRequired: selectedComponents.some(c => ['flight', 'bus', 'car', 'ship', 'train'].includes(c)),
+                additionalServices: selectedComponents.filter(c => !['hotel', 'flight', 'bus', 'car', 'ship', 'train'].includes(c))
+            };
+            const data = await searchOffers(updatedInquiry);
             setResults(data);
         } catch (error) {
             console.error('Search failed:', error);
@@ -47,13 +58,10 @@ const TotalTripSearch: React.FC = () => {
         }
     };
 
-    const toggleService = (service: string) => {
-        setInquiry(prev => ({
-            ...prev,
-            additionalServices: prev.additionalServices.includes(service)
-                ? prev.additionalServices.filter(s => s !== service)
-                : [...prev.additionalServices, service]
-        }));
+    const toggleComponent = (id: string) => {
+        setSelectedComponents(prev =>
+            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+        );
     };
 
     return (
@@ -61,28 +69,45 @@ const TotalTripSearch: React.FC = () => {
             <header className="total-trip-header">
                 <div className="header-content">
                     <h1><Compass className="icon-main" /> Total Trip Planner</h1>
-                    <p>Univerzalna pretraga smeštaja, prevoza i dodatnih usluga</p>
+                    <p>Kreirajte personalizovano putovanje kao mozaik doživljaja</p>
                 </div>
-                <div className="header-badge">
+                <div className="header-badge ai-premium">
                     <Sparkles size={16} />
-                    <span>AI Enhanced</span>
+                    <span>AI Enhanced Planning</span>
                 </div>
             </header>
 
-            <div className="search-console">
-                <div className="search-grid">
-                    <div className="input-group">
-                        <label><Home size={14} /> Destinacija / Hotel</label>
+            <div className="trip-builder-console">
+                <div className="component-selector">
+                    <h3 className="selector-title">Šta uključujemo u putovanje?</h3>
+                    <div className="component-chips-grid">
+                        {TRIP_CATEGORIES.map(cat => (
+                            <button
+                                key={cat.id}
+                                className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
+                                onClick={() => toggleComponent(cat.id)}
+                            >
+                                <span className="comp-icon">{cat.icon}</span>
+                                <span className="comp-label">{cat.label}</span>
+                                {selectedComponents.includes(cat.id) && <CheckCircle2 size={12} className="check-indicator" />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="search-form-row">
+                    <div className="input-group-premium main-search">
+                        <MapPin size={18} className="input-icon" />
                         <input
                             type="text"
-                            placeholder="Npr. Splendid Bečići..."
+                            placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
                             value={inquiry.hotelName}
                             onChange={e => setInquiry({ ...inquiry, hotelName: e.target.value })}
                         />
                     </div>
 
-                    <div className="input-group">
-                        <label><Calendar size={14} /> Datum polaska</label>
+                    <div className="input-group-premium">
+                        <Calendar size={18} className="input-icon" />
                         <input
                             type="date"
                             value={inquiry.checkIn}
@@ -90,127 +115,123 @@ const TotalTripSearch: React.FC = () => {
                         />
                     </div>
 
-                    <div className="input-group">
-                        <label><Users size={14} /> Putnici</label>
-                        <div className="passengers-input">
+                    <div className="input-group-premium passengers">
+                        <Users size={18} className="input-icon" />
+                        <div className="count-inputs">
                             <input
                                 type="number"
                                 min="1"
                                 value={inquiry.adults}
                                 onChange={e => setInquiry({ ...inquiry, adults: parseInt(e.target.value) || 1 })}
-                                title="Odrasli"
                             />
-                            <span>+</span>
+                            <span className="sep">/</span>
                             <input
                                 type="number"
                                 min="0"
                                 value={inquiry.children}
                                 onChange={e => setInquiry({ ...inquiry, children: parseInt(e.target.value) || 0 })}
-                                title="Deca"
                             />
                         </div>
                     </div>
 
-                    <div className="search-actions">
-                        <button className="search-btn" onClick={handleSearch} disabled={isLoading}>
-                            {isLoading ? <Loader2 className="spin" /> : <Search />}
-                            Pretraži Sve
-                        </button>
-                    </div>
-                </div>
-
-                <div className="extra-filters">
-                    <div className="filter-chip-group">
-                        <span>Dodatno:</span>
-                        {[
-                            { id: 'transport', label: 'Prevoz', icon: <Bus size={14} /> },
-                            { id: 'excursion', label: 'Izleti', icon: <Compass size={14} /> },
-                            { id: 'ticket', label: 'Ulaznice', icon: <Ticket size={14} /> },
-                        ].map(service => (
-                            <button
-                                key={service.id}
-                                className={`filter-chip ${inquiry.additionalServices.includes(service.id) ? 'active' : ''}`}
-                                onClick={() => toggleService(service.id)}
-                            >
-                                {service.icon}
-                                {service.label}
-                            </button>
-                        ))}
-                    </div>
+                    <button className="search-launch-btn" onClick={handleSearch} disabled={isLoading}>
+                        {isLoading ? <Loader2 className="spin" /> : <Search size={22} />}
+                        <span>Pronađi sve</span>
+                    </button>
                 </div>
             </div>
 
-            <div className="results-area">
+            <div className="content-workflow">
                 {!searchPerformed && (
-                    <div className="search-placeholder">
-                        <div className="placeholder-content">
-                            <Compass size={64} opacity={0.2} />
-                            <h3>Spremni za planiranje?</h3>
-                            <p>Unesite parametre iznad da pretražite bazu Olympic Travela.</p>
+                    <div className="zen-placeholder">
+                        <div className="zen-content">
+                            <div className="musashi-icon-large">
+                                <Compass size={80} strokeWidth={1} />
+                            </div>
+                            <h2>Spremite se za savršeno putovanje</h2>
+                            <p>Izaberite komponente iznad i unesite destinaciju da pretražimo Olympic Hub bazu.</p>
                         </div>
                     </div>
                 )}
 
                 {isLoading && (
-                    <div className="loading-state">
-                        <Loader2 className="spin" size={48} />
-                        <p>Pretražujem hotele, prevoz i izlete...</p>
+                    <div className="loading-orchestrator">
+                        <div className="pulse-loader"></div>
+                        <p>AI sklapa vaš mozaik putovanja...</p>
                     </div>
                 )}
 
                 {results && !isLoading && (
-                    <div className="results-grid">
-                        <section className="results-column">
-                            <h3><Hotel size={18} /> Smeštaj ({results.hotels.length})</h3>
-                            {results.hotels.length > 0 ? (
-                                results.hotels.map(hotel => (
-                                    <div key={hotel.id} className="result-card hotel">
-                                        <div className="result-main">
-                                            <h4>{hotel.title}</h4>
-                                            <p className="location"><MapPin size={12} /> {hotel.location || 'Crna Gora'}</p>
-                                            <div className="price-tag">
-                                                <span>od</span>
-                                                <strong>{hotel.price_periods?.[0]?.net_price || '??'} EUR</strong>
+                    <div className="results-mosaic">
+                        {selectedComponents.includes('hotel') && (
+                            <section className="results-category">
+                                <div className="cat-header-premium">
+                                    <Hotel size={20} />
+                                    <h3>Smeštaj</h3>
+                                    <span className="count-pill">{results.hotels.length}</span>
+                                </div>
+                                <div className="mosaic-grid">
+                                    {results.hotels.length > 0 ? (
+                                        results.hotels.map(hotel => (
+                                            <div key={hotel.id} className="mosaic-card hotel">
+                                                <div className="card-top">
+                                                    <h4>{hotel.title}</h4>
+                                                    <span className="stars">{'★'.repeat(hotel.stars || 5)}</span>
+                                                </div>
+                                                <div className="card-meta">
+                                                    <MapPin size={12} /> {hotel.location || 'Lokacija na upit'}
+                                                </div>
+                                                <div className="card-price">
+                                                    <span className="label">Od</span>
+                                                    <span className="value">{hotel.price_periods?.[0]?.net_price || '??'} EUR</span>
+                                                </div>
+                                                <div className="card-actions">
+                                                    <button className="btn-action">Dodaj u plan</button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-data-card">Nema slobodnih soba u bazi.</div>
+                                    )}
+                                </div>
+                            </section>
+                        )}
+
+                        <section className="results-category">
+                            <div className="cat-header-premium experiences">
+                                <Sparkles size={20} />
+                                <h3>Doživljaji i Prevoz</h3>
+                                <span className="count-pill">{results.services.length}</span>
+                            </div>
+                            <div className="mosaic-grid">
+                                {results.services.length > 0 ? (
+                                    results.services.map(service => (
+                                        <div key={service.id} className="mosaic-card service">
+                                            <div className="service-tag">{service.category}</div>
+                                            <h4>{service.title}</h4>
+                                            <p className="description-short">{service.description}</p>
+                                            <div className="card-price">
+                                                <span className="value">{service.price_gross} {service.currency}</span>
+                                            </div>
+                                            <div className="card-actions">
+                                                <button className="btn-action add">Dodaj</button>
                                             </div>
                                         </div>
-                                        <div className="result-footer">
-                                            <span className="badge">Dostupno</span>
-                                            <button className="view-btn">Detalji</button>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="no-results">Nema pronađenih hotela.</div>
-                            )}
+                                    ))
+                                ) : (
+                                    <div className="no-data-card">Pokušajte sa širim filterima ili kontaktirajte operativu.</div>
+                                )}
+                            </div>
                         </section>
 
-                        <section className="results-column">
-                            <h3><Plane size={18} /> Prevoz i Usluge ({results.services.length})</h3>
-                            {results.services.length > 0 ? (
-                                results.services.map(service => (
-                                    <div key={service.id} className="result-card service">
-                                        <div className="result-main">
-                                            <div className="cat-header">
-                                                <span className={`cat-icon ${service.category}`}>
-                                                    {service.category === 'transport' ? <Bus size={14} /> : <Compass size={14} />}
-                                                </span>
-                                                <span className="cat-name">{service.category}</span>
-                                            </div>
-                                            <h4>{service.title}</h4>
-                                            <p className="desc">{service.description}</p>
-                                            <div className="price-tag">
-                                                <strong>{service.price_gross} {service.currency}</strong>
-                                            </div>
-                                        </div>
-                                        <div className="result-footer">
-                                            <button className="add-btn">Dodaj u ponudu</button>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="no-results">Nema pronađenih dodatnih usluga.</div>
-                            )}
-                        </section>
+                        {results.hotels.length > 0 && (
+                            <div className="verified-upsell">
+                                <div className="upsell-banner">
+                                    <Info size={20} />
+                                    <span><strong>Pro tip:</strong> Uz ovaj hotel preporučujemo privatni transfer i jedan od Olympic proverenih izleta!</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

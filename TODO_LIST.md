@@ -114,6 +114,12 @@ src/
     - [x] Add "Master Lock" for Level 6: Second-factor confirmation for any action involving Banks or Government systems.
     - [ ] API Guardian: Encrypt and isolate all external API keys (Banks, CIS, e-Turista).
     - [ ] Implement IP Whitelisting for backend authentication to prevent "upad sa strane".
+### 🗺️ TOTAL TRIP & EXPERIENCES
+- [ ] **Viator API Integration**: Istražiti i implementirati konekciju sa Viatorom za globalnu ponudu izleta i ulaznica.
+- [ ] **Contextual Upselling**: Razviti logiku koja na osnovu izabranog hotela/destinacije nudi "Verified Experiences" (restorani, lokalni dragulji, najbolja kafa).
+- [ ] **Musashi Iconography**: Implementirati oštre, minimalističke ikone za sve tipove usluga.
+- [ ] **Group Travel Logic**: Implementirati pretragu i kalkulaciju za grupna putovanja (popusti na količinu, grupni prevoz).
+- [ ] **Trip Builder**: Omogućiti korisniku da "sklapa" putovanje kao mozaik (Avio + Hotel + Transfer + Disneyland + Večera).
 - [x] **Zero Trust Arhitektura**:
     - [x] RBAC enforcement (Levels 1-6).
     - [x] Deep Archive for immutable audit logs.
