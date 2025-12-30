@@ -26,6 +26,7 @@ const DeepArchive = React.lazy(() => import('../modules/system/DeepArchive'));
 const Katana = React.lazy(() => import('../modules/system/Katana'));
 const Fortress = React.lazy(() => import('../modules/system/Fortress'));
 const PricingIntelligence = React.lazy(() => import('../modules/pricing/PricingIntelligence'));
+const TotalTripSearch = React.lazy(() => import('../modules/pricing/TotalTripSearch'));
 const OlympicMail = React.lazy(() => import('../modules/mail/OlympicMail'));
 const Login = React.lazy(() => import('../pages/Login'));
 
@@ -239,6 +240,10 @@ export const router = createBrowserRouter([
             {
                 path: 'pricing-intelligence',
                 element: <PricingIntelligence />,
+            },
+            {
+                path: 'total-trip',
+                element: <TotalTripSearch />,
             },
             {
                 path: 'mail',
