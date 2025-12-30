@@ -41,9 +41,8 @@ interface MailState {
 
 const initialAccounts: MailAccount[] = [
     { id: 'acc1', email: 'nenad.tomic1403@gmail.com', name: 'Nenad Tomić - Gmail', color: '#ea4335', signature: 'Srdačan pozdrav,\nNenad Tomić' },
-    { id: 'acc2', email: 'nenad@olympic.rs', name: 'Nenad - Olympic', color: '#3fb950', signature: 'Srdačan pozdrav,\nNenad\nOlympic Travel' },
-    { id: 'acc3', email: 'office@olympic.rs', name: 'Olympic Office', color: '#3b82f6', signature: 'Olympic Travel Team' },
-    { id: 'acc4', email: 'marketing@olympic.rs', name: 'Marketing SES', color: '#a855f7' }
+    { id: 'acc2', email: 'nenad.tomic@olympic.rs', name: 'Nenad Tomić - Olympic', color: '#3fb950', signature: 'Srdačan pozdrav,\nNenad Tomić\nOlympic Travel' },
+    { id: 'acc3', email: 'info@olympic.rs', name: 'Olympic Info', color: '#3b82f6', signature: 'Olympic Travel Team\nwww.olympic.rs' }
 ];
 
 const initialEmails: Email[] = [
