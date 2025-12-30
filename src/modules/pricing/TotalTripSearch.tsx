@@ -4,27 +4,20 @@ import {
     Bus, Compass, Ticket, Loader2, CheckCircle2, Hotel,
     Info, CarFront, Ship, TrainFront, Utensils, Waves,
     Castle, Users2, ChevronRight, PlusCircle, Trash2,
-    Moon, RotateCcw, Zap
+    Moon, RotateCcw, Zap, MoveRight, MoveLeft
 } from 'lucide-react';
 import { searchOffers, type OfferInquiry } from '../../services/aiOfferService';
 import './TotalTripSearch.css';
 
-const TRIP_CATEGORIES_CORE = [
-    { id: 'hotel', label: 'Hotel', icon: <Hotel size={18} /> },
-    { id: 'flight', label: 'Avio', icon: <Plane size={18} /> },
-    { id: 'transfer', label: 'Transfer', icon: <CarFront size={18} /> },
+const TRIP_CATEGORIES_LEFT = [
+    { id: 'group', label: 'Putovanja', icon: <Users2 size={18} /> },
+    { id: 'ship', label: 'Krstarenje', icon: <Ship size={18} /> },
 ];
 
-const TRIP_CATEGORIES_EXTRAS = [
-    { id: 'bus', label: 'Autobus', icon: <Bus size={18} /> },
-    { id: 'ship', label: 'Krstarenje', icon: <Ship size={18} /> },
-    { id: 'train', label: 'Voz', icon: <TrainFront size={18} /> },
-    { id: 'excursion', label: 'Izleti', icon: <Compass size={18} /> },
-    { id: 'ticket', label: 'Ulaznice', icon: <Ticket size={18} /> },
-    { id: 'disney', label: 'Disneyland', icon: <Castle size={18} /> },
-    { id: 'waterpark', label: 'Aquapark', icon: <Waves size={18} /> },
-    { id: 'food', label: 'Restorani', icon: <Utensils size={18} /> },
-    { id: 'group', label: 'Grupe', icon: <Users2 size={18} /> },
+const TRIP_CATEGORIES_RIGHT = [
+    { id: 'hotel', label: 'Smeštaj', icon: <Hotel size={18} /> },
+    { id: 'flight', label: 'Avion', icon: <Plane size={18} /> },
+    { id: 'transfer', label: 'Transfer', icon: <CarFront size={18} /> },
 ];
 
 const TotalTripSearch: React.FC = () => {
@@ -76,22 +69,14 @@ const TotalTripSearch: React.FC = () => {
         setInquiry(newInquiry);
     };
 
-    // Dynamic Placeholder Logic
-    const getPlaceholderText = () => {
-        if (selectedComponents.includes('disney')) return "Tražite Disneyland (Pariz, Orlando, Hong Kong...)?";
-        if (selectedComponents.includes('waterpark')) return "Pronađite najbolje Aquaparkove (Turska, Grčka, UAE...)?";
-        if (selectedComponents.includes('ship')) return "Gde želite da isplovite? (Mediteran, Karibi...)?";
-        return "Gde putujemo? (Hotel, Grad, Regija...)";
-    };
-
     const handleSearch = async () => {
         setIsLoading(true);
         setSearchPerformed(true);
         try {
             const updatedInquiry = {
                 ...inquiry,
-                transportRequired: selectedComponents.some(c => ['flight', 'bus', 'transfer', 'ship', 'train'].includes(c)),
-                additionalServices: selectedComponents.filter(c => !['hotel', 'flight', 'bus', 'transfer', 'ship', 'train'].includes(c))
+                transportRequired: selectedComponents.some(c => ['flight', 'transfer', 'ship'].includes(c)),
+                additionalServices: selectedComponents.filter(c => !['hotel', 'flight', 'transfer', 'ship'].includes(c))
             };
             const data = await searchOffers(updatedInquiry);
             setResults(data);
@@ -122,10 +107,9 @@ const TotalTripSearch: React.FC = () => {
             </header>
 
             <div className="trip-builder-console">
-                <div className="component-selector-symmetric">
-                    <div className="selector-group primary-group">
-                        <span className="selector-label">Glavno:</span>
-                        {TRIP_CATEGORIES_CORE.map(cat => (
+                <div className="component-selector-v3">
+                    <div className="selector-group left">
+                        {TRIP_CATEGORIES_LEFT.map(cat => (
                             <button
                                 key={cat.id}
                                 className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
@@ -138,9 +122,9 @@ const TotalTripSearch: React.FC = () => {
                         ))}
                     </div>
 
-                    <div className="selector-group extras-group">
-                        <span className="selector-label">Dodaci:</span>
-                        {TRIP_CATEGORIES_EXTRAS.map(cat => (
+                    <div className="selector-group right">
+                        <span className="cta-label">Odaberite jednu, dve ili tri usluge</span>
+                        {TRIP_CATEGORIES_RIGHT.map(cat => (
                             <button
                                 key={cat.id}
                                 className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
@@ -161,22 +145,22 @@ const TotalTripSearch: React.FC = () => {
                             <label><MapPin size={14} /> Destinacija / Objekat</label>
                             <input
                                 type="text"
-                                placeholder={getPlaceholderText()}
+                                placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
                                 value={inquiry.hotelName}
                                 onChange={e => setInquiry({ ...inquiry, hotelName: e.target.value })}
                             />
                         </div>
 
                         <div className="date-cluster">
-                            <div className="input-group-premium date">
-                                <label><Calendar size={14} /> Polazak</label>
+                            <div className="input-group-premium">
+                                <label><MoveRight size={14} /> Polazak</label>
                                 <input
                                     type="date"
                                     value={inquiry.checkIn}
                                     onChange={e => handleCheckInChange(e.target.value)}
                                 />
                             </div>
-                            <div className="input-group-premium nights">
+                            <div className="input-group-premium nights-tiny">
                                 <label><Moon size={14} /> Noćenja</label>
                                 <input
                                     type="number"
@@ -185,15 +169,15 @@ const TotalTripSearch: React.FC = () => {
                                     onChange={e => handleNightsChange(parseInt(e.target.value) || 1)}
                                 />
                             </div>
-                            <div className="input-group-premium date">
-                                <label><RotateCcw size={14} /> Povratak</label>
+                            <div className="input-group-premium">
+                                <label><MoveLeft size={14} /> Povratak</label>
                                 <input
                                     type="date"
                                     value={inquiry.checkOut}
                                     onChange={e => handleCheckOutChange(e.target.value)}
                                 />
                             </div>
-                            <div className="input-group-premium flexibility">
+                            <div className="input-group-premium flexibility-tiny">
                                 <label><Zap size={14} /> +/- dana</label>
                                 <select value={flexibleDays} onChange={e => setFlexibleDays(parseInt(e.target.value))}>
                                     <option value={0}>Fiksno</option>
@@ -205,57 +189,56 @@ const TotalTripSearch: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 2: Passengers and Action */}
-                    <div className="form-row sub">
-                        <div className="passenger-cluster">
-                            <div className="input-group-premium">
-                                <label><Users size={14} /> Odrasli</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={inquiry.adults}
-                                    onChange={e => setInquiry({ ...inquiry, adults: parseInt(e.target.value) || 1 })}
-                                />
-                            </div>
-                            <div className="input-group-premium">
-                                <label><Users2 size={14} /> Deca</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={inquiry.children}
-                                    onChange={e => {
-                                        const count = parseInt(e.target.value) || 0;
-                                        setInquiry({
-                                            ...inquiry,
-                                            children: count,
-                                            childrenAges: Array(count).fill(7) // Default to 7 years
-                                        });
-                                    }}
-                                />
-                            </div>
-                            {inquiry.children > 0 && (
-                                <div className="children-ages-scroll">
-                                    {inquiry.childrenAges.map((age, idx) => (
-                                        <div key={idx} className="age-input">
-                                            <span>Det {idx + 1}</span>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="17"
-                                                value={age}
-                                                onChange={e => {
-                                                    const newAges = [...inquiry.childrenAges];
-                                                    newAges[idx] = parseInt(e.target.value) || 0;
-                                                    setInquiry({ ...inquiry, childrenAges: newAges });
-                                                }}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                    {/* Row 2: Passengers and Action - ALL IN LINE */}
+                    <div className="form-row passengers-action-line">
+                        <div className="input-group-premium adults-input">
+                            <label><Users size={14} /> Odrasli</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={inquiry.adults}
+                                onChange={e => setInquiry({ ...inquiry, adults: parseInt(e.target.value) || 1 })}
+                            />
+                        </div>
+                        <div className="input-group-premium children-input">
+                            <label><Users2 size={14} /> Deca</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={inquiry.children}
+                                onChange={e => {
+                                    const count = parseInt(e.target.value) || 0;
+                                    setInquiry({
+                                        ...inquiry,
+                                        children: count,
+                                        childrenAges: Array(count).fill(7)
+                                    });
+                                }}
+                            />
                         </div>
 
-                        <button className="search-launch-btn-v2" onClick={handleSearch} disabled={isLoading}>
+                        {inquiry.children > 0 && (
+                            <div className="children-ages-inline">
+                                {inquiry.childrenAges.map((age, idx) => (
+                                    <div key={idx} className="age-input-tiny">
+                                        <label>Det {idx + 1}</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="17"
+                                            value={age}
+                                            onChange={e => {
+                                                const newAges = [...inquiry.childrenAges];
+                                                newAges[idx] = parseInt(e.target.value) || 0;
+                                                setInquiry({ ...inquiry, childrenAges: newAges });
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <button className="search-launch-btn-v3" onClick={handleSearch} disabled={isLoading}>
                             {isLoading ? <Loader2 className="spin" /> : <Search size={22} />}
                             <span>Pretraži Ponude</span>
                         </button>
@@ -271,7 +254,7 @@ const TotalTripSearch: React.FC = () => {
                                 <Compass size={80} strokeWidth={1} />
                             </div>
                             <h2>Spremite se za savršeno putovanje</h2>
-                            <p>Izaberite komponente iznad i unesite destinaciju da pretražimo Olympic Hub bazu.</p>
+                            <p>Izaberite usluge iznad i unesite detalje za pretragu Olympic Hub baze.</p>
                         </div>
                     </div>
                 )}
@@ -345,15 +328,6 @@ const TotalTripSearch: React.FC = () => {
                                 )}
                             </div>
                         </section>
-
-                        {results.hotels.length > 0 && (
-                            <div className="verified-upsell">
-                                <div className="upsell-banner">
-                                    <Info size={20} />
-                                    <span><strong>Pro tip:</strong> Uz ovaj hotel preporučujemo privatni transfer i jedan od Olympic proverenih izleta!</span>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
