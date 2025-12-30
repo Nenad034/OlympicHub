@@ -6,7 +6,8 @@ import {
     Users,
     Settings as SettingsIcon,
     Search,
-    Mail
+    Mail,
+    Compass
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useThemeStore, useAppStore } from '../../stores';
@@ -52,6 +53,12 @@ const HorizontalNav: React.FC = () => {
                     className={({ isActive }) => navItemClass(isActive)}
                 >
                     <Mail size={18} /> Olympic Mail
+                </NavLink>
+                <NavLink
+                    to="/total-trip"
+                    className={({ isActive }) => navItemClass(isActive)}
+                >
+                    <Compass size={18} /> Savetnik
                 </NavLink>
                 <NavLink
                     to="/suppliers"
