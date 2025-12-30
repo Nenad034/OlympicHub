@@ -83,6 +83,41 @@
     color: #58a6ff;
 }
 
+/* Symmetrical Category Selector */
+.component-selector-symmetric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #30363d;
+}
+
+.selector-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.selector-label {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-right: 5px;
+}
+
+.primary-group {
+    flex: 0 0 auto;
+}
+
+.extras-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .search-form-complex {
     display: flex;
     flex-direction: column;
@@ -95,14 +130,15 @@
     align-items: flex-end;
 }
 
-.main-search {
-    flex: 2;
+.main-search.wide {
+    flex: 4;
+    /* Widened by about 50% compared to previous layout */
 }
 
 .date-cluster {
     display: flex;
     gap: 10px;
-    flex: 3;
+    flex: 4;
 }
 
 .input-group-premium {
@@ -150,18 +186,35 @@
     display: flex;
     gap: 10px;
     overflow-x: auto;
-    padding: 5px;
-    background: #0d1117;
+    padding: 10px;
+    background: rgba(88, 166, 255, 0.05);
     border-radius: 12px;
-    border: 1px solid #30363d;
-    max-width: 400px;
+    border: 1px dashed rgba(88, 166, 255, 0.3);
+    max-width: 450px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .age-input {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-width: 60px;
+    min-width: 65px;
+    background: #1c2128;
+    padding: 5px;
+    border-radius: 8px;
+    border: 1px solid #30363d;
 }
 
 .age-input span {

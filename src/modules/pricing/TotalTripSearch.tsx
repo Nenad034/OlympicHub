@@ -9,12 +9,15 @@ import {
 import { searchOffers, type OfferInquiry } from '../../services/aiOfferService';
 import './TotalTripSearch.css';
 
-const TRIP_CATEGORIES = [
+const TRIP_CATEGORIES_CORE = [
     { id: 'hotel', label: 'Hotel', icon: <Hotel size={18} /> },
     { id: 'flight', label: 'Avio', icon: <Plane size={18} /> },
+    { id: 'transfer', label: 'Transfer', icon: <CarFront size={18} /> },
+];
+
+const TRIP_CATEGORIES_EXTRAS = [
     { id: 'bus', label: 'Autobus', icon: <Bus size={18} /> },
-    { id: 'car', label: 'Rent-a-car', icon: <CarFront size={18} /> },
-    { id: 'ship', label: 'Brod/Krstarenje', icon: <Ship size={18} /> },
+    { id: 'ship', label: 'Krstarenje', icon: <Ship size={18} /> },
     { id: 'train', label: 'Voz', icon: <TrainFront size={18} /> },
     { id: 'excursion', label: 'Izleti', icon: <Compass size={18} /> },
     { id: 'ticket', label: 'Ulaznice', icon: <Ticket size={18} /> },
@@ -25,7 +28,7 @@ const TRIP_CATEGORIES = [
 ];
 
 const TotalTripSearch: React.FC = () => {
-    const [selectedComponents, setSelectedComponents] = useState<string[]>(['hotel']);
+    const [selectedComponents, setSelectedComponents] = useState<string[]>(['hotel', 'flight', 'transfer']);
     const [nights, setNights] = useState<number>(7);
     const [flexibleDays, setFlexibleDays] = useState<number>(0);
     const [inquiry, setInquiry] = useState<OfferInquiry>({
@@ -35,7 +38,7 @@ const TotalTripSearch: React.FC = () => {
         adults: 2,
         children: 0,
         childrenAges: [],
-        transportRequired: false,
+        transportRequired: true,
         additionalServices: []
     });
 
@@ -69,10 +72,16 @@ const TotalTripSearch: React.FC = () => {
             const diffTime = Math.abs(new Date(date).getTime() - new Date(inquiry.checkIn).getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             setNights(diffDays);
-        } else if (date && !inquiry.checkIn) {
-            // If only checkout set, well just set it
         }
         setInquiry(newInquiry);
+    };
+
+    // Dynamic Placeholder Logic
+    const getPlaceholderText = () => {
+        if (selectedComponents.includes('disney')) return "Tražite Disneyland (Pariz, Orlando, Hong Kong...)?";
+        if (selectedComponents.includes('waterpark')) return "Pronađite najbolje Aquaparkove (Turska, Grčka, UAE...)?";
+        if (selectedComponents.includes('ship')) return "Gde želite da isplovite? (Mediteran, Karibi...)?";
+        return "Gde putujemo? (Hotel, Grad, Regija...)";
     };
 
     const handleSearch = async () => {
@@ -81,8 +90,8 @@ const TotalTripSearch: React.FC = () => {
         try {
             const updatedInquiry = {
                 ...inquiry,
-                transportRequired: selectedComponents.some(c => ['flight', 'bus', 'car', 'ship', 'train'].includes(c)),
-                additionalServices: selectedComponents.filter(c => !['hotel', 'flight', 'bus', 'car', 'ship', 'train'].includes(c))
+                transportRequired: selectedComponents.some(c => ['flight', 'bus', 'transfer', 'ship', 'train'].includes(c)),
+                additionalServices: selectedComponents.filter(c => !['hotel', 'flight', 'bus', 'transfer', 'ship', 'train'].includes(c))
             };
             const data = await searchOffers(updatedInquiry);
             setResults(data);
@@ -104,7 +113,7 @@ const TotalTripSearch: React.FC = () => {
             <header className="total-trip-header">
                 <div className="header-content">
                     <h1><Compass className="icon-main" /> Total Trip Planner</h1>
-                    <p>Kreirajte personalizovano putovanje kao mozaik doživljaja</p>
+                    <p>Inteligentno povezivanje usluga za savršen odmor</p>
                 </div>
                 <div className="header-badge ai-premium">
                     <Sparkles size={16} />
@@ -113,13 +122,28 @@ const TotalTripSearch: React.FC = () => {
             </header>
 
             <div className="trip-builder-console">
-                <div className="component-selector">
-                    <h3 className="selector-title">Šta uključujemo u putovanje?</h3>
-                    <div className="component-chips-grid">
-                        {TRIP_CATEGORIES.map(cat => (
+                <div className="component-selector-symmetric">
+                    <div className="selector-group primary-group">
+                        <span className="selector-label">Glavno:</span>
+                        {TRIP_CATEGORIES_CORE.map(cat => (
                             <button
                                 key={cat.id}
-                                className={`comp - chip ${selectedComponents.includes(cat.id) ? 'active' : ''} `}
+                                className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
+                                onClick={() => toggleComponent(cat.id)}
+                            >
+                                <span className="comp-icon">{cat.icon}</span>
+                                <span className="comp-label">{cat.label}</span>
+                                {selectedComponents.includes(cat.id) && <CheckCircle2 size={12} className="check-indicator" />}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="selector-group extras-group">
+                        <span className="selector-label">Dodaci:</span>
+                        {TRIP_CATEGORIES_EXTRAS.map(cat => (
+                            <button
+                                key={cat.id}
+                                className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
                                 onClick={() => toggleComponent(cat.id)}
                             >
                                 <span className="comp-icon">{cat.icon}</span>
@@ -133,11 +157,11 @@ const TotalTripSearch: React.FC = () => {
                 <div className="search-form-complex">
                     {/* Row 1: Destination and Dates */}
                     <div className="form-row main">
-                        <div className="input-group-premium main-search">
-                            <label><MapPin size={14} /> Destinacija</label>
+                        <div className="input-group-premium main-search wide">
+                            <label><MapPin size={14} /> Destinacija / Objekat</label>
                             <input
                                 type="text"
-                                placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
+                                placeholder={getPlaceholderText()}
                                 value={inquiry.hotelName}
                                 onChange={e => setInquiry({ ...inquiry, hotelName: e.target.value })}
                             />
