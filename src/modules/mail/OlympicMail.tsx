@@ -29,12 +29,16 @@ import {
     Shield,
     Settings,
     RefreshCw,
-    Loader2
+    Loader2,
+    Sparkles,
+    Wand2
 } from 'lucide-react';
 import { useMailStore, useAuthStore } from '../../stores';
 import { sendEmail as sendEmailViaSmtp, fetchEmails as fetchEmailsViaImap } from '../../services/emailService';
+import { generateOfferFromEmail } from '../../services/aiOfferService';
 import { supabase } from '../../supabaseClient';
 import { EmailConfigModal } from '../../components/email/EmailConfigModal';
+import { AIOfferModal } from '../../components/email/AIOfferModal';
 import './OlympicMail.styles.css';
 
 export const OlympicMail: React.FC = () => {
@@ -63,6 +67,10 @@ export const OlympicMail: React.FC = () => {
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [isSending, setIsSending] = useState(false);
+
+    // AI Offer State
+    const [isLoadingAIOffer, setIsLoadingAIOffer] = useState(false);
+    const [aiProposal, setAiProposal] = useState<any | null>(null);
 
     // Compose State
     const [composeTo, setComposeTo] = useState('');
@@ -318,6 +326,61 @@ export const OlympicMail: React.FC = () => {
         }
     };
 
+    const handleCreateAIOffer = async () => {
+        if (!selectedEmail) return;
+
+        setIsLoadingAIOffer(true);
+        try {
+            const result = await generateOfferFromEmail(selectedEmail.body);
+            if (result.success && result.data) {
+                setAiProposal(result.data);
+            } else {
+                alert(`❌ AI Greška: ${result.error}`);
+            }
+        } catch (error: any) {
+            console.error('AI Offer generation error:', error);
+            alert('❌ Došlo je do greške pri radu AI asistenta.');
+        } finally {
+            setIsLoadingAIOffer(false);
+        }
+    };
+
+    const handleSendAIOffer = async (text: string) => {
+        if (!selectedEmail) return;
+
+        setIsSending(true);
+        try {
+            const result = await sendEmailViaSmtp({
+                from: activeAccount.email,
+                to: selectedEmail.senderEmail,
+                subject: `Re: ${selectedEmail.subject}`,
+                body: text,
+                accountId: selectedAccountId
+            });
+
+            if (result.success) {
+                // Immediate update
+                sendEmail({
+                    accountId: selectedAccountId,
+                    to: selectedEmail.senderEmail,
+                    subject: `Re: ${selectedEmail.subject}`,
+                    body: text,
+                    sender: activeAccount.name,
+                    senderEmail: activeAccount.email
+                });
+
+                alert('✅ Ponuda je uspešno poslata!');
+                setAiProposal(null);
+            } else {
+                alert(`❌ Greška pri slanju: ${result.error}`);
+            }
+        } catch (error: any) {
+            alert(`❌ Greška: ${error.message}`);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
     return (
         <div
             ref={containerRef}
@@ -511,6 +574,21 @@ export const OlympicMail: React.FC = () => {
                                             <>
                                                 <button title="Reply" onClick={() => handleReply(selectedEmail)}><Reply size={18} /></button>
                                                 <button title="Forward" onClick={() => handleForward(selectedEmail)}><Forward size={18} /></button>
+
+                                                <div className="v-divider"></div>
+
+                                                <button
+                                                    className="ai-magic-btn-main"
+                                                    title="Kreiraj AI ponudu"
+                                                    onClick={handleCreateAIOffer}
+                                                    disabled={isLoadingAIOffer}
+                                                >
+                                                    {isLoadingAIOffer ? <Loader2 size={18} className="spin" /> : <Sparkles size={18} />}
+                                                    <span>Kreiraj ponudu</span>
+                                                </button>
+
+                                                <div className="v-divider"></div>
+
                                                 <button title="Archive" onClick={() => {
                                                     updateEmail(selectedEmail.id, { category: 'archive' });
                                                     setSelectedEmailId(null);
@@ -550,19 +628,32 @@ export const OlympicMail: React.FC = () => {
                                     </div>
 
                                     {activeFolder !== 'trash' && (
-                                        <div className="ai-suggestion-mail">
+                                        <div className="ai-suggestion-mail-active">
                                             <div className="ai-header">
-                                                <Mail size={16} color="var(--accent)" />
-                                                <span>AI Assistant - Predlog odgovora</span>
+                                                <div className="ai-title">
+                                                    <Sparkles size={16} color="var(--accent)" />
+                                                    <span>AI Ponuda Asistent</span>
+                                                </div>
+                                                <div className="ai-badge">Agentic</div>
                                             </div>
-                                            <p>Na osnovu upita za {selectedEmail.subject.includes('Splendid') ? 'Hotel Splendid' : 'ovaj upit'}, mogu generisati ponudu sa 10% popusta za rani buking.</p>
+                                            <p>Pusti AI da proanalizira upit, pretraži bazu ponuda i sastavi profesionalan odgovor.</p>
                                             <div className="ai-actions">
-                                                <button className="ai-btn" onClick={() => handleReply(selectedEmail)}>Generiši ponudu</button>
-                                                <button className="ai-btn secondary" onClick={() => handleReply(selectedEmail)}>Draftuj odgovor</button>
+                                                <button
+                                                    className="ai-gen-btn"
+                                                    onClick={handleCreateAIOffer}
+                                                    disabled={isLoadingAIOffer}
+                                                >
+                                                    {isLoadingAIOffer ? (
+                                                        <><Loader2 size={16} className="spin" /> Analiziram upit...</>
+                                                    ) : (
+                                                        <><Wand2 size={16} /> Kreiraj AI ponudu</>
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
                                     )}
                                 </div>
+
                             </>
                         ) : (
                             <div className="no-selection">
@@ -701,8 +792,16 @@ export const OlympicMail: React.FC = () => {
                     accountEmail={activeAccount.email}
                     onClose={() => setShowConfigModal(false)}
                     onSaved={() => {
-                        alert('✅ Konfiguracija sačuvana! Sada možete slati i primati email-ove.');
+                        // Refresh accounts if needed
                     }}
+                />
+            )}
+
+            {aiProposal && (
+                <AIOfferModal
+                    proposal={aiProposal}
+                    onClose={() => setAiProposal(null)}
+                    onSend={handleSendAIOffer}
                 />
             )}
         </div>

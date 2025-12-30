@@ -220,10 +220,93 @@
     transition: all 0.2s;
 }
 
-.settings-btn-sidebar:hover {
-    background: var(--accent);
+.v-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--mail-border);
+    margin: 0 8px;
+}
+
+.ai-magic-btn-main {
+    background: linear-gradient(135deg, #1d2126 0%, #2c3e50 100%) !important;
+    border: 1px solid #3fb950 !important;
+    color: #3fb950 !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.ai-magic-btn-main:hover {
+    background: #3fb950 !important;
+    color: white !important;
+    box-shadow: 0 0 15px rgba(63, 185, 80, 0.4);
+}
+
+.ai-suggestion-mail-active {
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(63, 185, 80, 0.05);
+    border: 1px solid rgba(63, 185, 80, 0.2);
+    border-radius: 12px;
+    border-left: 4px solid #3fb950;
+}
+
+.ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.ai-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.ai-badge {
+    background: #3fb950;
     color: white;
-    border-color: var(--accent);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+.ai-suggestion-mail-active p {
+    font-size: 13px;
+    color: var(--mail-text-secondary);
+    margin-bottom: 15px;
+}
+
+.ai-gen-btn {
+    background: #3fb950;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.ai-gen-btn:hover {
+    opacity: 0.9;
+}
+
+.ai-gen-btn:disabled {
+    background: #2d333b;
+    cursor: not-allowed;
 }
 
 .folder-list {
