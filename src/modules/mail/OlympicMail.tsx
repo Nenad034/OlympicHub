@@ -332,6 +332,7 @@ export const OlympicMail: React.FC = () => {
                     </button>
                     <button className="settings-btn-sidebar" onClick={handleOpenSettings} title="Email Podešavanja">
                         <Settings size={18} />
+                        <span>Podešavanja</span>
                     </button>
                 </div>
 

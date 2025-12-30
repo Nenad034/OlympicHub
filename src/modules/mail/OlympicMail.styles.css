@@ -204,16 +204,26 @@
 }
 
 .settings-btn-sidebar {
+    flex: 1;
     background: var(--mail-item-hover);
     color: var(--mail-text-primary);
     border: 1px solid var(--mail-border);
-    width: 40px;
-    height: 40px;
+    padding: 10px;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
+    font-weight: 600;
     cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.settings-btn-sidebar:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
 }
 
 .folder-list {
