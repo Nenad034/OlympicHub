@@ -117,7 +117,7 @@ const TotalTripSearch: React.FC = () => {
         <div className="total-trip-container">
             <header className="total-trip-header">
                 <div className="header-content">
-                    <h1><Compass className="icon-main" /> Total Trip Planner</h1>
+                    <h1><Compass className="icon-main" /> Savetnik za putovanja</h1>
                     <p>Inteligentno povezivanje usluga za savršen odmor</p>
                 </div>
                 <div className="header-badge ai-premium">
