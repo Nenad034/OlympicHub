@@ -121,7 +121,6 @@ const TotalTripSearch: React.FC = () => {
                                 {selectedComponents.includes(cat.id) && <CheckCircle2 size={12} className="check-indicator" />}
                             </button>
                         ))}
-                        <span className="cta-label">Odaberite jednu, dve ili tri usluge</span>
                     </div>
 
                     <div className="selector-group right">
