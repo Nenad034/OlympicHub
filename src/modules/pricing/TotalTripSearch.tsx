@@ -192,12 +192,15 @@ const TotalTripSearch: React.FC = () => {
                     {/* Row 2: Passengers and Action */}
                     <div className="form-row passengers-action-line-v4">
                         <div className="input-group-premium rooms-input">
-                            <label><Home size={14} /> Sobe</label>
+                            <label><Home size={14} /> Broj soba</label>
                             <input
                                 type="number"
                                 min="1"
-                                value={rooms}
-                                onChange={e => setRooms(parseInt(e.target.value) || 1)}
+                                value={rooms || ''}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setRooms(val === '' ? 0 : parseInt(val) || 0);
+                                }}
                             />
                         </div>
                         <div className="input-group-premium adults-input">
@@ -205,8 +208,11 @@ const TotalTripSearch: React.FC = () => {
                             <input
                                 type="number"
                                 min="1"
-                                value={inquiry.adults}
-                                onChange={e => setInquiry({ ...inquiry, adults: parseInt(e.target.value) || 1 })}
+                                value={inquiry.adults || ''}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setInquiry({ ...inquiry, adults: val === '' ? 0 : parseInt(val) || 0 });
+                                }}
                             />
                         </div>
                         <div className="input-group-premium children-input">
