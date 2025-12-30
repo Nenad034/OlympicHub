@@ -222,12 +222,66 @@ serve(async (req) => {
 **Problem**: "Authentication failed"
 - **Rešenje**: Za Gmail, koristite App Password umesto obične lozinke
 
+## 🎯 Deployment Edge Functions
+
+### Brzi Start
+
+Edge Functions su već kreirane u `supabase/functions/` folderu. Sada ih samo treba deploy-ovati:
+
+#### Windows (PowerShell):
+```powershell
+cd supabase/functions
+.\deploy-functions.ps1
+```
+
+#### Linux/Mac (Bash):
+```bash
+cd supabase/functions
+chmod +x deploy-functions.sh
+./deploy-functions.sh
+```
+
+#### Ručno (pojedinačno):
+```bash
+# 1. Login u Supabase
+supabase login
+
+# 2. Link projekat
+supabase link --project-ref your-project-ref
+
+# 3. Deploy funkcije
+supabase functions deploy send-email
+supabase functions deploy fetch-emails
+supabase functions deploy test-email-connection
+```
+
+### Verifikacija
+
+Nakon deployment-a, proverite da li funkcije rade:
+
+```bash
+# Pratite logove
+supabase functions logs send-email --follow
+
+# Test lokalno
+supabase functions serve send-email
+```
+
+### Detaljne Instrukcije
+
+Za detaljne instrukcije, pogledajte:
+- **`supabase/functions/README.md`** - Kompletna dokumentacija
+- **`supabase/functions/deploy-functions.ps1`** - PowerShell deployment script
+- **`supabase/functions/deploy-functions.sh`** - Bash deployment script
+
 ## 🎯 Sledeći Koraci
 
-1. **Kreirajte Supabase Edge Functions** za send-email i fetch-emails
-2. **Testirajte slanje** email-a sa vašim nalogom
-3. **Testirajte primanje** email-ova preko IMAP-a
-4. **Podesite dodatne naloge** ako je potrebno
+1. ✅ **Edge Functions su kreirane** - Nalaze se u `supabase/functions/`
+2. 🚀 **Deploy Edge Functions** - Koristite deployment skriptu
+3. 🔧 **Podesite email nalog** - Otvorite Olympic Mail i kliknite Settings
+4. 📧 **Testirajte slanje** email-a sa vašim nalogom
+5. 📥 **Testirajte primanje** email-ova preko IMAP-a
+6. 🎨 **Podesite dodatne naloge** ako je potrebno
 
 ---
 
