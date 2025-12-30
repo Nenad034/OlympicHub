@@ -27,9 +27,13 @@ import {
     Check,
     RotateCcw,
     Shield,
-    Settings
+    Settings,
+    RefreshCw,
+    Loader2
 } from 'lucide-react';
 import { useMailStore, useAuthStore } from '../../stores';
+import { sendEmail as sendEmailViaSmtp, fetchEmails as fetchEmailsViaImap } from '../../services/emailService';
+import { EmailConfigModal } from '../../components/email/EmailConfigModal';
 import './OlympicMail.styles.css';
 
 export const OlympicMail: React.FC = () => {
@@ -54,6 +58,9 @@ export const OlympicMail: React.FC = () => {
     const [isMasterView, setIsMasterView] = useState(false);
     const [signatureEdit, setSignatureEdit] = useState('');
     const [searchText, setSearchText] = useState('');
+    const [showConfigModal, setShowConfigModal] = useState(false);
+    const [isFetching, setIsFetching] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
     // Compose State
     const [composeTo, setComposeTo] = useState('');
@@ -154,28 +161,85 @@ export const OlympicMail: React.FC = () => {
         setViewMode('compose');
     };
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!composeTo) return alert('Unesite primaoca');
 
-        // In a real app, this would call an API. 
-        // For now, we simulate by adding to the sent folder in the store.
-        sendEmail({
-            accountId: selectedAccountId,
-            to: composeTo,
-            subject: composeSubject || '(Bez naslova)',
-            body: composeBody,
-            sender: activeAccount.name,
-            senderEmail: activeAccount.email
-        });
+        setIsSending(true);
 
-        alert('Poruka je poslata!');
-        setViewMode('list');
-        setActiveFolder('sent');
+        try {
+            // Try to send real email via SMTP
+            const result = await sendEmailViaSmtp({
+                from: activeAccount.email,
+                to: composeTo,
+                subject: composeSubject || '(Bez naslova)',
+                body: composeBody,
+                accountId: selectedAccountId
+            });
+
+            if (result.success) {
+                // Also add to local store for immediate UI update
+                sendEmail({
+                    accountId: selectedAccountId,
+                    to: composeTo,
+                    subject: composeSubject || '(Bez naslova)',
+                    body: composeBody,
+                    sender: activeAccount.name,
+                    senderEmail: activeAccount.email
+                });
+
+                alert('✅ Poruka je uspešno poslata!');
+                setViewMode('list');
+                setActiveFolder('sent');
+            } else {
+                if (result.error?.includes('configuration not found')) {
+                    const shouldConfigure = confirm(
+                        'Email konfiguracija nije podešena. Da li želite da podesite sada?'
+                    );
+                    if (shouldConfigure) {
+                        setShowConfigModal(true);
+                    }
+                } else {
+                    alert(`❌ Greška pri slanju: ${result.error}`);
+                }
+            }
+        } catch (error: any) {
+            console.error('Error sending email:', error);
+            alert(`❌ Greška: ${error.message}`);
+        } finally {
+            setIsSending(false);
+        }
     };
 
     const handleOpenSettings = () => {
-        setSignatureEdit(activeAccount.signature || '');
-        setViewMode('settings');
+        setShowConfigModal(true);
+    };
+
+    const handleFetchEmails = async () => {
+        setIsFetching(true);
+        try {
+            const result = await fetchEmailsViaImap(selectedAccountId);
+            if (result.success) {
+                alert(`✅ Preuzeto ${result.emails?.length || 0} novih poruka!`);
+                // Emails are automatically stored in the database by the service
+                // You may want to refresh the local store here
+            } else {
+                if (result.error?.includes('configuration not found')) {
+                    const shouldConfigure = confirm(
+                        'Email konfiguracija nije podešena. Da li želite da podesite sada?'
+                    );
+                    if (shouldConfigure) {
+                        setShowConfigModal(true);
+                    }
+                } else {
+                    alert(`❌ Greška pri preuzimanju: ${result.error}`);
+                }
+            }
+        } catch (error: any) {
+            console.error('Error fetching emails:', error);
+            alert(`❌ Greška: ${error.message}`);
+        } finally {
+            setIsFetching(false);
+        }
     };
 
     const handleSaveSignature = () => {
@@ -332,6 +396,14 @@ export const OlympicMail: React.FC = () => {
                                     onChange={(e) => setSearchText(e.target.value)}
                                 />
                             </div>
+                            <button
+                                className="filter-btn"
+                                onClick={handleFetchEmails}
+                                disabled={isFetching}
+                                title="Preuzmi nove poruke"
+                            >
+                                {isFetching ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
+                            </button>
                             <button className="filter-btn"><Filter size={16} /></button>
                         </div>
 
@@ -451,7 +523,14 @@ export const OlympicMail: React.FC = () => {
                     </div>
 
                     <div className="compose-toolbar-main">
-                        <button className="btn-primary-send" onClick={handleSend}><Send size={16} /> Pošalji</button>
+                        <button
+                            className="btn-primary-send"
+                            onClick={handleSend}
+                            disabled={isSending}
+                        >
+                            {isSending ? <Loader2 size={16} className="spin" /> : <Send size={16} />}
+                            {isSending ? ' Šaljem...' : ' Pošalji'}
+                        </button>
                         <button className="btn-toolbar"><Paperclip size={16} /> Priloži</button>
                         <button className="btn-toolbar"><ImageIcon size={16} /> Slika</button>
                         <div className="toolbar-divider"></div>
@@ -550,6 +629,18 @@ export const OlympicMail: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Email Configuration Modal */}
+            {showConfigModal && (
+                <EmailConfigModal
+                    accountId={selectedAccountId}
+                    accountEmail={activeAccount.email}
+                    onClose={() => setShowConfigModal(false)}
+                    onSaved={() => {
+                        alert('✅ Konfiguracija sačuvana! Sada možete slati i primati email-ove.');
+                    }}
+                />
             )}
         </div>
     );
