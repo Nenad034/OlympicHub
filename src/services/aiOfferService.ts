@@ -8,13 +8,18 @@ export interface OfferInquiry {
     adults: number;
     children: number;
     childrenAges: number[];
+    transportRequired: boolean;
+    transportType?: 'bus' | 'flight' | 'car' | 'transfer';
+    locationFilter?: string;
+    additionalServices: string[]; // npr. ['izleti', 'ulaznice', 'vodič']
 }
 
 export interface OfferProposal {
     success: boolean;
     data?: {
         inquiry: OfferInquiry;
-        matches: any[];
+        hotelMatches: any[];
+        serviceMatches: any[];
         suggestedResponse: string;
     };
     error?: string;
@@ -25,28 +30,37 @@ export interface OfferProposal {
  */
 export async function extractInquiryParameters(emailBody: string): Promise<OfferInquiry | null> {
     const prompt = `
-        Analiziraj sledeći upit za putovanje i izvuci parametre u JSON formatu.
-        Pokušaj da identifikuješ:
-        - Naziv hotela (hotelName)
-        - Datum dolaska (checkIn - format YYYY-MM-DD)
-        - Datum odlaska (checkOut - format YYYY-MM-DD)
-        - Broj odraslih (adults)
-        - Broj dece (children)
-        - Uzrast dece (childrenAges - niz brojeva)
+        Analiziraj sledeći upit za putovanje i izvuci SVE parametre u JSON formatu.
+        Budi detektov i za dodatne usluge kao što su prevoz, izleti, ulaznice.
+
+        Parametri:
+        - hotelName: Naziv hotela
+        - checkIn: Datum dolaska (YYYY-MM-DD)
+        - checkOut: Datum odlaska (YYYY-MM-DD)
+        - adults: Broj odraslih
+        - children: Broj dece
+        - childrenAges: Niz uzrasta dece
+        - transportRequired: boolean (da li pominju prevoz, avio, bus...)
+        - transportType: 'bus' | 'flight' | 'car' | 'transfer'
+        - locationFilter: Grad ili regija koja se pominje
+        - additionalServices: Niz ključnih reči za dodatke (npr. ['izlet', 'muzej', 'brod'])
 
         Upit:
         "${emailBody}"
 
-        Odgovori ISKLJUČIVO JSON objektom. Ako neki podatak fali, stavi null ili prazan niz.
+        Odgovori ISKLJUČIVO JSON objektom.
     `;
 
     const result = await askGemini(prompt, { temperature: 0.1 });
 
     if (result.success) {
         try {
-            // Clean the response from markdown code blocks if present
             const jsonStr = result.response.replace(/```json|```/g, '').trim();
-            return JSON.parse(jsonStr) as OfferInquiry;
+            const parsed = JSON.parse(jsonStr);
+            return {
+                ...parsed,
+                additionalServices: parsed.additionalServices || []
+            } as OfferInquiry;
         } catch (e) {
             console.error('Failed to parse Gemini JSON:', e);
             return null;
@@ -56,31 +70,25 @@ export async function extractInquiryParameters(emailBody: string): Promise<Offer
 }
 
 /**
- * Searches the pricelist database for matching offers
+ * Searches the pricelist database for matching offers and services
  */
-export async function searchPricelists(params: OfferInquiry): Promise<any[]> {
+export async function searchOffers(params: OfferInquiry): Promise<{ hotels: any[], services: any[] }> {
     try {
-        // Simple search by hotel name in pricelist titles or connected properties
-        let query = supabase
+        // 1. Search Hotels
+        let hotelQuery = supabase
             .from('pricelists')
-            .select(`
-                *,
-                price_periods (*),
-                price_rules (*)
-            `)
+            .select('*, price_periods (*), price_rules (*)')
             .eq('status', 'active');
 
         if (params.hotelName) {
-            query = query.ilike('title', `%${params.hotelName}%`);
+            hotelQuery = hotelQuery.ilike('title', `%${params.hotelName}%`);
         }
 
-        const { data: pricelists, error } = await query;
-
-        if (error) throw error;
-        if (!pricelists) return [];
+        const { data: hotels, error: hotelError } = await hotelQuery;
+        if (hotelError) throw hotelError;
 
         // Filter periods that cover the requested dates
-        const matches = pricelists.filter((pl: any) => {
+        const filteredHotels = (hotels || []).filter((pl: any) => {
             const hasValidPeriod = pl.price_periods.some((period: any) => {
                 const pFrom = new Date(period.date_from);
                 const pTo = new Date(period.date_to);
@@ -94,10 +102,34 @@ export async function searchPricelists(params: OfferInquiry): Promise<any[]> {
             return hasValidPeriod;
         });
 
-        return matches;
+
+        // 2. Search Services (Transport, Excursions)
+        let serviceQuery = supabase.from('travel_services').select('*');
+
+        // Search by location or keywords in tags/title
+        const searchTerms = [
+            ...(params.locationFilter ? [params.locationFilter] : []),
+            ...(params.additionalServices || []),
+            ...(params.transportRequired ? [params.transportType || 'transport'] : [])
+        ];
+
+        if (searchTerms.length > 0) {
+            // Simple OR search for demonstration
+            serviceQuery = serviceQuery.or(
+                searchTerms.map(term => `title.ilike.%${term}%,description.ilike.%${term}%`).join(',')
+            );
+        }
+
+        const { data: services, error: serviceError } = await serviceQuery;
+        if (serviceError) throw serviceError;
+
+        return {
+            hotels: filteredHotels || [],
+            services: services || []
+        };
     } catch (error) {
-        console.error('Error searching pricelists:', error);
-        return [];
+        console.error('Error searching database:', error);
+        return { hotels: [], services: [] };
     }
 }
 
@@ -112,24 +144,29 @@ export async function generateOfferFromEmail(emailBody: string): Promise<OfferPr
     }
 
     // 2. Search DB
-    const matches = await searchPricelists(inquiry);
+    const { hotels, services } = await searchOffers(inquiry);
 
     // 3. Generate Response Text
     const responsePrompt = `
-        Na osnovu upita i pronađenih cena iz baze, sastavi profesionalan odgovor korisniku na SRPSKOM JEZIKU.
+        Na osnovu upita i pronađenih podataka iz baze, sastavi KOMPLETNU ponudu na SRPSKOM JEZIKU.
         
         UPIT KORISNIKA:
         Hotel: ${inquiry.hotelName}
         Period: ${inquiry.checkIn} do ${inquiry.checkOut}
         Putnika: ${inquiry.adults} odraslih, ${inquiry.children} dece
+        Prevoz: ${inquiry.transportRequired ? inquiry.transportType : 'nije traženo'}
+        Dodatno: ${inquiry.additionalServices.join(', ')}
 
-        PRONAĐENE CENE:
-        ${JSON.stringify(matches, null, 2)}
+        PRONAĐENI HOTELI:
+        ${JSON.stringify(hotels, null, 2)}
+
+        PRONAĐENE DODATNE USLUGE (Prevoz, izleti...):
+        ${JSON.stringify(services, null, 2)}
 
         ZADATAK:
-        Sastavi ljubazan email odgovor. Ako si našao cenu, navedi je jasno sa ukuponim iznosom. 
-        Ako nisi našao tačnu cenu, reci da proveravaš i ponudi alternativu (ako postoji u pronađenim cenama).
-        Koristi profesionalan ton Olympic Travel agencije.
+        Sastavi ljubazan email odgovor koji obuhvata SVE komponente (hotel + prevoz + izlete ako su traženi i nađeni).
+        Ako nešto nedostaje u bazi, reci da je ta komponenta "na upit" ili predloži najbolju alternativu.
+        Koristi profesionalan i topao ton Olympic Travel agencije.
     `;
 
     const aiResponse = await askGemini(responsePrompt);
@@ -138,7 +175,8 @@ export async function generateOfferFromEmail(emailBody: string): Promise<OfferPr
         success: true,
         data: {
             inquiry,
-            matches,
+            hotelMatches: hotels,
+            serviceMatches: services,
             suggestedResponse: aiResponse.response
         }
     };

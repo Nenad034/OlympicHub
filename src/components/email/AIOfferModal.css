@@ -83,26 +83,31 @@
     letter-spacing: 0.5px;
 }
 
-.matches-list {
+.match-sections-grid {
     display: grid;
-    gap: 10px;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
     margin-bottom: 24px;
 }
 
-.match-card {
-    padding: 12px;
-    background: rgba(63, 185, 80, 0.1);
+.match-section h3 {
+    margin-top: 0;
+}
+
+.match-card.hotel {
     border-left: 3px solid #3fb950;
-    border-radius: 4px;
+    background: rgba(63, 185, 80, 0.05);
 }
 
-.match-card h4 {
-    margin: 0 0 5px 0;
-    font-size: 14px;
+.match-card.service {
+    border-left: 3px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
 }
 
-.status-badge-active {
-    color: #3fb950;
+.service-cat {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #3b82f6;
     font-weight: 600;
 }
 

@@ -5,7 +5,8 @@ import './AIOfferModal.css';
 interface AIOfferModalProps {
     proposal: {
         inquiry: any;
-        matches: any[];
+        hotelMatches: any[];
+        serviceMatches: any[];
         suggestedResponse: string;
     };
     onClose: () => void;
@@ -46,19 +47,39 @@ export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, o
 
                     {/* DB Matches Section */}
                     <div className="ai-db-matches">
-                        <h3>🔎 Pronađeno u bazi ({proposal.matches.length})</h3>
-                        {proposal.matches.length > 0 ? (
-                            <div className="matches-list">
-                                {proposal.matches.slice(0, 2).map((match, idx) => (
-                                    <div key={idx} className="match-card">
-                                        <h4>{match.title}</h4>
-                                        <p>Status: <span className="status-badge-active">{match.status}</span></p>
+                        <div className="match-sections-grid">
+                            <div className="match-section">
+                                <h3>🏨 Hoteli ({proposal.hotelMatches.length})</h3>
+                                {proposal.hotelMatches.length > 0 ? (
+                                    <div className="matches-list">
+                                        {proposal.hotelMatches.slice(0, 2).map((match, idx) => (
+                                            <div key={idx} className="match-card hotel">
+                                                <h4>{match.title}</h4>
+                                                <p><span className="status-badge-active">Dostupno</span></p>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                ) : (
+                                    <p className="no-matches">Nema smeštaja u bazi.</p>
+                                )}
                             </div>
-                        ) : (
-                            <p className="no-matches">Nije pronađeno direktno poklapanje u bazi cenovnika.</p>
-                        )}
+
+                            <div className="match-section">
+                                <h3>🚌 Usluge ({proposal.serviceMatches.length})</h3>
+                                {proposal.serviceMatches.length > 0 ? (
+                                    <div className="matches-list">
+                                        {proposal.serviceMatches.slice(0, 2).map((match, idx) => (
+                                            <div key={idx} className="match-card service">
+                                                <h4>{match.title}</h4>
+                                                <p className="service-cat">{match.category}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="no-matches">Nema dodatnih usluga.</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Response Preview */}
