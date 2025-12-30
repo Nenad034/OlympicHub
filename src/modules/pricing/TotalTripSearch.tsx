@@ -6,7 +6,7 @@ import {
     Castle, Users2, ChevronRight, PlusCircle, Trash2,
     Moon, RotateCcw, Zap, MoveRight, MoveLeft
 } from 'lucide-react';
-import { searchOffers, type OfferInquiry } from '../../services/aiOfferService';
+import { searchOffers, getSearchSuggestions, type OfferInquiry } from '../../services/aiOfferService';
 import './TotalTripSearch.css';
 
 const TRIP_CATEGORIES_PRIMARY = [
@@ -25,6 +25,8 @@ const TotalTripSearch: React.FC = () => {
     const [nights, setNights] = useState<number>(7);
     const [rooms, setRooms] = useState<number>(1);
     const [flexibleDays, setFlexibleDays] = useState<number>(0);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [inquiry, setInquiry] = useState<OfferInquiry>({
         hotelName: '',
         checkIn: '',
@@ -39,6 +41,23 @@ const TotalTripSearch: React.FC = () => {
     const [results, setResults] = useState<{ hotels: any[], services: any[] } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [searchPerformed, setSearchPerformed] = useState(false);
+
+    // Suggestions Logic
+    const handleHotelNameChange = async (val: string) => {
+        setInquiry({ ...inquiry, hotelName: val });
+        if (val.length >= 3) {
+            const list = await getSearchSuggestions(val);
+            setSuggestions(list);
+            setShowSuggestions(list.length > 0);
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const selectSuggestion = (s: string) => {
+        setInquiry({ ...inquiry, hotelName: s });
+        setShowSuggestions(false);
+    };
 
     // Smart Date Calculations
     const handleCheckInChange = (date: string) => {
@@ -147,8 +166,24 @@ const TotalTripSearch: React.FC = () => {
                                 type="text"
                                 placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
                                 value={inquiry.hotelName}
-                                onChange={e => setInquiry({ ...inquiry, hotelName: e.target.value })}
+                                onChange={e => handleHotelNameChange(e.target.value)}
+                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                onFocus={() => inquiry.hotelName.length >= 3 && setShowSuggestions(true)}
                             />
+                            {showSuggestions && (
+                                <div className="search-suggestions-dropdown">
+                                    {suggestions.map((s, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="suggestion-item"
+                                            onClick={() => selectSuggestion(s)}
+                                        >
+                                            <MapPin size={12} className="sugg-icon" />
+                                            <span>{s}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="date-cluster">

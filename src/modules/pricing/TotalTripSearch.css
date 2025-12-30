@@ -171,6 +171,60 @@
     height: 50px;
 }
 
+.main-search {
+    position: relative;
+}
+
+.search-suggestions-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    width: 100%;
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #c9d1d9;
+    font-size: 14px;
+}
+
+.suggestion-item:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #58a6ff;
+}
+
+.suggestion-item .sugg-icon {
+    color: #8b949e;
+}
+
+.suggestion-item:hover .sugg-icon {
+    color: #58a6ff;
+}
+
 /* Second Row: Passengers and Search - ALL IN LINE */
 .passengers-action-line {
     display: flex;

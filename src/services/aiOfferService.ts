@@ -208,3 +208,39 @@ export async function generateOfferFromEmail(emailBody: string): Promise<OfferPr
         }
     };
 }
+/**
+ * Fetches autocomplete suggestions from internal DB (hotels) 
+ * and can be extended to Google Places for cities.
+ */
+export async function getSearchSuggestions(query: string): Promise<string[]> {
+    if (!query || query.length < 3) return [];
+
+    try {
+        // 1. Search Hotels in our DB
+        const { data: hotels } = await supabase
+            .from('pricelists')
+            .select('title, location')
+            .ilike('title', `%${query}%`)
+            .eq('status', 'active')
+            .limit(5);
+
+        const hotelSuggestions = (hotels || []).map((h: any) =>
+            `${h.title}, ${h.location || 'Grčka'}`
+        );
+
+        // 2. Search Cities in our DB
+        const { data: locations } = await supabase
+            .from('pricelists')
+            .select('location')
+            .ilike('location', `%${query}%`)
+            .eq('status', 'active')
+            .limit(3);
+
+        const locationSuggestions = Array.from(new Set((locations || []).map((l: any) => l.location))).filter(Boolean) as string[];
+
+        return [...hotelSuggestions, ...locationSuggestions];
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        return [];
+    }
+}
