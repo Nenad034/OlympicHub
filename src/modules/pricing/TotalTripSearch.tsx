@@ -161,15 +161,22 @@ const TotalTripSearch: React.FC = () => {
                     {/* Row 1: Destination and Dates */}
                     <div className="form-row main">
                         <div className="input-group-premium main-search wide">
-                            <label><MapPin size={14} /> Destinacija / Objekat</label>
-                            <input
-                                type="text"
-                                placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
-                                value={inquiry.hotelName}
-                                onChange={e => handleHotelNameChange(e.target.value)}
-                                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                onFocus={() => inquiry.hotelName.length >= 3 && setShowSuggestions(true)}
-                            />
+                            <label className="smart-label">
+                                <Sparkles size={14} className="sparkle-accent" />
+                                Destinacija, Hotel... ili jednostavno napišite gde želite da putujete
+                            </label>
+                            <div className="smart-input-container">
+                                <input
+                                    type="text"
+                                    placeholder="Npr: Porodični hotel u Grčkoj pored plaže do 2000€ ili samo 'Kopaonik'..."
+                                    value={inquiry.hotelName}
+                                    onChange={e => handleHotelNameChange(e.target.value)}
+                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                    onFocus={() => inquiry.hotelName.length >= 3 && setShowSuggestions(true)}
+                                    className="smart-query-input"
+                                />
+                                <div className="input-ai-waves"></div>
+                            </div>
                             {showSuggestions && (
                                 <div className="search-suggestions-dropdown">
                                     {suggestions.map((s, idx) => (

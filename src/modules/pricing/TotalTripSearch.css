@@ -173,10 +173,44 @@
     height: 50px !important;
 }
 
-.input-group-premium input:focus,
-.input-group-premium select:focus,
-.age-input-premium input:focus {
-    border-color: #3fb950 !important;
+.smart-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #58a6ff !important;
+    /* Blue accent for AI */
+    text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+}
+
+.sparkle-accent {
+    color: #f1e05a;
+    animation: twinkle 2s infinite ease-in-out;
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+.smart-input-container {
+    position: relative;
+    width: 100%;
+}
+
+.smart-query-input {
+    padding-left: 20px !important;
+    border-left: 2px solid #58a6ff !important;
 }
 
 .main-search {
