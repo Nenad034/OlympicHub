@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useMailStore, useAuthStore } from '../../stores';
 import { sendEmail as sendEmailViaSmtp, fetchEmails as fetchEmailsViaImap } from '../../services/emailService';
+import { supabase } from '../../supabaseClient';
 import { EmailConfigModal } from '../../components/email/EmailConfigModal';
 import './OlympicMail.styles.css';
 
@@ -46,13 +47,14 @@ export const OlympicMail: React.FC = () => {
         deleteEmail,
         restoreEmail,
         setSignature,
-        updateEmail
+        updateEmail,
+        setEmails
     } = useMailStore();
 
     const { userLevel } = useAuthStore();
 
     const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'archive' | 'trash'>('inbox');
-    const [selectedEmailId, setSelectedEmailId] = useState<string | null>(emails[0]?.id || null);
+    const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'compose' | 'settings'>('list');
     const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
     const [isMasterView, setIsMasterView] = useState(false);
@@ -210,6 +212,45 @@ export const OlympicMail: React.FC = () => {
         }
     };
 
+    // Load emails form Supabase on mount or account change
+    const loadEmails = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('emails')
+                .select('*')
+                .eq('account_id', selectedAccountId)
+                .order('received_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (data) {
+                const mappedEmails = data.map((e: any) => ({
+                    id: e.id,
+                    sender: e.sender,
+                    senderEmail: e.sender_email || '',
+                    recipient: e.recipient,
+                    subject: e.subject,
+                    preview: e.preview || (e.body ? e.body.substring(0, 100) + '...' : ''),
+                    body: e.body || '',
+                    time: e.received_at ? new Date(e.received_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
+                        e.sent_at ? new Date(e.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+                    isUnread: !e.is_read,
+                    isStarred: e.is_starred,
+                    category: e.folder as any,
+                    accountId: e.account_id,
+                    deletedAt: e.deleted_at
+                }));
+                setEmails(mappedEmails);
+            }
+        } catch (error: any) {
+            console.error('Error loading emails:', error);
+        }
+    };
+
+    useEffect(() => {
+        loadEmails();
+    }, [selectedAccountId]);
+
     const handleOpenSettings = () => {
         setShowConfigModal(true);
     };
@@ -220,23 +261,20 @@ export const OlympicMail: React.FC = () => {
             const result = await fetchEmailsViaImap(selectedAccountId);
             if (result.success) {
                 alert(`✅ Preuzeto ${result.emails?.length || 0} novih poruka!`);
-                // Emails are automatically stored in the database by the service
-                // You may want to refresh the local store here
+                // Refresh list from database
+                await loadEmails();
             } else {
                 if (result.error?.includes('configuration not found')) {
-                    const shouldConfigure = confirm(
-                        'Email konfiguracija nije podešena. Da li želite da podesite sada?'
-                    );
-                    if (shouldConfigure) {
+                    if (confirm('📧 Nalog nije podešen. Da li želite da ga podesite sada?')) {
                         setShowConfigModal(true);
                     }
                 } else {
-                    alert(`❌ Greška pri preuzimanju: ${result.error}`);
+                    alert(`❌ Greška: ${result.error}`);
                 }
             }
         } catch (error: any) {
-            console.error('Error fetching emails:', error);
-            alert(`❌ Greška: ${error.message}`);
+            console.error('Fetch error:', error);
+            alert('❌ Greška prilikom preuzimanja poruka.');
         } finally {
             setIsFetching(false);
         }
@@ -247,13 +285,37 @@ export const OlympicMail: React.FC = () => {
         setViewMode('list');
     };
 
-    const handleDelete = (id: string) => {
-        deleteEmail(id);
-        if (selectedEmailId === id) setSelectedEmailId(null);
+    const handleDelete = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('emails')
+                .update({ folder: 'trash', deleted_at: new Date().toISOString() })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            deleteEmail(id);
+            if (selectedEmailId === id) setSelectedEmailId(null);
+        } catch (error: any) {
+            console.error('Error deleting email:', error);
+            alert('❌ Greška prilikom brisanja poruke.');
+        }
     };
 
-    const handleRestore = (id: string) => {
-        restoreEmail(id);
+    const handleRestore = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('emails')
+                .update({ folder: 'inbox', deleted_at: null })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            restoreEmail(id);
+        } catch (error: any) {
+            console.error('Error restoring email:', error);
+            alert('❌ Greška prilikom vraćanja poruke.');
+        }
     };
 
     return (

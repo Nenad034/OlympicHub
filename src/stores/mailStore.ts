@@ -37,6 +37,7 @@ interface MailState {
     restoreEmail: (id: string) => void;
     setSignature: (accountId: string, signature: string) => void;
     setSelectedAccount: (id: string) => void;
+    setEmails: (emails: Email[]) => void;
 }
 
 const initialAccounts: MailAccount[] = [
@@ -45,36 +46,7 @@ const initialAccounts: MailAccount[] = [
     { id: 'acc3', email: 'info@olympic.rs', name: 'Olympic Info', color: '#3b82f6', signature: 'Olympic Travel Team\nwww.olympic.rs' }
 ];
 
-const initialEmails: Email[] = [
-    {
-        id: '1',
-        accountId: 'acc1',
-        sender: 'Nikola Petrović',
-        senderEmail: 'nikola.p@gmail.com',
-        recipient: 'nenad@olympic.rs',
-        subject: 'Upit za ponudu - Hotel Splendid 5*',
-        preview: 'Poštovani, molim vas za ponudu za 2 odrasle osobe i 2 deteta u periodu...',
-        body: 'Poštovani,\n\nMolim vas za ponudu za 2 odrasle osobe i 2 deteta u periodu od 15.07. do 25.07. u hotelu Splendid 5*.\n\nSrdačan pozdrav,\nNikola Petrović',
-        time: '14:20',
-        isUnread: true,
-        isStarred: true,
-        category: 'inbox'
-    },
-    {
-        id: '2',
-        accountId: 'acc2',
-        sender: 'Rezervacije - Regent Porto Montenegro',
-        senderEmail: 'reservations@regentpm.com',
-        recipient: 'office@olympic.rs',
-        subject: 'Potvrda rezervacije #88432',
-        preview: 'Vaša rezervacija je uspešno potvrđena. Detalji u prilogu...',
-        body: 'Poštovani,\n\nVaša rezervacija #88432 je uspešno potvrđena. Detalji u prilogu.\n\nHvala na poverenju!',
-        time: '12:05',
-        isUnread: false,
-        isStarred: false,
-        category: 'inbox'
-    }
-];
+const initialEmails: Email[] = [];
 
 export const useMailStore = create<MailState>()(
     persist(
@@ -83,7 +55,7 @@ export const useMailStore = create<MailState>()(
             emails: initialEmails,
             selectedAccountId: 'acc1',
 
-            sendEmail: (data) => set((state) => {
+            sendEmail: (data: { accountId: string, to: string, subject: string, body: string, sender: string, senderEmail: string }) => set((state: MailState) => {
                 const newEmail: Email = {
                     id: Math.random().toString(36).substring(7),
                     accountId: data.accountId,
@@ -101,11 +73,11 @@ export const useMailStore = create<MailState>()(
                 return { emails: [newEmail, ...state.emails] };
             }),
 
-            updateEmail: (id, updates) => set((state) => ({
+            updateEmail: (id: string, updates: Partial<Email>) => set((state: MailState) => ({
                 emails: state.emails.map(e => e.id === id ? { ...e, ...updates } : e)
             })),
 
-            deleteEmail: (id) => set((state) => ({
+            deleteEmail: (id: string) => set((state: MailState) => ({
                 emails: state.emails.map(e => {
                     if (e.id === id) {
                         return {
@@ -118,7 +90,7 @@ export const useMailStore = create<MailState>()(
                 })
             })),
 
-            restoreEmail: (id) => set((state) => ({
+            restoreEmail: (id: string) => set((state: MailState) => ({
                 emails: state.emails.map(e => {
                     if (e.id === id) {
                         return { ...e, category: 'inbox', deletedAt: undefined };
@@ -127,11 +99,13 @@ export const useMailStore = create<MailState>()(
                 })
             })),
 
-            setSignature: (accountId, signature) => set((state) => ({
+            setSignature: (accountId: string, signature: string) => set((state: MailState) => ({
                 accounts: state.accounts.map(a => a.id === accountId ? { ...a, signature } : a)
             })),
 
-            setSelectedAccount: (id) => set({ selectedAccountId: id }),
+            setSelectedAccount: (id: string) => set({ selectedAccountId: id }),
+
+            setEmails: (emails: Email[]) => set({ emails }),
         }),
         {
             name: 'olympic-mail-storage',
