@@ -9,20 +9,21 @@ import {
 import { searchOffers, type OfferInquiry } from '../../services/aiOfferService';
 import './TotalTripSearch.css';
 
-const TRIP_CATEGORIES_LEFT = [
-    { id: 'group', label: 'Putovanja', icon: <Users2 size={18} /> },
-    { id: 'ship', label: 'Krstarenje', icon: <Ship size={18} /> },
-];
-
-const TRIP_CATEGORIES_RIGHT = [
+const TRIP_CATEGORIES_PRIMARY = [
     { id: 'hotel', label: 'Smeštaj', icon: <Hotel size={18} /> },
     { id: 'flight', label: 'Avion', icon: <Plane size={18} /> },
     { id: 'transfer', label: 'Transfer', icon: <CarFront size={18} /> },
 ];
 
+const TRIP_CATEGORIES_SECONDARY = [
+    { id: 'group', label: 'Putovanja', icon: <Users2 size={18} /> },
+    { id: 'ship', label: 'Krstarenje', icon: <Ship size={18} /> },
+];
+
 const TotalTripSearch: React.FC = () => {
     const [selectedComponents, setSelectedComponents] = useState<string[]>(['hotel', 'flight', 'transfer']);
     const [nights, setNights] = useState<number>(7);
+    const [rooms, setRooms] = useState<number>(1);
     const [flexibleDays, setFlexibleDays] = useState<number>(0);
     const [inquiry, setInquiry] = useState<OfferInquiry>({
         hotelName: '',
@@ -107,9 +108,9 @@ const TotalTripSearch: React.FC = () => {
             </header>
 
             <div className="trip-builder-console">
-                <div className="component-selector-v3">
+                <div className="component-selector-v4">
                     <div className="selector-group left">
-                        {TRIP_CATEGORIES_LEFT.map(cat => (
+                        {TRIP_CATEGORIES_PRIMARY.map(cat => (
                             <button
                                 key={cat.id}
                                 className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
@@ -120,11 +121,11 @@ const TotalTripSearch: React.FC = () => {
                                 {selectedComponents.includes(cat.id) && <CheckCircle2 size={12} className="check-indicator" />}
                             </button>
                         ))}
+                        <span className="cta-label">Odaberite jednu, dve ili tri usluge</span>
                     </div>
 
                     <div className="selector-group right">
-                        <span className="cta-label">Odaberite jednu, dve ili tri usluge</span>
-                        {TRIP_CATEGORIES_RIGHT.map(cat => (
+                        {TRIP_CATEGORIES_SECONDARY.map(cat => (
                             <button
                                 key={cat.id}
                                 className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
@@ -189,8 +190,17 @@ const TotalTripSearch: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Row 2: Passengers and Action - ALL IN LINE */}
-                    <div className="form-row passengers-action-line">
+                    {/* Row 2: Passengers and Action */}
+                    <div className="form-row passengers-action-line-v4">
+                        <div className="input-group-premium rooms-input">
+                            <label><Home size={14} /> Sobe</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={rooms}
+                                onChange={e => setRooms(parseInt(e.target.value) || 1)}
+                            />
+                        </div>
                         <div className="input-group-premium adults-input">
                             <label><Users size={14} /> Odrasli</label>
                             <input
@@ -205,9 +215,11 @@ const TotalTripSearch: React.FC = () => {
                             <input
                                 type="number"
                                 min="0"
-                                value={inquiry.children}
+                                max="4"
+                                value={inquiry.children || ''}
                                 onChange={e => {
-                                    const count = parseInt(e.target.value) || 0;
+                                    const val = e.target.value;
+                                    const count = val === '' ? 0 : Math.min(4, parseInt(val) || 0);
                                     setInquiry({
                                         ...inquiry,
                                         children: count,
@@ -218,18 +230,20 @@ const TotalTripSearch: React.FC = () => {
                         </div>
 
                         {inquiry.children > 0 && (
-                            <div className="children-ages-inline">
+                            <div className="children-ages-inline-v4">
                                 {inquiry.childrenAges.map((age, idx) => (
-                                    <div key={idx} className="age-input-tiny">
+                                    <div key={idx} className="age-input-premium">
                                         <label>Det {idx + 1}</label>
                                         <input
                                             type="number"
                                             min="0"
                                             max="17"
-                                            value={age}
+                                            value={age || ''}
                                             onChange={e => {
+                                                const val = e.target.value;
+                                                const newAge = val === '' ? 0 : parseInt(val) || 0;
                                                 const newAges = [...inquiry.childrenAges];
-                                                newAges[idx] = parseInt(e.target.value) || 0;
+                                                newAges[idx] = newAge;
                                                 setInquiry({ ...inquiry, childrenAges: newAges });
                                             }}
                                         />
@@ -238,7 +252,7 @@ const TotalTripSearch: React.FC = () => {
                             </div>
                         )}
 
-                        <button className="search-launch-btn-v3" onClick={handleSearch} disabled={isLoading}>
+                        <button className="search-launch-btn-v4" onClick={handleSearch} disabled={isLoading}>
                             {isLoading ? <Loader2 className="spin" /> : <Search size={22} />}
                             <span>Pretraži Ponude</span>
                         </button>
