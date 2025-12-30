@@ -3,7 +3,8 @@ import {
     Search, Plane, Home, MapPin, Calendar, Users, Sparkles,
     Bus, Compass, Ticket, Loader2, CheckCircle2, Hotel,
     Info, CarFront, Ship, TrainFront, Utensils, Waves,
-    Castle, Users2, ChevronRight, PlusCircle, Trash2
+    Castle, Users2, ChevronRight, PlusCircle, Trash2,
+    Moon, RotateCcw, Zap
 } from 'lucide-react';
 import { searchOffers, type OfferInquiry } from '../../services/aiOfferService';
 import './TotalTripSearch.css';
@@ -25,6 +26,8 @@ const TRIP_CATEGORIES = [
 
 const TotalTripSearch: React.FC = () => {
     const [selectedComponents, setSelectedComponents] = useState<string[]>(['hotel']);
+    const [nights, setNights] = useState<number>(7);
+    const [flexibleDays, setFlexibleDays] = useState<number>(0);
     const [inquiry, setInquiry] = useState<OfferInquiry>({
         hotelName: '',
         checkIn: '',
@@ -39,6 +42,38 @@ const TotalTripSearch: React.FC = () => {
     const [results, setResults] = useState<{ hotels: any[], services: any[] } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [searchPerformed, setSearchPerformed] = useState(false);
+
+    // Smart Date Calculations
+    const handleCheckInChange = (date: string) => {
+        const newInquiry = { ...inquiry, checkIn: date };
+        if (date && nights > 0) {
+            const outDate = new Date(date);
+            outDate.setDate(outDate.getDate() + nights);
+            newInquiry.checkOut = outDate.toISOString().split('T')[0];
+        }
+        setInquiry(newInquiry);
+    };
+
+    const handleNightsChange = (n: number) => {
+        setNights(n);
+        if (inquiry.checkIn && n > 0) {
+            const outDate = new Date(inquiry.checkIn);
+            outDate.setDate(outDate.getDate() + n);
+            setInquiry({ ...inquiry, checkOut: outDate.toISOString().split('T')[0] });
+        }
+    };
+
+    const handleCheckOutChange = (date: string) => {
+        const newInquiry = { ...inquiry, checkOut: date };
+        if (inquiry.checkIn && date) {
+            const diffTime = Math.abs(new Date(date).getTime() - new Date(inquiry.checkIn).getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            setNights(diffDays);
+        } else if (date && !inquiry.checkIn) {
+            // If only checkout set, well just set it
+        }
+        setInquiry(newInquiry);
+    };
 
     const handleSearch = async () => {
         setIsLoading(true);
@@ -84,7 +119,7 @@ const TotalTripSearch: React.FC = () => {
                         {TRIP_CATEGORIES.map(cat => (
                             <button
                                 key={cat.id}
-                                className={`comp-chip ${selectedComponents.includes(cat.id) ? 'active' : ''}`}
+                                className={`comp - chip ${selectedComponents.includes(cat.id) ? 'active' : ''} `}
                                 onClick={() => toggleComponent(cat.id)}
                             >
                                 <span className="comp-icon">{cat.icon}</span>
@@ -95,49 +130,112 @@ const TotalTripSearch: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="search-form-row">
-                    <div className="input-group-premium main-search">
-                        <MapPin size={18} className="input-icon" />
-                        <input
-                            type="text"
-                            placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
-                            value={inquiry.hotelName}
-                            onChange={e => setInquiry({ ...inquiry, hotelName: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="input-group-premium">
-                        <Calendar size={18} className="input-icon" />
-                        <input
-                            type="date"
-                            value={inquiry.checkIn}
-                            onChange={e => setInquiry({ ...inquiry, checkIn: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="input-group-premium passengers">
-                        <Users size={18} className="input-icon" />
-                        <div className="count-inputs">
+                <div className="search-form-complex">
+                    {/* Row 1: Destination and Dates */}
+                    <div className="form-row main">
+                        <div className="input-group-premium main-search">
+                            <label><MapPin size={14} /> Destinacija</label>
                             <input
-                                type="number"
-                                min="1"
-                                value={inquiry.adults}
-                                onChange={e => setInquiry({ ...inquiry, adults: parseInt(e.target.value) || 1 })}
+                                type="text"
+                                placeholder="Gde putujemo? (Hotel, Grad, Regija...)"
+                                value={inquiry.hotelName}
+                                onChange={e => setInquiry({ ...inquiry, hotelName: e.target.value })}
                             />
-                            <span className="sep">/</span>
-                            <input
-                                type="number"
-                                min="0"
-                                value={inquiry.children}
-                                onChange={e => setInquiry({ ...inquiry, children: parseInt(e.target.value) || 0 })}
-                            />
+                        </div>
+
+                        <div className="date-cluster">
+                            <div className="input-group-premium date">
+                                <label><Calendar size={14} /> Polazak</label>
+                                <input
+                                    type="date"
+                                    value={inquiry.checkIn}
+                                    onChange={e => handleCheckInChange(e.target.value)}
+                                />
+                            </div>
+                            <div className="input-group-premium nights">
+                                <label><Moon size={14} /> Noćenja</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={nights}
+                                    onChange={e => handleNightsChange(parseInt(e.target.value) || 1)}
+                                />
+                            </div>
+                            <div className="input-group-premium date">
+                                <label><RotateCcw size={14} /> Povratak</label>
+                                <input
+                                    type="date"
+                                    value={inquiry.checkOut}
+                                    onChange={e => handleCheckOutChange(e.target.value)}
+                                />
+                            </div>
+                            <div className="input-group-premium flexibility">
+                                <label><Zap size={14} /> +/- dana</label>
+                                <select value={flexibleDays} onChange={e => setFlexibleDays(parseInt(e.target.value))}>
+                                    <option value={0}>Fiksno</option>
+                                    <option value={1}>+/- 1 dan</option>
+                                    <option value={2}>+/- 2 dana</option>
+                                    <option value={3}>+/- 3 dana</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <button className="search-launch-btn" onClick={handleSearch} disabled={isLoading}>
-                        {isLoading ? <Loader2 className="spin" /> : <Search size={22} />}
-                        <span>Pronađi sve</span>
-                    </button>
+                    {/* Row 2: Passengers and Action */}
+                    <div className="form-row sub">
+                        <div className="passenger-cluster">
+                            <div className="input-group-premium">
+                                <label><Users size={14} /> Odrasli</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={inquiry.adults}
+                                    onChange={e => setInquiry({ ...inquiry, adults: parseInt(e.target.value) || 1 })}
+                                />
+                            </div>
+                            <div className="input-group-premium">
+                                <label><Users2 size={14} /> Deca</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={inquiry.children}
+                                    onChange={e => {
+                                        const count = parseInt(e.target.value) || 0;
+                                        setInquiry({
+                                            ...inquiry,
+                                            children: count,
+                                            childrenAges: Array(count).fill(7) // Default to 7 years
+                                        });
+                                    }}
+                                />
+                            </div>
+                            {inquiry.children > 0 && (
+                                <div className="children-ages-scroll">
+                                    {inquiry.childrenAges.map((age, idx) => (
+                                        <div key={idx} className="age-input">
+                                            <span>Det {idx + 1}</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="17"
+                                                value={age}
+                                                onChange={e => {
+                                                    const newAges = [...inquiry.childrenAges];
+                                                    newAges[idx] = parseInt(e.target.value) || 0;
+                                                    setInquiry({ ...inquiry, childrenAges: newAges });
+                                                }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button className="search-launch-btn-v2" onClick={handleSearch} disabled={isLoading}>
+                            {isLoading ? <Loader2 className="spin" /> : <Search size={22} />}
+                            <span>Pretraži Ponude</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
