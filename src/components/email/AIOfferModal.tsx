@@ -32,6 +32,15 @@ const getServiceIcon = (category: string) => {
     }
 };
 
+const isPromoted = (item: any) => {
+    return (
+        item.description?.toLowerCase().includes('verified') ||
+        item.description?.toLowerCase().includes('ekskluzivno') ||
+        (item.stars && item.stars >= 5) ||
+        item.category === 'transfer'
+    );
+};
+
 export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, onSend }) => {
     const [editableText, setEditableText] = useState(proposal.suggestedResponse);
     const [isEditing, setIsEditing] = useState(false);
@@ -71,11 +80,12 @@ export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, o
                                 <h3><Hotel size={18} /> Hoteli ({proposal.hotelMatches.length})</h3>
                                 {proposal.hotelMatches.length > 0 ? (
                                     <div className="matches-list">
-                                        {proposal.hotelMatches.slice(0, 2).map((match, idx) => (
-                                            <div key={idx} className="match-card hotel">
+                                        {proposal.hotelMatches.slice(0, 3).map((match, idx) => (
+                                            <div key={idx} className={`match-card hotel ${isPromoted(match) ? 'promoted' : ''}`}>
                                                 <div className="match-card-header">
                                                     <Hotel size={14} />
                                                     <h4>{match.title}</h4>
+                                                    {isPromoted(match) && <span className="promoted-badge"><Sparkles size={10} /> Olympic Preporuka</span>}
                                                 </div>
                                                 <p><span className="status-badge-active">Dostupno</span></p>
                                             </div>
@@ -90,11 +100,12 @@ export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, o
                                 <h3><Compass size={18} /> Usluge ({proposal.serviceMatches.length})</h3>
                                 {proposal.serviceMatches.length > 0 ? (
                                     <div className="matches-list">
-                                        {proposal.serviceMatches.slice(0, 2).map((match, idx) => (
-                                            <div key={idx} className="match-card service">
+                                        {proposal.serviceMatches.slice(0, 3).map((match, idx) => (
+                                            <div key={idx} className={`match-card service ${isPromoted(match) ? 'promoted' : ''}`}>
                                                 <div className="match-card-header">
                                                     {getServiceIcon(match.category)}
                                                     <h4>{match.title}</h4>
+                                                    {isPromoted(match) && <span className="promoted-badge"><Sparkles size={10} /> Top Izbor</span>}
                                                 </div>
                                                 <p className="service-cat">{match.category}</p>
                                             </div>

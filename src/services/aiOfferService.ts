@@ -135,6 +135,7 @@ export async function searchOffers(params: OfferInquiry): Promise<{ hotels: any[
 
 /**
  * Main workflow: From Email to Proposal
+ * Now with Marketing Steered Logic: AI favors "Promoted" or high-value offers.
  */
 export async function generateOfferFromEmail(emailBody: string): Promise<OfferProposal> {
     // 1. Extract params
@@ -146,10 +147,26 @@ export async function generateOfferFromEmail(emailBody: string): Promise<OfferPr
     // 2. Search DB
     const { hotels, services } = await searchOffers(inquiry);
 
-    // 3. Generate Response Text
+    // 3. Marketing Priority Logic - Identify "Promoted" items
+    // In a real scenario, this would check a 'is_promoted' or 'margin_level' flag in DB
+    const promotedHotels = hotels.filter(h =>
+        h.description?.toLowerCase().includes('verified') ||
+        h.description?.toLowerCase().includes('ekskluzivno') ||
+        h.stars >= 5
+    );
+
+    const promotedServices = services.filter(s =>
+        s.description?.toLowerCase().includes('verified') ||
+        s.category === 'transfer' // Agents usually want to sell transfers with hotels
+    );
+
+    // 4. Generate Response Text with Marketing Steering
     const responsePrompt = `
         Na osnovu upita i pronađenih podataka iz baze, sastavi KOMPLETNU ponudu na SRPSKOM JEZIKU.
         
+        Kao AI Agent prodaje Olympic Travel-a, tvoj cilj je da klijentu pružiš najbolju uslugu 
+        ALI i da istakneš ponude koje su u interesu agencije (označene kao PRIORITET).
+
         UPIT KORISNIKA:
         Hotel: ${inquiry.hotelName}
         Period: ${inquiry.checkIn} do ${inquiry.checkOut}
@@ -157,16 +174,26 @@ export async function generateOfferFromEmail(emailBody: string): Promise<OfferPr
         Prevoz: ${inquiry.transportRequired ? inquiry.transportType : 'nije traženo'}
         Dodatno: ${inquiry.additionalServices.join(', ')}
 
-        PRONAĐENI HOTELI:
-        ${JSON.stringify(hotels, null, 2)}
+        PRIORITETNI HOTELI (Istakni ih kao 'Olympic Preporuka'):
+        ${JSON.stringify(promotedHotels, null, 2)}
 
-        PRONAĐENE DODATNE USLUGE (Prevoz, izleti...):
-        ${JSON.stringify(services, null, 2)}
+        OSTALI HOTELI:
+        ${JSON.stringify(hotels.filter(h => !promotedHotels.includes(h)), null, 2)}
+
+        PRIORITETNE USLUGE (Transferi i Verified izleti):
+        ${JSON.stringify(promotedServices, null, 2)}
+
+        OSTALE USLUGE:
+        ${JSON.stringify(services.filter(s => !promotedServices.includes(s)), null, 2)}
+
+        STRATEGIJA PRODAJE (Marketing Guidance):
+        1. Ako postoji PRIORITETAN hotel, predstavi ga prvi sa rečenicom poput "Posebno izdvajamo našu verifikovanu ponudu..."
+        2. UVEK predloži Privatni Transfer ako postoji u bazi, čak i ako ga klijent nije eksplicitno tražio, uz obrazloženje da to "pruža maksimalan komfor i sigurnost".
+        3. Ako je upit za Disneyland ili Aquapark, obavezno ponudi i transfer/ulaznice u istom pasusu.
+        4. Koristi prodajni, inspirativan, ali profesionalan ton.
 
         ZADATAK:
-        Sastavi ljubazan email odgovor koji obuhvata SVE komponente (hotel + prevoz + izlete ako su traženi i nađeni).
-        Ako nešto nedostaje u bazi, reci da je ta komponenta "na upit" ili predloži najbolju alternativu.
-        Koristi profesionalan i topao ton Olympic Travel agencije.
+        Sastavi ljubazan email odgovor.
     `;
 
     const aiResponse = await askGemini(responsePrompt);

@@ -104,10 +104,32 @@
     background: rgba(59, 130, 246, 0.05);
 }
 
-.match-card h4 {
-    margin: 0;
-    font-size: 13px;
-    color: #f0f6fc;
+.match-card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.2s;
+}
+
+.match-card.promoted {
+    border: 1px solid #d29922;
+    background: rgba(210, 153, 34, 0.05);
+    box-shadow: 0 0 10px rgba(210, 153, 34, 0.1);
+}
+
+.promoted-badge {
+    background: #d29922;
+    color: #0d1117;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    text-transform: uppercase;
 }
 
 .match-card-header {
@@ -118,11 +140,8 @@
     color: #58a6ff;
 }
 
-.service-cat {
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #8b949e;
-    margin: 0;
+.match-card.promoted .match-card-header {
+    color: #d29922;
 }
 
 .service-cat {
