@@ -154,28 +154,40 @@ const TotalTripSearch: React.FC = () => {
                         <div className="date-cluster">
                             <div className="input-group-premium">
                                 <label><MoveRight size={14} /> Polazak</label>
-                                <input
-                                    type="date"
-                                    value={inquiry.checkIn}
-                                    onChange={e => handleCheckInChange(e.target.value)}
-                                />
+                                <div className="custom-date-wrapper">
+                                    <input
+                                        type="date"
+                                        value={inquiry.checkIn}
+                                        onChange={e => handleCheckInChange(e.target.value)}
+                                        className="native-date-input"
+                                    />
+                                    <div className="date-display-overlay">
+                                        {inquiry.checkIn ? new Date(inquiry.checkIn).toLocaleDateString('sr-RS').replace(/\//g, '.') : 'dd/mm/yyyy'}
+                                    </div>
+                                </div>
                             </div>
                             <div className="input-group-premium nights-tiny">
                                 <label><Moon size={14} /> Noćenja</label>
                                 <input
                                     type="number"
                                     min="1"
-                                    value={nights}
-                                    onChange={e => handleNightsChange(parseInt(e.target.value) || 1)}
+                                    value={nights || ''}
+                                    onChange={e => handleNightsChange(parseInt(e.target.value) || 0)}
                                 />
                             </div>
                             <div className="input-group-premium">
                                 <label><MoveLeft size={14} /> Povratak</label>
-                                <input
-                                    type="date"
-                                    value={inquiry.checkOut}
-                                    onChange={e => handleCheckOutChange(e.target.value)}
-                                />
+                                <div className="custom-date-wrapper">
+                                    <input
+                                        type="date"
+                                        value={inquiry.checkOut}
+                                        onChange={e => handleCheckOutChange(e.target.value)}
+                                        className="native-date-input"
+                                    />
+                                    <div className="date-display-overlay">
+                                        {inquiry.checkOut ? new Date(inquiry.checkOut).toLocaleDateString('sr-RS').replace(/\//g, '.') : 'dd/mm/yyyy'}
+                                    </div>
+                                </div>
                             </div>
                             <div className="input-group-premium flexibility-tiny">
                                 <label><Zap size={14} /> +/- dana</label>

@@ -118,7 +118,47 @@
     gap: 5px;
 }
 
-.input-group-premium input,
+.custom-date-wrapper {
+    position: relative;
+    width: 100%;
+    height: 50px;
+}
+
+.native-date-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.date-display-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 12px;
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1;
+    transition: border-color 0.2s;
+}
+
+.native-date-input:focus+.date-display-overlay {
+    border-color: #3fb950;
+}
+
 .input-group-premium select {
     background: #0d1117;
     border: 1px solid #30363d;
@@ -129,10 +169,6 @@
     width: 100%;
     outline: none;
     height: 50px;
-}
-
-.input-group-premium input:focus {
-    border-color: #3fb950;
 }
 
 /* Second Row: Passengers and Search - ALL IN LINE */
