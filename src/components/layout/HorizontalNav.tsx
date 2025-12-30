@@ -58,7 +58,7 @@ const HorizontalNav: React.FC = () => {
                     to="/total-trip"
                     className={({ isActive }) => navItemClass(isActive)}
                 >
-                    <Compass size={18} /> Savetnik
+                    <Compass size={18} /> {t.tripCounselorShort}
                 </NavLink>
                 <NavLink
                     to="/suppliers"

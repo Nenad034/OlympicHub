@@ -43,6 +43,26 @@ export interface Translations {
     dangerZone: string;
     rollbackSuccess: string;
     snapshotCreated: string;
+    // Trip Counselor
+    tripCounselor: string;
+    tripCounselorShort: string;
+    smartQueryLabel: string;
+    smartQueryPlaceholder: string;
+    checkIn: string;
+    checkOut: string;
+    nights: string;
+    flexibility: string;
+    rooms: string;
+    adults: string;
+    children: string;
+    childAge: string;
+    searchOffers: string;
+    accommodation: string;
+    flight: string;
+    transfer: string;
+    travels: string;
+    cruises: string;
+    fixed: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -87,7 +107,26 @@ export const translations: Record<Language, Translations> = {
         backupHistory: "Istorija verzija",
         dangerZone: "Zona opreza",
         rollbackSuccess: "Sistem je uspešno vraćen na prethodnu verziju!",
-        snapshotCreated: "Snapshot sistema je uspešno kreiran."
+        snapshotCreated: "Snapshot sistema je uspešno kreiran.",
+        tripCounselor: "Savetnik za putovanja",
+        tripCounselorShort: "Savetnik",
+        smartQueryLabel: "Destinacija, Hotel... ili jednostavno napišite gde želite da putujete",
+        smartQueryPlaceholder: "Npr: Porodični hotel u Grčkoj pored plaže do 2000€ ili samo 'Kopaonik'...",
+        checkIn: "Polazak",
+        checkOut: "Povratak",
+        nights: "Noćenja",
+        flexibility: "+/- dana",
+        rooms: "Broj soba",
+        adults: "Odrasli",
+        children: "Deca",
+        childAge: "Det",
+        searchOffers: "Pretraži Ponude",
+        accommodation: "Smeštaj",
+        flight: "Avion",
+        transfer: "Transfer",
+        travels: "Putovanja",
+        cruises: "Krstarenje",
+        fixed: "Fiksno"
     },
     en: {
         dashboard: "Dashboard",
@@ -130,6 +169,25 @@ export const translations: Record<Language, Translations> = {
         backupHistory: "Version history",
         dangerZone: "Danger Zone",
         rollbackSuccess: "System successfully restored to a previous version!",
-        snapshotCreated: "System snapshot successfully created."
+        snapshotCreated: "System snapshot successfully created.",
+        tripCounselor: "Trip Counselor",
+        tripCounselorShort: "Counselor",
+        smartQueryLabel: "Destination, Hotel... or simply type where you want to travel",
+        smartQueryPlaceholder: "E.g.: Family hotel in Greece near beach under 2000€ or just 'Kopaonik'...",
+        checkIn: "Departure",
+        checkOut: "Return",
+        nights: "Nights",
+        flexibility: "+/- days",
+        rooms: "Rooms",
+        adults: "Adults",
+        children: "Children",
+        childAge: "Child",
+        searchOffers: "Search Offers",
+        accommodation: "Accommodation",
+        flight: "Flight",
+        transfer: "Transfer",
+        travels: "Travels",
+        cruises: "Cruises",
+        fixed: "Fixed"
     }
 };

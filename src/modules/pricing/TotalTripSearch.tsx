@@ -7,20 +7,26 @@ import {
     Moon, RotateCcw, Zap, MoveRight, MoveLeft
 } from 'lucide-react';
 import { searchOffers, getSearchSuggestions, type OfferInquiry } from '../../services/aiOfferService';
+import { useThemeStore } from '../../stores';
+import { translations } from '../../translations';
 import './TotalTripSearch.css';
 
-const TRIP_CATEGORIES_PRIMARY = [
-    { id: 'hotel', label: 'Smeštaj', icon: <Hotel size={18} /> },
-    { id: 'flight', label: 'Avion', icon: <Plane size={18} /> },
-    { id: 'transfer', label: 'Transfer', icon: <CarFront size={18} /> },
-];
-
-const TRIP_CATEGORIES_SECONDARY = [
-    { id: 'group', label: 'Putovanja', icon: <Users2 size={18} /> },
-    { id: 'ship', label: 'Krstarenje', icon: <Ship size={18} /> },
-];
 
 const TotalTripSearch: React.FC = () => {
+    const { lang } = useThemeStore();
+    const t = translations[lang];
+
+    const TRIP_CATEGORIES_PRIMARY = [
+        { id: 'hotel', label: t.accommodation, icon: <Hotel size={18} /> },
+        { id: 'flight', label: t.flight, icon: <Plane size={18} /> },
+        { id: 'transfer', label: t.transfer, icon: <CarFront size={18} /> },
+    ];
+
+    const TRIP_CATEGORIES_SECONDARY = [
+        { id: 'group', label: t.travels, icon: <Users2 size={18} /> },
+        { id: 'ship', label: t.cruises, icon: <Ship size={18} /> },
+    ];
+
     const [selectedComponents, setSelectedComponents] = useState<string[]>(['hotel', 'flight', 'transfer']);
     const [nights, setNights] = useState<number>(7);
     const [rooms, setRooms] = useState<number>(1);
@@ -117,8 +123,8 @@ const TotalTripSearch: React.FC = () => {
         <div className="total-trip-container">
             <header className="total-trip-header">
                 <div className="header-content">
-                    <h1><Compass className="icon-main" /> Savetnik za putovanja</h1>
-                    <p>Inteligentno povezivanje usluga za savršen odmor</p>
+                    <h1><Compass className="icon-main" /> {t.tripCounselor}</h1>
+                    <p>{t.hubDesc}</p>
                 </div>
                 <div className="header-badge ai-premium">
                     <Sparkles size={16} />
@@ -163,12 +169,12 @@ const TotalTripSearch: React.FC = () => {
                         <div className="input-group-premium main-search wide">
                             <label className="smart-label">
                                 <Sparkles size={14} className="sparkle-accent" />
-                                Destinacija, Hotel... ili jednostavno napišite gde želite da putujete
+                                {t.smartQueryLabel}
                             </label>
                             <div className="smart-input-container">
                                 <input
                                     type="text"
-                                    placeholder="Npr: Porodični hotel u Grčkoj pored plaže do 2000€ ili samo 'Kopaonik'..."
+                                    placeholder={t.smartQueryPlaceholder}
                                     value={inquiry.hotelName}
                                     onChange={e => handleHotelNameChange(e.target.value)}
                                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
@@ -195,7 +201,7 @@ const TotalTripSearch: React.FC = () => {
 
                         <div className="date-cluster">
                             <div className="input-group-premium">
-                                <label><MoveRight size={14} /> Polazak</label>
+                                <label><MoveRight size={14} /> {t.checkIn}</label>
                                 <div className="custom-date-wrapper">
                                     <input
                                         type="date"
@@ -204,12 +210,12 @@ const TotalTripSearch: React.FC = () => {
                                         className="native-date-input"
                                     />
                                     <div className="date-display-overlay">
-                                        {inquiry.checkIn ? new Date(inquiry.checkIn).toLocaleDateString('sr-RS').replace(/\//g, '.') : 'dd/mm/yyyy'}
+                                        {inquiry.checkIn ? new Date(inquiry.checkIn).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'en-GB').replace(/\//g, lang === 'sr' ? '.' : '/') : 'dd/mm/yyyy'}
                                     </div>
                                 </div>
                             </div>
                             <div className="input-group-premium nights-tiny">
-                                <label><Moon size={14} /> Noćenja</label>
+                                <label><Moon size={14} /> {t.nights}</label>
                                 <input
                                     type="number"
                                     min="1"
@@ -218,7 +224,7 @@ const TotalTripSearch: React.FC = () => {
                                 />
                             </div>
                             <div className="input-group-premium">
-                                <label><MoveLeft size={14} /> Povratak</label>
+                                <label><MoveLeft size={14} /> {t.checkOut}</label>
                                 <div className="custom-date-wrapper">
                                     <input
                                         type="date"
@@ -227,17 +233,17 @@ const TotalTripSearch: React.FC = () => {
                                         className="native-date-input"
                                     />
                                     <div className="date-display-overlay">
-                                        {inquiry.checkOut ? new Date(inquiry.checkOut).toLocaleDateString('sr-RS').replace(/\//g, '.') : 'dd/mm/yyyy'}
+                                        {inquiry.checkOut ? new Date(inquiry.checkOut).toLocaleDateString(lang === 'sr' ? 'sr-RS' : 'en-GB').replace(/\//g, lang === 'sr' ? '.' : '/') : 'dd/mm/yyyy'}
                                     </div>
                                 </div>
                             </div>
                             <div className="input-group-premium flexibility-tiny">
-                                <label><Zap size={14} /> +/- dana</label>
+                                <label><Zap size={14} /> {t.flexibility}</label>
                                 <select value={flexibleDays} onChange={e => setFlexibleDays(parseInt(e.target.value))}>
-                                    <option value={0}>Fiksno</option>
-                                    <option value={1}>+/- 1 dan</option>
-                                    <option value={2}>+/- 2 dana</option>
-                                    <option value={3}>+/- 3 dana</option>
+                                    <option value={0}>{t.fixed}</option>
+                                    <option value={1}>+/- 1 {lang === 'sr' ? 'dan' : 'day'}</option>
+                                    <option value={2}>+/- 2 {lang === 'sr' ? 'dana' : 'days'}</option>
+                                    <option value={3}>+/- 3 {lang === 'sr' ? 'dana' : 'days'}</option>
                                 </select>
                             </div>
                         </div>
@@ -246,7 +252,7 @@ const TotalTripSearch: React.FC = () => {
                     {/* Row 2: Passengers and Action */}
                     <div className="form-row passengers-action-line-v4">
                         <div className="input-group-premium rooms-input">
-                            <label><Home size={14} /> Broj soba</label>
+                            <label><Home size={14} /> {t.rooms}</label>
                             <input
                                 type="number"
                                 min="1"
@@ -258,7 +264,7 @@ const TotalTripSearch: React.FC = () => {
                             />
                         </div>
                         <div className="input-group-premium adults-input">
-                            <label><Users size={14} /> Odrasli</label>
+                            <label><Users size={14} /> {t.adults}</label>
                             <input
                                 type="number"
                                 min="1"
@@ -270,7 +276,7 @@ const TotalTripSearch: React.FC = () => {
                             />
                         </div>
                         <div className="input-group-premium children-input">
-                            <label><Users2 size={14} /> Deca</label>
+                            <label><Users2 size={14} /> {t.children}</label>
                             <input
                                 type="number"
                                 min="0"
@@ -292,7 +298,7 @@ const TotalTripSearch: React.FC = () => {
                             <div className="children-ages-inline-v4">
                                 {inquiry.childrenAges.map((age, idx) => (
                                     <div key={idx} className="age-input-premium">
-                                        <label>Det {idx + 1}</label>
+                                        <label>{t.childAge} {idx + 1}</label>
                                         <input
                                             type="number"
                                             min="0"
@@ -313,7 +319,7 @@ const TotalTripSearch: React.FC = () => {
 
                         <button className="search-launch-btn-v4" onClick={handleSearch} disabled={isLoading}>
                             {isLoading ? <Loader2 className="spin" /> : <Search size={22} />}
-                            <span>Pretraži Ponude</span>
+                            <span>{t.searchOffers}</span>
                         </button>
                     </div>
                 </div>
