@@ -9,9 +9,9 @@ let client: any;
 if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("⚠️ OlympicHub: Supabase Cloud credentials missing. App running in OFFLINE/DEMO mode.");
     // Soft mock implementation to prevent crash while informing developer
-    const mockError = (method: string) => ({ 
-        data: null, 
-        error: { message: `🚀 OlympicHub: Supabase Cloud connection required for '${method}'. Create .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.` } 
+    const mockError = (method: string) => ({
+        data: null,
+        error: { message: `🚀 OlympicHub: Supabase Cloud connection required for '${method}'. Create .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.` }
     });
 
     client = {
@@ -31,6 +31,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
         auth: {
             getSession: () => Promise.resolve({ data: { session: null }, error: null }),
             onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } })
+        },
+        functions: {
+            invoke: (name: string) => Promise.resolve(mockError(`Edge Function: ${name}`))
         }
     };
 } else {

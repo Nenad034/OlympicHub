@@ -385,3 +385,37 @@
 .modal-footer button .spin {
     animation: spin 1s linear infinite;
 }
+.highlight-bg {
+    background: rgba(88, 166, 255, 0.05);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(88, 166, 255, 0.1);
+}
+
+.danger-zone-mini {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-delete-account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: fit-content;
+}
+
+.btn-delete-account:hover {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}

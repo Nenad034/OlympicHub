@@ -957,7 +957,201 @@
     animation: spin 1s linear infinite;
 }
 
+.ai-translation-bar {
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: rgba(88, 166, 255, 0.05);
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.tone-selector-mini {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tone-selector-mini button {
+    background: transparent !important;
+    color: #888 !important;
+    font-size: 11px !important;
+    padding: 6px 14px !important;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.tone-selector-mini button.active {
+    background: #58a6ff !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.ai-tiny-btn {
+    background: rgba(30, 35, 40, 0.8) !important;
+    border: 1px solid rgba(88, 166, 255, 0.3) !important;
+    color: #58a6ff !important;
+    font-size: 11px;
+    font-weight: 800;
+    width: 40px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-tiny-btn:hover:not(:disabled) {
+    background: #58a6ff !important;
+    color: white !important;
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.3);
+}
+
+.compose-ai-tool-group {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 16px;
+    border-radius: 100px;
+    border: 1px solid rgba(88, 166, 255, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+.ai-action-btn {
+    background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%) !important;
+    color: white !important;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 100px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.ai-action-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.5);
+}
+
+.ai-icon {
+    color: #58a6ff;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Add Account Dialog */
+.add-account-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-account-dialog {
+    background: #1e2328;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    width: 400px;
+    padding: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.add-account-dialog h3 {
+    margin-bottom: 20px;
+    color: #f0f6fc;
+}
+
+.add-account-dialog .form-group {
+    margin-bottom: 16px;
+}
+
+.add-account-dialog label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #8b949e;
+}
+
+.add-account-dialog input {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #f0f6fc;
+}
+
+.add-account-dialog .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.add-account-dialog .btn-secondary {
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.add-account-dialog .btn-primary {
+    background: #238636;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.mail-sidebar-footer {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid var(--mail-border);
+}
+
+.mail-sidebar-footer .settings-btn-sidebar {
+    width: 100%;
 }

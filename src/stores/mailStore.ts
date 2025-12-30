@@ -23,6 +23,7 @@ export interface Email {
     category: 'inbox' | 'sent' | 'drafts' | 'archive' | 'trash';
     accountId: string;
     deletedAt?: string;
+    isLocal?: boolean;
 }
 
 interface MailState {
@@ -38,6 +39,10 @@ interface MailState {
     setSignature: (accountId: string, signature: string) => void;
     setSelectedAccount: (id: string) => void;
     setEmails: (emails: Email[]) => void;
+    addAccount: (account: Omit<MailAccount, 'id'>) => string;
+    updateAccount: (id: string, updates: Partial<MailAccount>) => void;
+    removeAccount: (id: string) => void;
+    receiveEmail: (data: { accountId: string, from: string, fromEmail: string, subject: string, body: string }) => void;
 }
 
 const initialAccounts: MailAccount[] = [
@@ -68,7 +73,8 @@ export const useMailStore = create<MailState>()(
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     isUnread: false,
                     isStarred: false,
-                    category: 'sent'
+                    category: 'sent',
+                    isLocal: true
                 };
                 return { emails: [newEmail, ...state.emails] };
             }),
@@ -104,8 +110,49 @@ export const useMailStore = create<MailState>()(
             })),
 
             setSelectedAccount: (id: string) => set({ selectedAccountId: id }),
-
             setEmails: (emails: Email[]) => set({ emails }),
+
+            addAccount: (accountData: Omit<MailAccount, 'id'>) => {
+                const newId = `acc-${Math.random().toString(36).substring(2, 9)}`;
+                set((state: MailState) => ({
+                    accounts: [...state.accounts, { ...accountData, id: newId }],
+                    selectedAccountId: newId
+                }));
+                return newId;
+            },
+
+            updateAccount: (id: string, updates: Partial<MailAccount>) => set((state: MailState) => ({
+                accounts: state.accounts.map(a => a.id === id ? { ...a, ...updates } : a)
+            })),
+
+            removeAccount: (id: string) => set((state: MailState) => {
+                const newAccounts = state.accounts.filter(a => a.id !== id);
+                return {
+                    accounts: newAccounts,
+                    selectedAccountId: state.selectedAccountId === id
+                        ? (newAccounts.length > 0 ? newAccounts[0].id : '')
+                        : state.selectedAccountId
+                };
+            }),
+
+            receiveEmail: (data: { accountId: string, from: string, fromEmail: string, subject: string, body: string }) => set((state: MailState) => {
+                const newEmail: Email = {
+                    id: `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                    accountId: data.accountId,
+                    sender: data.from,
+                    senderEmail: data.fromEmail,
+                    recipient: 'Mene',
+                    subject: data.subject,
+                    body: data.body,
+                    preview: data.body.substring(0, 100) + '...',
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    isUnread: true,
+                    isStarred: false,
+                    category: 'inbox',
+                    isLocal: true
+                };
+                return { emails: [newEmail, ...state.emails] };
+            }),
         }),
         {
             name: 'olympic-mail-storage',

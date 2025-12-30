@@ -244,3 +244,40 @@ export async function getSearchSuggestions(query: string): Promise<string[]> {
         return [];
     }
 }
+
+/**
+ * Translates and rephrases text based on source/target language and desired tone.
+ */
+export async function translateWithTone(
+    text: string,
+    targetLang: 'sr' | 'en',
+    tone: 'formal' | 'informal' | 'friendly'
+): Promise<string> {
+    const toneMap = {
+        formal: 'profesionalan i formalan (npr. Poštovani, Srdačan pozdrav)',
+        informal: 'poslovno-opušten, ali učtiv (npr. Pozdrav, Hvala na javljanju)',
+        friendly: 'drugarski i topao (npr. Zdravo, Baš nam je drago)'
+    };
+
+    const prompt = `
+        Prevedi i preoblikuj sledeći tekst na ${targetLang === 'sr' ? 'SRPSKI' : 'ENGLESKI'} jezik.
+        Ton komunikacije treba da bude: ${toneMap[tone]}.
+        
+        TEKST ZA OBRADU:
+        "${text}"
+        
+        ZADATAK:
+        1. Prevedi tekst tačno, ali prirodno.
+        2. Prilagodi rečnik izabranom tonu.
+        3. Ako je tekst na jeziku na koji treba da se prevede, samo ga preoblikuj u izabrani ton.
+        4. Odgovori SAMO obrađenim tekstom, bez dodatnih komentara.
+    `;
+
+    try {
+        const result = await askGemini(prompt);
+        return result.response.trim();
+    } catch (error) {
+        console.error('Translation error:', error);
+        return text;
+    }
+}
