@@ -11,7 +11,7 @@
 - **AI Assistant** - Automatsko generisanje odgovora
 - **Master View** - Admin pristup svim nalozima
 
-👉 **[Quick Start Email](./QUICKSTART_EMAIL.md)** | **[Detaljna Dokumentacija](./EMAIL_SETUP.md)**
+👉 **[Quick Start Email](./docs/QUICKSTART_EMAIL.md)** | **[Detaljna Dokumentacija](./docs/EMAIL_SETUP.md)**
 
 ### 🎯 Production Moduli
 
@@ -71,7 +71,7 @@ cd supabase/functions
 # 3. Podesite nalog preko Settings dugmeta
 ```
 
-📖 **[Detaljne Instrukcije](./QUICKSTART_EMAIL.md)**
+📖 **[Detaljne Instrukcije](./docs/QUICKSTART_EMAIL.md)**
 
 ## 📁 Struktura Projekta
 
@@ -112,9 +112,14 @@ olympichub034/
 
 ## 📚 Dokumentacija
 
-- **[Email Setup Guide](./EMAIL_SETUP.md)** - Kompletno uputstvo za email sistem
-- **[Quick Start Email](./QUICKSTART_EMAIL.md)** - Brzi start za email
+- **[Email Setup Guide](./docs/EMAIL_SETUP.md)** - Kompletno uputstvo za email sistem
+- **[Quick Start Email](./docs/QUICKSTART_EMAIL.md)** - Brzi start za email
+- **[Implementation Summary](./docs/EMAIL_IMPLEMENTATION_SUMMARY.md)** - Detaljan pregled implementacije
 - **[Edge Functions README](./supabase/functions/README.md)** - Deployment guide
+- **[Architecture](./docs/ARCHITECTURE.md)** - Arhitektura sistema
+- **[Components](./docs/COMPONENTS.md)** - Dokumentacija komponenti
+- **[API](./docs/API.md)** - API dokumentacija
+- **[Security](./docs/SECURITY.md)** - Sigurnosne smernice
 - **[TODO List](./TODO_LIST.md)** - Planirane funkcionalnosti
 
 ## 🔧 Development
