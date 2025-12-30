@@ -66,6 +66,27 @@
     font-weight: 600;
 }
 
+.match-card h4 {
+    margin: 0;
+    font-size: 13px;
+    color: #f0f6fc;
+}
+
+.match-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    color: #58a6ff;
+}
+
+.service-cat {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #8b949e;
+    margin: 0;
+}
+
 .close-btn {
     background: none;
     border: none;

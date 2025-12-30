@@ -115,9 +115,9 @@ src/
     - [ ] API Guardian: Encrypt and isolate all external API keys (Banks, CIS, e-Turista).
     - [ ] Implement IP Whitelisting for backend authentication to prevent "upad sa strane".
 ### 🗺️ TOTAL TRIP & EXPERIENCES
-- [ ] **Viator API Integration**: Istražiti i implementirati konekciju sa Viatorom za globalnu ponudu izleta i ulaznica.
-- [ ] **Contextual Upselling**: Razviti logiku koja na osnovu izabranog hotela/destinacije nudi "Verified Experiences" (restorani, lokalni dragulji, najbolja kafa).
-- [ ] **Musashi Iconography**: Implementirati oštre, minimalističke ikone za sve tipove usluga.
+- [ ] **Unified Iconography**: Osigurati da se iste ikone iz pretrage (Musashi stil) koriste i u prikazima cenovnika i generisanim ponudama.
+- [ ] **Marketing-Steered AI Assistant**: Naučiti AI asistenta da, pored pronalaženja najboljih opcija, suptilno predlaže "Promoted" ponude koje su u strateškom interesu agencije.
+- [ ] **Verified Experiences**: Razviti logiku koja na osnovu izabranog hotela/destinacije nudi "Verified Experiences" (restorani, lokalni dragulji, najbolja kafa).
 - [ ] **Group Travel Logic**: Implementirati pretragu i kalkulaciju za grupna putovanja (popusti na količinu, grupni prevoz).
 - [ ] **Trip Builder**: Omogućiti korisniku da "sklapa" putovanje kao mozaik (Avio + Hotel + Transfer + Disneyland + Večera).
 - [x] **Zero Trust Arhitektura**:

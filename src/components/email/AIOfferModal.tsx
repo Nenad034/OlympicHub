@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, Send, Edit3, Check, Loader2, Calendar, Users, Home } from 'lucide-react';
+import {
+    Sparkles, Send, Edit3, Check, Loader2, Calendar, Users, Home,
+    Hotel, Plane, Bus, Compass, Ticket, CarFront, Ship, TrainFront,
+    Castle, Waves, Utensils
+} from 'lucide-react';
 import './AIOfferModal.css';
 
 interface AIOfferModalProps {
@@ -12,6 +16,21 @@ interface AIOfferModalProps {
     onClose: () => void;
     onSend: (text: string) => void;
 }
+
+const getServiceIcon = (category: string) => {
+    switch (category) {
+        case 'flight': return <Plane size={14} />;
+        case 'bus': return <Bus size={14} />;
+        case 'transport': return <Bus size={14} />;
+        case 'transfer': return <CarFront size={14} />;
+        case 'excursion': return <Compass size={14} />;
+        case 'ticket': return <Ticket size={14} />;
+        case 'disney': return <Castle size={14} />;
+        case 'waterpark': return <Waves size={14} />;
+        case 'food': return <Utensils size={14} />;
+        default: return <Compass size={14} />;
+    }
+};
 
 export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, onSend }) => {
     const [editableText, setEditableText] = useState(proposal.suggestedResponse);
@@ -49,12 +68,15 @@ export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, o
                     <div className="ai-db-matches">
                         <div className="match-sections-grid">
                             <div className="match-section">
-                                <h3>🏨 Hoteli ({proposal.hotelMatches.length})</h3>
+                                <h3><Hotel size={18} /> Hoteli ({proposal.hotelMatches.length})</h3>
                                 {proposal.hotelMatches.length > 0 ? (
                                     <div className="matches-list">
                                         {proposal.hotelMatches.slice(0, 2).map((match, idx) => (
                                             <div key={idx} className="match-card hotel">
-                                                <h4>{match.title}</h4>
+                                                <div className="match-card-header">
+                                                    <Hotel size={14} />
+                                                    <h4>{match.title}</h4>
+                                                </div>
                                                 <p><span className="status-badge-active">Dostupno</span></p>
                                             </div>
                                         ))}
@@ -65,12 +87,15 @@ export const AIOfferModal: React.FC<AIOfferModalProps> = ({ proposal, onClose, o
                             </div>
 
                             <div className="match-section">
-                                <h3>🚌 Usluge ({proposal.serviceMatches.length})</h3>
+                                <h3><Compass size={18} /> Usluge ({proposal.serviceMatches.length})</h3>
                                 {proposal.serviceMatches.length > 0 ? (
                                     <div className="matches-list">
                                         {proposal.serviceMatches.slice(0, 2).map((match, idx) => (
                                             <div key={idx} className="match-card service">
-                                                <h4>{match.title}</h4>
+                                                <div className="match-card-header">
+                                                    {getServiceIcon(match.category)}
+                                                    <h4>{match.title}</h4>
+                                                </div>
                                                 <p className="service-cat">{match.category}</p>
                                             </div>
                                         ))}
