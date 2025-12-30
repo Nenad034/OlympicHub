@@ -39,6 +39,8 @@ import {
 import { exportToJSON } from '../../utils/exportUtils';
 import PropertyWizard from '../../components/PropertyWizard';
 import TourWizard from '../../components/TourWizard/TourWizard';
+import Transport from './Transport';
+import Services from './Services';
 import { type Property, validateProperty } from '../../types/property.types';
 import { type Tour } from '../../types/tour.types';
 import {
@@ -122,7 +124,7 @@ interface ProductionHubProps {
 }
 
 const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
-    const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail'>('hub');
+    const [viewMode, setViewMode] = useState<'hub' | 'list' | 'detail' | 'transport' | 'services'>('hub');
     const [displayType, setDisplayType] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeModuleTab, setActiveModuleTab] = useState('all');
@@ -692,25 +694,26 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                             onClick={() => {
                                 if (s.id === 'accommodation') setViewMode('list');
                                 if (s.id === 'group_trips') startCreateTour();
+                                if (s.category === 'transport') setViewMode('transport');
+                                if (s.category === 'amenities') setViewMode('services');
                             }}
                             style={{
-                                cursor: (s.id === 'accommodation' || s.id === 'group_trips') ? 'pointer' : 'not-allowed',
-                                opacity: (s.id === 'accommodation' || s.id === 'group_trips') ? 1 : 0.8,
-                                border: (s.id === 'accommodation' || s.id === 'group_trips') ? '1px solid var(--accent)' : '1px solid var(--border)'
+                                cursor: 'pointer',
+                                border: (s.id === 'accommodation' || s.id === 'group_trips' || s.category === 'transport' || s.category === 'amenities') ? '1px solid var(--accent)' : '1px solid var(--border)'
                             }}
                         >
                             <div className="module-icon" style={{ background: `linear-gradient(135deg, ${s.color}, ${s.color}dd)` }}>
                                 {s.icon}
                             </div>
-                            <div className={`module-badge ${s.badge === 'LIVE' ? 'live' : 'new'}`}>{s.badge}</div>
+                            <div className={`module-badge ${(['accommodation', 'group_trips'].includes(s.id) || ['transport', 'amenities'].includes(s.category)) ? 'live' : 'new'}`}>
+                                {(['accommodation', 'group_trips'].includes(s.id) || ['transport', 'amenities'].includes(s.category)) ? 'LIVE' : 'USKORO'}
+                            </div>
                             <h3 className="module-title">{s.name}</h3>
                             <p className="module-desc">{s.desc}</p>
-                            {(s.id === 'accommodation' || s.id === 'group_trips') && (
-                                <button className="module-action">
-                                    {s.id === 'accommodation' ? 'Otvori Modul' : 'Kreiraj Turu'}
-                                    <ChevronRight size={16} />
-                                </button>
-                            )}
+                            <button className="module-action">
+                                {s.id === 'accommodation' ? 'Otvori Modul' : s.id === 'group_trips' ? 'Kreiraj Turu' : 'Otvori Modul'}
+                                <ChevronRight size={16} />
+                            </button>
                         </motion.div>
                     ))}
                 </div>
@@ -1261,6 +1264,14 @@ const ProductionHub: React.FC<ProductionHubProps> = ({ onBack }) => {
                 </AnimatePresence>
             </div >
         );
+    }
+
+    if (viewMode === 'transport') {
+        return <Transport onBack={() => setViewMode('hub')} />;
+    }
+
+    if (viewMode === 'services') {
+        return <Services onBack={() => setViewMode('hub')} />;
     }
 
     return null;

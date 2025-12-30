@@ -10,6 +10,8 @@ import {
     Zap,
     Coffee,
     Sparkles,
+    Power,
+    Monitor
 } from 'lucide-react';
 import { useThemeStore, useAppStore, useAuthStore } from '../../stores';
 import { translations } from '../../translations';
@@ -23,10 +25,11 @@ const TopBar: React.FC = () => {
         lang,
         setLang,
         navMode,
-        toggleNavMode
+        toggleNavMode,
+        setLayoutMode
     } = useThemeStore();
     const { appStatus, setAppStatus, searchQuery, setSearchQuery } = useAppStore();
-    const { userLevel, userName } = useAuthStore();
+    const { userLevel, userName, logout } = useAuthStore();
     const t = translations[lang];
 
     useEffect(() => {
@@ -106,6 +109,17 @@ const TopBar: React.FC = () => {
                     <span style={{ fontSize: '12px', fontWeight: 600 }}>
                         {navMode === 'sidebar' ? 'Horizontal Menu' : 'Sidebar Menu'}
                     </span>
+                </button>
+
+                {/* Modern Layout Toggle */}
+                <button
+                    className="btn-glass"
+                    onClick={() => setLayoutMode('modern')}
+                    title="Switch to Modern VS Code Visual"
+                    style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+                >
+                    <Monitor size={18} />
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>Modern IDE</span>
                 </button>
 
                 {/* Language Toggle */}
@@ -188,11 +202,28 @@ const TopBar: React.FC = () => {
                 </button>
 
                 {/* User Profile */}
-                <div className="user-profile">
-                    <div className="avatar"></div>
-                    <div style={{ fontSize: '13px', fontWeight: '600' }}>
-                        {userName} (Lvl {userLevel})
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="user-profile">
+                        <div className="avatar"></div>
+                        <div style={{ fontSize: '13px', fontWeight: '600' }}>
+                            {userName} (Lvl {userLevel})
+                        </div>
                     </div>
+                    <button
+                        onClick={logout}
+                        title="Logout"
+                        style={{
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                            color: '#ef4444',
+                            padding: '8px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            display: 'flex'
+                        }}
+                    >
+                        <Power size={16} />
+                    </button>
                 </div>
             </div>
         </div>

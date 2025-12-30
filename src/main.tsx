@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+// import './index.css' - Managed dynamically by StyleManager in App.tsx
 import App from './App.tsx'
 import { ConfigProvider } from './context/ConfigContext'
 import ErrorBoundary from './components/ErrorBoundary'

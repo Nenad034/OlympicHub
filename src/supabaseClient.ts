@@ -8,23 +8,28 @@ let client: any;
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("⚠️ OlympicHub: Supabase Cloud credentials missing. App running in OFFLINE/DEMO mode.");
-    // specific mock implementation to prevent white screen
+    // Soft mock implementation to prevent crash while informing developer
+    const mockError = (method: string) => ({ 
+        data: null, 
+        error: { message: `🚀 OlympicHub: Supabase Cloud connection required for '${method}'. Create .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.` } 
+    });
+
     client = {
-        from: () => ({
+        from: (table: string) => ({
             select: () => ({
                 limit: () => ({
-                    single: () => Promise.resolve({ data: null, error: null })
+                    single: () => Promise.resolve(mockError(`select from ${table}`))
                 }),
-                order: () => Promise.resolve({ data: [] }),
-                eq: () => Promise.resolve({ data: [] })
+                order: () => Promise.resolve({ data: [], error: mockError(`select from ${table}`).error }),
+                eq: () => Promise.resolve({ data: [], error: mockError(`select from ${table}`).error })
             }),
-            upsert: () => Promise.resolve({ error: null }),
-            insert: () => ({ select: () => Promise.resolve({ data: [] }) }),
-            update: () => Promise.resolve({ error: null }),
-            delete: () => Promise.resolve({ error: null })
+            upsert: () => Promise.resolve(mockError(`upsert to ${table}`)),
+            insert: () => ({ select: () => Promise.resolve(mockError(`insert to ${table}`)) }),
+            update: () => Promise.resolve(mockError(`update ${table}`)),
+            delete: () => Promise.resolve(mockError(`delete from ${table}`))
         }),
         auth: {
-            getSession: () => Promise.resolve({ data: { session: null } }),
+            getSession: () => Promise.resolve({ data: { session: null }, error: null }),
             onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } })
         }
     };

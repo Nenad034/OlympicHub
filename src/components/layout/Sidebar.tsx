@@ -6,6 +6,7 @@ import {
     Users,
     Settings as SettingsIcon,
     ChevronRight,
+    Mail
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { GeometricBrain } from '../icons/GeometricBrain';
@@ -71,6 +72,13 @@ const Sidebar: React.FC = () => {
                         title={t.production}
                     >
                         <Package size={20} /> {!isSidebarCollapsed && t.production}
+                    </NavLink>
+                    <NavLink
+                        to="/mail"
+                        className={({ isActive }) => navItemClass(isActive)}
+                        title="Olympic Mail"
+                    >
+                        <Mail size={20} /> {!isSidebarCollapsed && 'Olympic Mail'}
                     </NavLink>
                     <NavLink
                         to="/suppliers"

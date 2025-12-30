@@ -30,7 +30,13 @@ export interface TourDay {
     dayNumber: number;
     title: string;
     description: string;
-    accommodationHotelId?: string; // Link to Property
+    location?: string;
+    accommodation?: {
+        hotelId: string;
+        hotelName: string;
+        roomTypeId?: string;
+    };
+    accommodationHotelId?: string; // Legacy
     activities: DayActivity[];
     transportSegments: TransportSegment[];
 }

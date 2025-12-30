@@ -1,9 +1,22 @@
+import { useState, useEffect } from 'react';
 import type { FC } from 'react';
 import type { StepProps } from '../types';
-import { Plane, Bus, Ship, Train, Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Plane, Bus, Ship, Train, Plus, Trash2, ArrowRight, MapPin } from 'lucide-react';
+import { loadFromCloud } from '../../../utils/storageUtils';
 
 const LogisticsStep: FC<StepProps> = ({ data, onChange }) => {
     const itinerary = data.itinerary || [];
+    const [properties, setProperties] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadProperties = async () => {
+            const { success, data: pData } = await loadFromCloud('properties');
+            if (success && pData) {
+                setProperties(pData);
+            }
+        };
+        loadProperties();
+    }, []);
 
     const addSegment = () => {
         const newSegment = {
@@ -23,6 +36,17 @@ const LogisticsStep: FC<StepProps> = ({ data, onChange }) => {
     const removeSegment = (dayIdx: number, segIdx: number) => {
         const next = [...itinerary];
         next[dayIdx].transportSegments = next[dayIdx].transportSegments?.filter((_, i) => i !== segIdx);
+        onChange({ itinerary: next });
+    };
+
+    const updateHotel = (dayIdx: number, hotelId: string) => {
+        const next = [...itinerary];
+        const selectedHotel = properties.find(p => p.id === hotelId);
+        next[dayIdx].accommodation = selectedHotel ? {
+            hotelId: selectedHotel.id,
+            hotelName: selectedHotel.name,
+            roomTypeId: '' // Could be expanded to select room type
+        } : undefined;
         onChange({ itinerary: next });
     };
 
@@ -138,14 +162,57 @@ const LogisticsStep: FC<StepProps> = ({ data, onChange }) => {
                 <h3 className="form-section-title" style={{ marginBottom: '4px' }}>Smeštaj & Objekti</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px' }}>Povežite hotele iz baze sa danima u itinereru</p>
 
-                <div style={{
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px'
-                }}>
-                    <p style={{ color: 'var(--text-secondary)' }}>Modul za povezivanje sa bazom smeštaja će biti aktivan nakon što definišete bazu hotela.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {itinerary.map((day, idx) => (
+                        <div key={idx} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            background: 'var(--bg-card)',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border)'
+                        }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: 'var(--accent)',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                fontWeight: 'bold'
+                            }}>
+                                {idx + 1}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>Dan {idx + 1}: {day.title || 'Itinerer'}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                                    <MapPin size={12} /> {day.location || 'Nije definisana lokacija'}
+                                </div>
+                            </div>
+                            <div style={{ width: '300px' }}>
+                                <select
+                                    className="form-select"
+                                    value={day.accommodation?.hotelId || ''}
+                                    onChange={(e) => updateHotel(idx, e.target.value)}
+                                    style={{ width: '100%' }}
+                                >
+                                    <option value="">Izaberi hotel...</option>
+                                    {properties.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    ))}
+                    {itinerary.length === 0 && (
+                        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--bg-card)', borderRadius: '12px', border: '1px dashed var(--border)' }}>
+                            Inicijalizujte itinerer u prvom koraku da biste dodelili smeštaj.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -153,3 +220,4 @@ const LogisticsStep: FC<StepProps> = ({ data, onChange }) => {
 };
 
 export default LogisticsStep;
+

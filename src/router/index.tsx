@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 
 // Layout Components
 import { Sidebar, TopBar, HorizontalNav } from '../components/layout';
+import { VSCodeLayout } from '../components/vscode';
 
 // Page Components - Lazy loaded for performance
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
@@ -25,9 +26,12 @@ const DeepArchive = React.lazy(() => import('../modules/system/DeepArchive'));
 const Katana = React.lazy(() => import('../modules/system/Katana'));
 const Fortress = React.lazy(() => import('../modules/system/Fortress'));
 const PricingIntelligence = React.lazy(() => import('../modules/pricing/PricingIntelligence'));
+const OlympicMail = React.lazy(() => import('../modules/mail/OlympicMail'));
+const Login = React.lazy(() => import('../pages/Login'));
 
 // Stores
 import { useThemeStore, useAuthStore } from '../stores';
+import { Navigate, useLocation } from 'react-router-dom';
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -35,15 +39,39 @@ const LoadingFallback = () => (
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100%',
+        height: '100vh',
+        background: 'var(--bg-main)',
         color: 'var(--text-secondary)'
     }}>
         <div className="loading-spinner">Učitavanje...</div>
     </div>
 );
 
-// Main Layout Component
+// Auth Guard for global protection
+const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { userLevel } = useAuthStore();
+    const location = useLocation();
+
+    if (userLevel === 0) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    return <>{children}</>;
+};
+
+// Main Layout Component - Switches between Modern and Classic
 const MainLayout: React.FC = () => {
+    const { layoutMode } = useThemeStore();
+
+    return (
+        <React.Suspense fallback={<LoadingFallback />}>
+            {layoutMode === 'modern' ? <VSCodeLayout /> : <ClassicLayout />}
+        </React.Suspense>
+    );
+};
+
+// Classic Layout Component (Fallback)
+const ClassicLayout: React.FC = () => {
     const { navMode } = useThemeStore();
 
     return (
@@ -101,65 +129,63 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, minLevel }) =
 // Create router configuration with nested routes
 export const router = createBrowserRouter([
     {
+        path: '/login',
+        element: (
+            <React.Suspense fallback={<LoadingFallback />}>
+                <Login />
+            </React.Suspense>
+        ),
+    },
+    {
         path: '/',
-        element: <MainLayout />,
+        element: (
+            <AuthGuard>
+                <MainLayout />
+            </AuthGuard>
+        ),
         children: [
             // Dashboard
             {
                 index: true,
                 element: <Dashboard />,
             },
-
-            // Mars Analysis
             {
                 path: 'mars-analysis',
                 element: <MarsAnalysis onBack={() => window.history.back()} lang="sr" userLevel={6} onOpenChat={() => { }} onDataUpdate={() => { }} />,
             },
-
-            // Production Module with nested routes
             {
                 path: 'production',
                 children: [
-                    // Production Hub (index)
                     {
                         index: true,
                         element: <ProductionHub onBack={() => window.history.back()} />,
                     },
-                    // Hotels List
                     {
                         path: 'hotels',
                         element: <HotelsList />,
                     },
-                    // New Hotel Creation
                     {
                         path: 'hotels/new',
                         element: <HotelNew />,
                     },
-                    // Individual Hotel Detail - deep link by slug
-                    // Example: /production/hotels/iberostar-bellevue
                     {
                         path: 'hotels/:hotelSlug',
                         element: <HotelDetail />,
                     },
-                    // Edit Hotel
                     {
                         path: 'hotels/:hotelSlug/edit',
                         element: <HotelEdit />,
                     },
-                    // Room Management for Hotel
                     {
                         path: 'hotels/:hotelSlug/rooms',
                         element: <HotelRooms />,
                     },
-                    // Price Management for Hotel
                     {
                         path: 'hotels/:hotelSlug/prices',
                         element: <HotelPrices />,
                     },
                 ],
             },
-
-            // Suppliers
             {
                 path: 'suppliers',
                 children: [
@@ -167,15 +193,12 @@ export const router = createBrowserRouter([
                         index: true,
                         element: <SuppliersModule onBack={() => window.history.back()} />,
                     },
-                    // Individual Supplier Detail
                     {
                         path: ':supplierId',
                         element: <SupplierDetail />,
                     },
                 ],
             },
-
-            // Customers
             {
                 path: 'customers',
                 children: [
@@ -183,27 +206,20 @@ export const router = createBrowserRouter([
                         index: true,
                         element: <CustomersModule onBack={() => window.history.back()} />,
                     },
-                    // Individual Customer Detail
                     {
                         path: ':customerId',
                         element: <CustomerDetail />,
                     },
                 ],
             },
-
-            // Settings
             {
                 path: 'settings',
                 element: <SettingsModule onBack={() => window.history.back()} lang="sr" userLevel={6} setUserLevel={() => { }} />,
             },
-
-            // Katana Task Manager
             {
                 path: 'katana',
                 element: <Katana onBack={() => window.history.back()} />,
             },
-
-            // Deep Archive (Level 6+)
             {
                 path: 'deep-archive',
                 element: (
@@ -212,8 +228,6 @@ export const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
-
-            // Fortress Security (Level 6+)
             {
                 path: 'fortress',
                 element: (
@@ -225,6 +239,10 @@ export const router = createBrowserRouter([
             {
                 path: 'pricing-intelligence',
                 element: <PricingIntelligence />,
+            },
+            {
+                path: 'mail',
+                element: <OlympicMail />,
             },
         ],
     },
