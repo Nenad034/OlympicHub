@@ -21,6 +21,10 @@ export const useTheme = () => {
             light: 'light-theme',
             cream: 'cream-theme',
             navy: 'navy-theme',
+            'dark-rainbow': 'dark-rainbow-theme',
+            'light-rainbow': 'light-rainbow-theme',
+            cyberpunk: 'cyberpunk-theme',
+            forest: 'forest-theme',
         };
 
         let className = themeClasses[theme] || '';

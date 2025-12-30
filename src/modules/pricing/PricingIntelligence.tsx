@@ -318,9 +318,9 @@ const PricingIntelligence: React.FC = () => {
             <PricingCodeView
                 pricelistTitle={pricelistTitle}
                 pricelistId={pricelistId}
-                productState={productState}
-                pricePeriods={pricePeriods}
-                supplements={supplements}
+                productState={productState as any}
+                pricePeriods={pricePeriods as any}
+                supplements={supplements as any}
                 validationIssues={validationIssues}
                 saveSuccess={saveSuccess}
                 isSaving={isSaving}
@@ -331,9 +331,9 @@ const PricingIntelligence: React.FC = () => {
                 onExportJSON={exportToJSON}
                 onSaveDraft={() => handleSavePricelist(false)}
                 onActivate={() => handleSavePricelist(true)}
-                onProductChange={setProductState}
-                onPeriodsChange={setPricePeriods}
-                onSupplementsChange={setSupplements}
+                onProductChange={setProductState as any}
+                onPeriodsChange={setPricePeriods as any}
+                onSupplementsChange={setSupplements as any}
             />
 
             {/* Load Modal */}
@@ -377,41 +377,41 @@ const PricingIntelligence: React.FC = () => {
                                             padding: '16px',
                                             background: 'var(--editor-line-hover)',
                                             borderRadius: '6px',
-                                                cursor: 'pointer',
-                                                border: '1px solid var(--pricing-border)',
-                                                transition: 'all 0.2s'
-                                            }}
-                                            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--pricing-accent)')}
-                                            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--pricing-border)')}
-                                        >
-                                            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{pl.title}</div>
-                                            <div style={{ fontSize: '12px', color: 'var(--pricing-text-dim)', display: 'flex', gap: '12px' }}>
-                                                <span>ðŸ“¦ {pl.product?.name || 'Bez proizvoda'}</span>
-                                                <span style={{
-                                                    padding: '2px 8px',
-                                                    borderRadius: '4px',
-                                                    background: pl.status === 'active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                                                    color: pl.status === 'active' ? '#10b981' : '#f59e0b'
-                                                }}>
-                                                    {pl.status === 'active' ? 'Aktivan' : 'Nacrt'}
-                                                </span>
-                                                <span>ðŸ“… {pl.updated_at ? new Date(pl.updated_at).toLocaleDateString('sr-RS') : '-'}</span>
-                                            </div>
+                                            cursor: 'pointer',
+                                            border: '1px solid var(--pricing-border)',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--pricing-accent)')}
+                                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--pricing-border)')}
+                                    >
+                                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{pl.title}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--pricing-text-dim)', display: 'flex', gap: '12px' }}>
+                                            <span>ðŸ“¦ {pl.product?.name || 'Bez proizvoda'}</span>
+                                            <span style={{
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                background: pl.status === 'active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                                color: pl.status === 'active' ? '#10b981' : '#f59e0b'
+                                            }}>
+                                                {pl.status === 'active' ? 'Aktivan' : 'Nacrt'}
+                                            </span>
+                                            <span>ðŸ“… {pl.updated_at ? new Date(pl.updated_at).toLocaleDateString('sr-RS') : '-'}</span>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                            <button
-                                className="btn-secondary"
-                                style={{ marginTop: '16px', width: '100%' }}
-                                onClick={() => setShowLoadModal(false)}
-                            >
-                                Zatvori
-                            </button>
-                        </div>
+                        <button
+                            className="btn-secondary"
+                            style={{ marginTop: '16px', width: '100%' }}
+                            onClick={() => setShowLoadModal(false)}
+                        >
+                            Zatvori
+                        </button>
                     </div>
-                )}
+                </div>
+            )}
         </div>
     );
 };
