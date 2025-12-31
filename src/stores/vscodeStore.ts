@@ -14,7 +14,9 @@ export type ActivityType =
     | 'hotels'
     | 'analytics'
     | 'settings'
-    | 'mail';
+    | 'notifications'
+    | 'mail'
+    | 'orchestrator';
 
 export interface Tab {
     id: string;

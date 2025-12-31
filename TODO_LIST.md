@@ -101,6 +101,146 @@ src/
 
 ## Future Tasks (Pending)
 
+### 🔔 NotificationCenter Improvements
+- [ ] **Dodatne opcije notifikacija**:
+    - [ ] Zvučne notifikacije (sound notifications)
+    - [ ] Email notifikacije (email notifications)
+- [ ] **Prioritet notifikacija**:
+    - [ ] Dodati mogućnost podešavanja prioriteta notifikacija (Low, Medium, High, Critical)
+- [ ] **Napredne opcije**:
+    - [ ] Desktop notifikacije (browser push notifications)
+    - [ ] Grupiranje notifikacija po tipu
+    - [ ] Istorija notifikacija
+
+### 🤖 AI Asistent za Call Centar
+- [ ] **Inteligentni Call Centar Asistent**:
+    - [ ] Agregacija svih informacija o ponudama u sistemu (hoteli, cene, dostupnost, usluge)
+    - [ ] Brzo pretraživanje i filtriranje ponuda na osnovu upita prodavca
+    - [ ] Instant odgovori na pitanja o:
+        - Dostupnosti smeštaja
+        - Cenama i popustima
+        - Uslovima plaćanja
+        - Dodatnim uslugama (transfer, osiguranje, ekskurzije)
+        - Specijalnim ponudama i akcijama
+    - [ ] Integracija sa svim modulima (Production Hub, Pricing Intelligence, Suppliers)
+    - [ ] Natural Language Processing za razumevanje upita na srpskom jeziku
+    - [ ] Automatsko generisanje odgovora sa relevantnim detaljima
+    - [ ] Istorija konverzacija i često postavljanih pitanja (FAQ)
+    - [ ] Sugestije za upselling i cross-selling
+    - [ ] Real-time sinhronizacija sa bazom podataka
+    - [ ] Multi-channel podrška (chat, email, telefon)
+- [ ] **Ubrzanje protoka informacija**:
+    - [ ] Smanjenje vremena odgovora sa minuta na sekunde
+    - [ ] Automatsko formatiranje odgovora za slanje putniku
+    - [ ] Template-i za česte upite
+    - [ ] Voice-to-text integracija za telefonske pozive
+
+### 🧠 Master Orchestrator - AI Agent Management
+- [x] **UI Implementation**:
+    - [x] Master Orchestrator modul (`modules/ai/MasterOrchestrator.tsx`)
+    - [x] Agent Registry prikaz sa 6 agenata
+    - [x] Chat interface za komunikaciju
+    - [x] Real-time status prikaz agenata
+    - [x] Integracija u Activity Bar (samo Level 6)
+    - [x] Integracija u VSCode Sidebar
+    - [x] Routing (`/orchestrator`)
+- [ ] **Backend Integration**:
+    - [ ] Agent Registry Service
+    - [ ] Context Manager implementation
+    - [ ] Agent-to-Agent communication protocol
+    - [ ] Real AI integration (trenutno simulacija)
+- [ ] **Specialized Agents**:
+    - [ ] Hotel Agent implementation
+    - [ ] Pricing Agent implementation
+    - [ ] Mail Agent implementation
+    - [ ] Customer Agent implementation
+    - [ ] Fortress Agent implementation
+    - [ ] Data Agent implementation
+- [ ] **Advanced Features**:
+    - [ ] Machine Learning integration
+    - [ ] Continuous learning from interactions
+    - [ ] Performance metrics tracking
+    - [ ] A/B testing framework
+
+### 🛡️ The Fortress - 24/7 Security Defense System
+- [x] **Osnovna arhitektura**:
+    - [x] Fortress Store (Zustand) za upravljanje attack logs, metrics i alerts
+    - [x] Security Defense Service za detekciju napada
+    - [x] Integracija sa postojećim Fortress UI modulom
+- [ ] **Detekcija napada (Attack Detection)**:
+    - [x] SQL Injection detekcija
+    - [x] XSS (Cross-Site Scripting) detekcija
+    - [x] Brute Force detekcija (failed login tracking)
+    - [x] DDoS detekcija (rate limiting)
+    - [x] Path Traversal detekcija
+    - [ ] CSRF (Cross-Site Request Forgery) detekcija
+    - [ ] File Upload Attack detekcija
+    - [ ] Command Injection detekcija
+    - [ ] LDAP Injection detekcija
+    - [ ] XML External Entity (XXE) detekcija
+- [ ] **24/7 Monitoring**:
+    - [x] Real-time attack logging
+    - [x] Automatic IP blocking za maliciozne izvore
+    - [ ] Geo-location tracking napadača
+    - [ ] Attack pattern recognition (AI-powered)
+    - [ ] Predictive threat analysis
+    - [ ] Honeypot implementation za privlačenje napadača
+- [ ] **Alerting System**:
+    - [x] Real-time alerts za kritične pretnje
+    - [ ] Email notifikacije za security team
+    - [ ] SMS alerts za kritične napade
+    - [ ] Slack/Teams integracija
+    - [ ] Escalation protocol (Low → Medium → High → Critical)
+    - [ ] Alert deduplication (sprečavanje spam-a)
+- [ ] **Attack Logs \u0026 Forensics**:
+    - [x] Detaljno logovanje svih napada
+    - [x] Severity classification (Low, Medium, High, Critical)
+    - [ ] Attack timeline visualization
+    - [ ] IP reputation tracking
+    - [ ] User-Agent analysis
+    - [ ] Payload inspection i analiza
+    - [ ] Export logs (JSON, CSV, PDF)
+    - [ ] Integration sa SIEM sistemima
+- [ ] **Security Recommendations**:
+    - [x] Automatsko generisanje bezbednosnih preporuka
+    - [ ] Vulnerability assessment
+    - [ ] Patch management suggestions
+    - [ ] Configuration hardening tips
+    - [ ] Compliance checking (OWASP Top 10, GDPR, PCI-DSS)
+- [ ] **Advanced Features**:
+    - [ ] Machine Learning za detekciju novih vrsta napada
+    - [ ] Behavioral analysis (anomaly detection)
+    - [ ] Threat Intelligence feed integration
+    - [ ] Automated incident response (auto-blocking, auto-patching)
+    - [ ] Security scoring dashboard
+    - [ ] Penetration testing simulator
+    - [ ] WAF (Web Application Firewall) rules generator
+- [ ] **UI Enhancements**:
+    - [ ] Attack Map (geografska mapa napada)
+    - [ ] Real-time attack counter
+    - [ ] Security Health Score
+    - [ ] Attack Type Distribution (pie chart)
+    - [ ] Timeline view za attack history
+    - [ ] Blocked IPs management interface
+    - [ ] Whitelist management
+    - [ ] Security audit reports generator
+- [ ] **Integration**:
+    - [ ] Supabase Edge Functions za server-side validation
+    - [ ] Cloudflare integration za DDoS protection
+    - [ ] Rate limiting na API Gateway nivou
+    - [ ] JWT token validation
+    - [ ] Session management i timeout
+    - [ ] Multi-factor authentication (MFA)
+- [ ] **Compliance \u0026 Reporting**:
+    - [ ] GDPR compliance monitoring
+    - [ ] PCI-DSS compliance checking
+    - [ ] ISO 27001 alignment
+    - [ ] Automated compliance reports
+    - [ ] Audit trail za sve security events
+    - [ ] Data retention policies
+
+
+
 - [x] **Master Administrator Role**: 
     - [x] Define a role above Level 5 (Master Level 6).
     - [x] Master Admin is the only one who can permanently delete data and access system source code.

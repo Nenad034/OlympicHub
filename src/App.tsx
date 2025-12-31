@@ -11,6 +11,7 @@ import { useThemeStore, useAppStore } from './stores';
 // Components
 import GeneralAIChat from './components/GeneralAIChat';
 import { GeometricBrain } from './components/icons/GeometricBrain';
+import { ToastProvider } from './components/ui/Toast';
 
 // Context
 import { useConfig } from './context/ConfigContext';
@@ -89,7 +90,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <>
+    <ToastProvider>
       <StyleManager />
       {isLoading ? loadingContent : (
         <>
@@ -141,7 +142,7 @@ const App: React.FC = () => {
           />
         </>
       )}
-    </>
+    </ToastProvider>
   );
 };
 

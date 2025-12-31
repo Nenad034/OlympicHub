@@ -40,9 +40,11 @@ import { generateOfferFromEmail, translateWithTone } from '../../services/aiOffe
 import { supabase } from '../../supabaseClient';
 import { EmailConfigModal } from '../../components/email/EmailConfigModal';
 import { AIOfferModal } from '../../components/email/AIOfferModal';
+import { useNotificationCenter } from '../../hooks/useNotificationCenter';
 import './OlympicMail.styles.css';
 
 export const OlympicMail: React.FC = () => {
+    const { notify } = useNotificationCenter();
     const {
         accounts,
         emails,
@@ -228,6 +230,7 @@ export const OlympicMail: React.FC = () => {
                                 subject: composeSubject || '(Bez naslova)',
                                 body: composeBody
                             });
+                            notify('mail', 'info', 'Nova poruka', `Od: ${activeAccount.name}`);
                             console.log('Demo: Mock email arrived in Inbox');
                         }, 2000);
                     }

@@ -25,7 +25,11 @@ import {
     Mail,
     Send,
     Trash2,
-    Inbox
+    Inbox,
+    Bell,
+    Brain,
+    Cpu,
+    Network
 } from 'lucide-react';
 import { useVSCodeStore, type ActivityType } from '../../stores/vscodeStore';
 import { useNavigate } from 'react-router-dom';
@@ -45,7 +49,9 @@ const routeToTabMap: Record<string, { title: string; icon?: React.ReactNode }> =
     '/fortress': { title: 'Fortress Security' },
     '/deep-archive': { title: 'Deep Archive' },
     '/settings': { title: 'Settings' },
+    '/notifications': { title: 'Centar za Notifikacije', icon: <Bell size={16} /> },
     '/mail': { title: 'Olympic Mail', icon: <Mail size={16} /> },
+    '/orchestrator': { title: 'Master Orchestrator', icon: <Brain size={16} /> },
 };
 
 interface TreeItem {
@@ -410,6 +416,55 @@ const MailPanel: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigat
     );
 };
 
+// Notifications panel
+const NotificationsPanel: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => {
+    return (
+        <div className="sidebar-panel">
+            <div className="sidebar-section">
+                <div className="section-header">
+                    <span>OBAVEŠTENJA</span>
+                </div>
+                <div className="section-items">
+                    <div className="section-item" onClick={() => onNavigate('/notifications')}>
+                        <Bell size={16} />
+                        <span>Centar za Notifikacije</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Master Orchestrator panel
+const OrchestratorPanel: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavigate }) => {
+    return (
+        <div className="sidebar-panel">
+            <div className="sidebar-section">
+                <div className="section-header">
+                    <span>AI ORCHESTRATOR</span>
+                </div>
+                <div className="section-items">
+                    <div className="section-item" onClick={() => onNavigate('/orchestrator')}>
+                        <Brain size={16} />
+                        <span>Master Orchestrator</span>
+                        <span className="item-badge">Master</span>
+                    </div>
+                    <div className="section-item">
+                        <Network size={16} />
+                        <span>Agent Registry</span>
+                        <span className="item-badge">6</span>
+                    </div>
+                    <div className="section-item">
+                        <Cpu size={16} />
+                        <span>Active Agents</span>
+                        <span className="item-badge">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const VSCodeSidebar: React.FC<VSCodeSidebarProps> = ({ width }) => {
     const { activeActivity, addTab, setActiveTab } = useVSCodeStore();
     const navigate = useNavigate();
@@ -476,6 +531,10 @@ export const VSCodeSidebar: React.FC<VSCodeSidebarProps> = ({ width }) => {
                 return <SettingsPanel onNavigate={handleFileClick} />;
             case 'mail':
                 return <MailPanel onNavigate={handleFileClick} />;
+            case 'notifications':
+                return <NotificationsPanel onNavigate={handleFileClick} />;
+            case 'orchestrator':
+                return <OrchestratorPanel onNavigate={handleFileClick} />;
             default:
                 return (
                     <div className="sidebar-panel">
@@ -500,7 +559,9 @@ export const VSCodeSidebar: React.FC<VSCodeSidebarProps> = ({ width }) => {
             'hotels': 'HOTELI',
             'analytics': 'ANALITIKA',
             'settings': 'PODEŠAVANJA',
-            'mail': 'MAIL'
+            'notifications': 'OBAVEŠTENJA',
+            'mail': 'MAIL',
+            'orchestrator': 'MASTER ORCHESTRATOR'
         };
         return titles[activeActivity] || 'EXPLORER';
     };

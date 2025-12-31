@@ -28,11 +28,13 @@ const Fortress = React.lazy(() => import('../modules/system/Fortress'));
 const PricingIntelligence = React.lazy(() => import('../modules/pricing/PricingIntelligence'));
 const TotalTripSearch = React.lazy(() => import('../modules/pricing/TotalTripSearch'));
 const OlympicMail = React.lazy(() => import('../modules/mail/OlympicMail'));
+const NotificationCenter = React.lazy(() => import('../modules/system/NotificationCenter'));
+const MasterOrchestrator = React.lazy(() => import('../modules/ai/MasterOrchestrator'));
 const Login = React.lazy(() => import('../pages/Login'));
 
 // Stores
 import { useThemeStore, useAuthStore } from '../stores';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -125,6 +127,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, minLevel }) =
     }
 
     return <>{children}</>;
+};
+
+// Helper component to use hooks for MasterOrchestrator
+const OrchestratorPage: React.FC = () => {
+    const navigate = useNavigate();
+    const { userLevel } = useAuthStore();
+    return <MasterOrchestrator onBack={() => navigate('/')} userLevel={userLevel} />;
 };
 
 // Create router configuration with nested routes
@@ -248,6 +257,18 @@ export const router = createBrowserRouter([
             {
                 path: 'mail',
                 element: <OlympicMail />,
+            },
+            {
+                path: 'notifications',
+                element: <NotificationCenter />,
+            },
+            {
+                path: 'orchestrator',
+                element: (
+                    <ProtectedRoute minLevel={6}>
+                        <OrchestratorPage />
+                    </ProtectedRoute>
+                ),
             },
         ],
     },

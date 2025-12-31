@@ -10,10 +10,12 @@ import {
     Users,
     Building2,
     BarChart3,
-    Mail
+    Mail,
+    Bell,
+    Brain
 } from 'lucide-react';
 import { useVSCodeStore, type ActivityType } from '../../stores/vscodeStore';
-import { useAppStore } from '../../stores';
+import { useAppStore, useAuthStore } from '../../stores';
 import { GeometricBrain } from '../icons/GeometricBrain';
 
 interface ActivityItem {
@@ -21,6 +23,7 @@ interface ActivityItem {
     icon: React.ReactNode;
     title: string;
     badge?: number;
+    minLevel?: number; // Minimum user level required
 }
 
 const topActivities: ActivityItem[] = [
@@ -37,12 +40,15 @@ const topActivities: ActivityItem[] = [
 ];
 
 const bottomActivities: ActivityItem[] = [
+    { id: 'orchestrator', icon: <Brain size={24} />, title: 'Master Orchestrator', minLevel: 6 },
+    { id: 'notifications', icon: <Bell size={24} />, title: 'Notifications' },
     { id: 'settings', icon: <Settings size={24} />, title: 'Settings' },
 ];
 
 export const ActivityBar: React.FC = () => {
     const { activeActivity, setActiveActivity, toggleSidebar, isSidebarVisible } = useVSCodeStore();
     const { setChatOpen } = useAppStore();
+    const { userLevel } = useAuthStore();
 
     const handleActivityClick = (activity: ActivityType) => {
         if (activity === activeActivity && isSidebarVisible) {
@@ -54,6 +60,11 @@ export const ActivityBar: React.FC = () => {
             }
         }
     };
+
+    // Filter activities based on user level
+    const visibleBottomActivities = bottomActivities.filter(
+        item => !item.minLevel || userLevel >= item.minLevel
+    );
 
     return (
         <div className="vscode-activity-bar">
@@ -83,7 +94,7 @@ export const ActivityBar: React.FC = () => {
                     <GeometricBrain size={24} color="#FFD700" />
                 </button>
 
-                {bottomActivities.map((item) => (
+                {visibleBottomActivities.map((item) => (
                     <button
                         key={item.id}
                         className={`activity-bar-item ${activeActivity === item.id ? 'active' : ''}`}

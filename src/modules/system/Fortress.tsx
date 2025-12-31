@@ -13,13 +13,23 @@ import {
     Cpu,
     Handshake,
     History,
-    LayoutDashboard
+    LayoutDashboard,
+    AlertTriangle,
+    Shield,
+    Eye,
+    Ban,
+    CheckCircle,
+    XCircle,
+    Zap,
+    TrendingUp,
+    Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GeometricBrain } from '../../components/icons/GeometricBrain';
 import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
-
 import { useSecurity } from '../../hooks/useSecurity';
+import { useFortressStore } from '../../stores/fortressStore';
+import { securityDefense } from '../../services/securityDefenseService';
 
 interface SecurityMetric {
     label: string;
@@ -42,14 +52,26 @@ interface Props {
 
 export default function Fortress({ onBack }: Props) {
     const { isAnomalyDetected, ipStatus, trackAction } = useSecurity();
+    const {
+        attackLogs,
+        metrics: fortressMetrics,
+        alerts,
+        isMonitoring,
+        addAlert,
+        clearAlerts,
+        startMonitoring,
+        stopMonitoring
+    } = useFortressStore();
+
     const [logs, setLogs] = useState<SecurityLog[]>([]);
     const [messages, setMessages] = useState<{ role: 'master' | 'ai', text: string }[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
-    const [view, setView] = useState<'monitor' | 'archive'>('monitor');
+    const [view, setView] = useState<'monitor' | 'archive' | 'attacks' | 'recommendations'>('monitor');
     const [archiveSearch, setArchiveSearch] = useState('');
     const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
     const [expandedIds, setExpandedIds] = useState<number[]>([]);
+    const [recommendations, setRecommendations] = useState<string[]>([]);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     const hashtags = ['#api', '#PII', '#GDPR', '#security', '#audit', '#stability', '#encryption'];
@@ -83,6 +105,12 @@ export default function Fortress({ onBack }: Props) {
         };
         loadFortressData();
     }, [ipStatus.ip]);
+
+    // Load security recommendations
+    useEffect(() => {
+        const recs = securityDefense.getSecurityRecommendations();
+        setRecommendations(recs);
+    }, [attackLogs]);
 
     // Sync to Cloud
     useEffect(() => {
@@ -133,6 +161,10 @@ export default function Fortress({ onBack }: Props) {
     };
 
     const metrics: SecurityMetric[] = [
+        { label: 'Attacks Blocked', value: fortressMetrics.totalAttacksBlocked, status: 'good', icon: <Shield size={20} /> },
+        { label: 'Last 24h', value: fortressMetrics.attacksLast24h, status: fortressMetrics.attacksLast24h > 50 ? 'warning' : 'good', icon: <TrendingUp size={20} /> },
+        { label: 'Critical Threats', value: fortressMetrics.criticalThreats, status: fortressMetrics.criticalThreats > 0 ? 'critical' : 'good', icon: <AlertTriangle size={20} /> },
+        { label: 'System Health', value: fortressMetrics.systemHealth.toUpperCase(), status: fortressMetrics.systemHealth === 'excellent' || fortressMetrics.systemHealth === 'good' ? 'good' : fortressMetrics.systemHealth === 'warning' ? 'warning' : 'critical', icon: <Activity size={20} /> },
         { label: 'AI Anomaly Monitor', value: isAnomalyDetected ? 'DETECTED' : 'NORMAL', status: isAnomalyDetected ? 'critical' : 'good', icon: <Cpu size={20} /> },
         { label: 'IP Whitelist', value: ipStatus.isWhitelisted ? 'VERIFIED' : 'OUTSIDER', status: ipStatus.isWhitelisted ? 'good' : 'warning', icon: <Globe size={20} /> },
         { label: 'API Guardian', value: 'ENCRYPTED', status: 'good', icon: <Lock size={20} /> },

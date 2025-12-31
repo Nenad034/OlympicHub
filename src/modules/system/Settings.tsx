@@ -23,7 +23,8 @@ import {
     Database,
     Zap,
     ShieldAlert,
-    Menu
+    Menu,
+    Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfig } from '../../context/ConfigContext';
@@ -31,6 +32,7 @@ import { type Language } from '../../translations';
 import { saveToCloud, loadFromCloud } from '../../utils/storageUtils';
 import SystemPulse from './SystemPulse';
 import DeepArchive from './DeepArchive';
+import NotificationCenter from './NotificationCenter';
 
 // --- Types ---
 interface UserAccount {
@@ -41,6 +43,8 @@ interface UserAccount {
     fixedPhone: string;
     mobilePhone: string;
     level: number;
+    username?: string;
+    password?: string;
 }
 
 interface Integration {
@@ -62,7 +66,7 @@ interface Props {
     setUserLevel: (level: number) => void;
 }
 
-type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'pulse' | 'backups' | 'archive';
+type TabType = 'general' | 'users' | 'permissions' | 'connections' | 'pulse' | 'backups' | 'archive' | 'notifications' | 'ai-training';
 
 // --- KATANA STYLED COMPONENTS (Inline Styles) ---
 const styles = {
@@ -463,6 +467,25 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                             <select value={newUser.level || 1} onChange={e => setNewUser({ ...newUser, level: Number(e.target.value) })} style={styles.input}>
                                 {[1, 2, 3, 4, 5, 6].map(l => <option key={l} value={l}>{l === 6 ? 'MASTER (Level 6)' : `Level ${l}`}</option>)}
                             </select>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                            <input
+                                placeholder="Username (korisničko ime)"
+                                value={newUser.username || ''}
+                                onChange={e => setNewUser({ ...newUser, username: e.target.value })}
+                                style={styles.input}
+                                autoComplete="username"
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password (šifra)"
+                                value={newUser.password || ''}
+                                onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                                style={styles.input}
+                                autoComplete="new-password"
+                            />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                             <input placeholder="Email" value={newUser.email || ''} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={styles.input} />
                             <input placeholder="Mobile Phone" value={newUser.mobilePhone || ''} onChange={e => setNewUser({ ...newUser, mobilePhone: e.target.value })} style={styles.input} />
                             <input placeholder="Fixed Phone" value={newUser.fixedPhone || ''} onChange={e => setNewUser({ ...newUser, fixedPhone: e.target.value })} style={styles.input} />
@@ -773,6 +796,7 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                             <div onClick={() => handleTabChange('general')} style={styles.navItem(activeTab === 'general')}><LayoutDashboard size={18} /> General Settings</div>
                             <div onClick={() => handleTabChange('users')} style={styles.navItem(activeTab === 'users')}><Users size={18} /> Users & Accounts</div>
                             <div onClick={() => handleTabChange('permissions')} style={styles.navItem(activeTab === 'permissions')}><Lock size={18} /> Access Permissions</div>
+                            <div onClick={() => handleTabChange('notifications')} style={styles.navItem(activeTab === 'notifications')}><Bell size={18} /> Notifications</div>
                             <div onClick={() => handleTabChange('backups')} style={styles.navItem(activeTab === 'backups')}><RotateCcw size={18} /> System Snapshots</div>
                             <div onClick={() => handleTabChange('pulse')} style={styles.navItem(activeTab === 'pulse')}><Activity size={18} /> System Pulse</div>
                             {userLevel >= 6 && (
@@ -841,6 +865,7 @@ export default function SettingsModule({ onBack, userLevel, setUserLevel }: Prop
                     {activeTab === 'users' && renderUsers()}
                     {activeTab === 'permissions' && renderPermissions()}
                     {activeTab === 'connections' && renderConnections()}
+                    {activeTab === 'notifications' && <NotificationCenter />}
                     {activeTab === 'pulse' && <SystemPulse />}
                     {activeTab === 'backups' && renderBackups()}
                     {activeTab === 'archive' && <DeepArchive onBack={() => setActiveTab('general')} lang={'sr'} />}

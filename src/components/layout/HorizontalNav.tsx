@@ -7,15 +7,17 @@ import {
     Settings as SettingsIcon,
     Search,
     Mail,
-    Compass
+    Compass,
+    Brain
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { useThemeStore, useAppStore } from '../../stores';
+import { useThemeStore, useAppStore, useAuthStore } from '../../stores';
 import { translations } from '../../translations';
 
 const HorizontalNav: React.FC = () => {
     const { lang } = useThemeStore();
     const { searchQuery, setSearchQuery } = useAppStore();
+    const { userLevel } = useAuthStore();
     const t = translations[lang];
 
     const navItemClass = (isActive: boolean) =>
@@ -72,6 +74,14 @@ const HorizontalNav: React.FC = () => {
                 >
                     <Users size={18} /> Kupci
                 </NavLink>
+                {userLevel >= 6 && (
+                    <NavLink
+                        to="/orchestrator"
+                        className={({ isActive }) => navItemClass(isActive)}
+                    >
+                        <Brain size={18} /> Master Orchestrator
+                    </NavLink>
+                )}
                 <NavLink
                     to="/settings"
                     className={({ isActive }) => navItemClass(isActive)}

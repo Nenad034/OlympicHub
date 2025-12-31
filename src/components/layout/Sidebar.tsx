@@ -7,16 +7,18 @@ import {
     Settings as SettingsIcon,
     ChevronRight,
     Mail,
-    Compass
+    Compass,
+    Brain
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { GeometricBrain } from '../icons/GeometricBrain';
-import { useThemeStore, useAppStore } from '../../stores';
+import { useThemeStore, useAppStore, useAuthStore } from '../../stores';
 import { translations } from '../../translations';
 
 const Sidebar: React.FC = () => {
     const { lang, isSidebarCollapsed, toggleSidebar } = useThemeStore();
     const { setChatOpen } = useAppStore();
+    const { userLevel } = useAuthStore();
     const t = translations[lang];
 
     const navItemClass = (isActive: boolean) =>
@@ -106,6 +108,15 @@ const Sidebar: React.FC = () => {
 
                 <div className="nav-group" style={{ marginTop: 'auto', paddingBottom: '10px' }}>
                     <h3 className="nav-label">{!isSidebarCollapsed && t.system}</h3>
+                    {userLevel >= 6 && (
+                        <NavLink
+                            to="/orchestrator"
+                            className={({ isActive }) => navItemClass(isActive)}
+                            title="Master Orchestrator"
+                        >
+                            <Brain size={20} /> {!isSidebarCollapsed && 'Master Orchestrator'}
+                        </NavLink>
+                    )}
                     <NavLink
                         to="/settings"
                         className={({ isActive }) => navItemClass(isActive)}
