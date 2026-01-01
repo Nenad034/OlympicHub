@@ -56,7 +56,16 @@ export interface PropertyImage {
     sortOrder: number;
     caption?: string;
     altText?: string;
+    isMain?: boolean;
 }
+
+export const AGE_CATEGORIES = {
+    INFANT: { min: 0, max: 2, label: 'Infant' },
+    CHD1: { min: 2, max: 7, label: 'Child 2-7' },
+    CHD2: { min: 7, max: 12, label: 'Child 7-12' },
+    CHD3: { min: 12, max: 15, label: 'Child 12-15' },
+    ADL: { min: 15, max: 120, label: 'Adult 15+' }
+} as const;
 
 export interface BeddingConfiguration {
     bedTypeCode: 'KING' | 'QUEEN' | 'DOUBLE' | 'TWIN' | 'SOFA_BED' | 'BUNK_BED';
@@ -74,6 +83,16 @@ export interface RoomType {
     maxChildren: number;
     maxOccupancy: number;
     minOccupancy: number;
+    osnovniKreveti: number; // Basic beds
+    pomocniKreveti: number; // Extra beds
+    allowChildSharingBed: boolean; // Dete deli krevet
+    allowAdultsOnExtraBeds: boolean; // Odrasli na pomoćnom ležaju
+    allowInfantSharingBed: boolean; // Beba deli krevet
+    babyCotAvailable: boolean; // Kreveac dostupan
+    isNonSmoking: boolean; // Nepušačka soba
+    isAccessible: boolean; // Pristupačno osobama sa invaliditetom
+    petsAllowed: boolean; // Dozvoljeni ljubimci
+    allowedOccupancyVariants?: string[]; // e.g., ["2+0", "2+1", "1+1"]
     sizeSqm?: number;
     floorNumber?: number;
     totalFloors?: number;
@@ -83,6 +102,15 @@ export interface RoomType {
     beddingConfigurations: BeddingConfiguration[];
     amenities: RoomAmenity[];
     images: PropertyImage[];
+    capacity?: {
+        type: 'Allotment' | 'OnRequest' | 'FixedLease' | 'StopSale';
+        releasePeriod: number;
+        calendar: Record<string, { // Date string key: "YYYY-MM-DD"
+            assigned: number;
+            sold: number;
+            remaining: number;
+        }>;
+    };
 }
 
 export interface Amenity {
@@ -162,49 +190,43 @@ export interface HostProfile {
     profileImageUrl?: string;
 }
 
+export interface AIPromptHistory {
+    id: string;
+    userId: string;
+    userName: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+    impactedFields?: string[];
+}
+
 export interface Property {
-    // Identifiers
+    id: string;
     identifiers: PropertyIdentifiers;
-
-    // Type and Classification
     propertyType: 'Hotel' | 'Apartment' | 'Villa' | 'Resort' | 'Hostel' | 'GuestHouse';
-    starRating?: number; // 1-5
-    chainCode?: string; // Legacy
-    brandCode?: string; // Legacy
-    chainId?: string; // Link to Partner (Chain)
-    brandId?: string; // Link to Partner (Brand)
-    affiliation?: string;
-
-    // Location
+    starRating?: number;
+    supplierId?: string; // Dobavljač
+    chainId?: string; // Lanac Hotela
+    brandId?: string; // Brand Hotela
     address: Address;
-    geoCoordinates: GeoCoordinates;
-    pointsOfInterest: PointOfInterest[];
-
-    // Content (Multilingual)
-    content: PropertyContent[];
+    geoCoordinates?: GeoCoordinates;
+    content: PropertyContent;
     images: PropertyImage[];
-
-    // Inventory
     roomTypes: RoomType[];
-
-    // Amenities
     propertyAmenities: PropertyAmenity[];
-
-    // Commercial
     ratePlans: RatePlan[];
     taxes: Tax[];
-
-    // Policies
     houseRules: HouseRules;
-    keyCollection?: KeyCollection; // For apartments/villas
-
-    // Host (for vacation rentals)
+    keyCollection?: KeyCollection;
     hostProfile?: HostProfile;
-
-    // Status
+    bookingPolicy: {
+        allOnRequest?: boolean;
+        paymentPolicy?: string;
+    };
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    aiPromptHistory?: AIPromptHistory[];
 }
 
 // Validation Rules

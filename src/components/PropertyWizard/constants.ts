@@ -9,6 +9,11 @@ export const MOCK_SUPPLIERS = [
     { id: 'sup8', name: 'Balkan Tours', type: 'Touroperatori' },
     { id: 'sup9', name: 'Argus Tours', type: 'Touroperatori' },
     { id: 'sup10', name: 'Hotel Serbia', type: 'Hoteli' },
+    { id: 'sup11', name: 'Hotelplan', type: 'Dobavljač' },
+    { id: 'sup12', name: 'TUI Group', type: 'Dobavljač' },
+    { id: 'sup13', name: 'Expedia Group', type: 'Dobavljač' },
+    { id: 'sup14', name: 'Booking Holdings', type: 'Dobavljač' },
+    { id: 'sup15', name: 'Airbnb', type: 'Dobavljač' },
 ];
 
 export const STEP_IDS = {

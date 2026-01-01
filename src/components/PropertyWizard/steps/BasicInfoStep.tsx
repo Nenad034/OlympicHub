@@ -93,6 +93,20 @@ const BasicInfoStep: React.FC<StepProps> = ({ data, onChange }) => {
                             ))}
                         </select>
                     </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Dobavljač</label>
+                        <select
+                            className="form-select"
+                            value={data.supplierId || ''}
+                            onChange={(e) => onChange({ supplierId: e.target.value })}
+                        >
+                            <option value="">Odaberite Dobavljača...</option>
+                            {MOCK_SUPPLIERS.filter(s => s.type === 'Dobavljač').map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 

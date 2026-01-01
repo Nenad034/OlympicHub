@@ -14,7 +14,8 @@ import {
     Check,
     AlertCircle,
     Save,
-    LogOut
+    LogOut,
+    Calendar
 } from 'lucide-react';
 import type { Property } from '../types/property.types';
 import { validateProperty } from '../types/property.types';
@@ -25,6 +26,7 @@ import LocationStep from './PropertyWizard/steps/LocationStep';
 import ContentStep from './PropertyWizard/steps/ContentStep';
 import ImagesStep from './PropertyWizard/steps/ImagesStep';
 import RoomsStep from './PropertyWizard/steps/RoomsStep';
+import CapacityStep from './PropertyWizard/steps/CapacityStep';
 import AmenitiesStep from './PropertyWizard/steps/AmenitiesStep';
 import RatesStep from './PropertyWizard/steps/RatesStep';
 import PoliciesStep from './PropertyWizard/steps/PoliciesStep';
@@ -59,6 +61,7 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initia
         { id: 'content', title: 'Sadržaj', icon: <Globe size={20} /> },
         { id: 'images', title: 'Slike', icon: <ImageIcon size={20} /> },
         { id: 'rooms', title: 'Sobe', icon: <Bed size={20} /> },
+        { id: 'capacity', title: 'Kapaciteti', icon: <Calendar size={20} /> },
         { id: 'amenities', title: 'Sadržaji', icon: <Shield size={20} /> },
         { id: 'rates', title: 'Cene', icon: <DollarSign size={20} /> },
         { id: 'policies', title: 'Pravila', icon: <Key size={20} /> }
@@ -88,9 +91,12 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initia
     };
 
     const handleSave = (shouldClose: boolean = false) => {
-        const validationErrors = validateProperty(propertyData);
-        if (validationErrors.length > 0) {
-            setErrors(validationErrors);
+        // Only validate on final step or when closing
+        if (shouldClose || currentStep === steps.length - 1) {
+            const validationErrors = validateProperty(propertyData);
+            if (validationErrors.length > 0) {
+                setErrors(validationErrors);
+            }
         }
         onSave(propertyData, shouldClose);
     };
@@ -103,6 +109,7 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initia
             case 'content': return <ContentStep {...stepProps} />;
             case 'images': return <ImagesStep {...stepProps} />;
             case 'rooms': return <RoomsStep {...stepProps} />;
+            case 'capacity': return <CapacityStep {...stepProps} />;
             case 'amenities': return <AmenitiesStep {...stepProps} />;
             case 'rates': return <RatesStep {...stepProps} />;
             case 'policies': return <PoliciesStep {...stepProps} />;
@@ -144,15 +151,30 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initia
                     {/* TOPBAR */}
                     <div className="wizard-topbar">
                         <div className="topbar-title">
-                            <h3>{steps[currentStep].title}</h3>
-                            <span className="topbar-subtitle">Korak {currentStep + 1} od {steps.length} • OTA Standard</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                                    {steps[currentStep].icon}
+                                </div>
+                                <div>
+                                    <h3 style={{ margin: 0 }}>{steps[currentStep].title}</h3>
+                                    <span className="topbar-subtitle">
+                                        MODUL: <span style={{ color: 'var(--accent)', fontWeight: 800 }}>ONBOARDING v2.0</span> • IZMENA OBJEKTA
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="exit-button"
-                        >
-                            <LogOut size={16} /> Exit
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                KORAK {currentStep + 1} / {steps.length}
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="exit-button"
+                                style={{ height: '44px', borderRadius: '12px', padding: '0 20px' }}
+                            >
+                                <LogOut size={16} /> Zatvori
+                            </button>
+                        </div>
                     </div>
 
                     {/* SCROLLABLE CONTENT */}

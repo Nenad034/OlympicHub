@@ -11,6 +11,16 @@ export interface StepProps {
     onChange: (updates: Partial<Property>) => void;
 }
 
+export interface AIPromptHistory {
+    id: string;
+    userId: string;
+    userName: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+    impactedFields?: string[];
+}
+
 export interface Step {
     id: string;
     title: string;
