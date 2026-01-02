@@ -29,7 +29,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
 
     // Initialize price list with default categories
     useEffect(() => {
-        if (!priceList && property.rooms && property.rooms.length > 0) {
+        if (!priceList && property.roomTypes && property.roomTypes.length > 0) {
             const defaultCategories: PersonCategory[] = [
                 { code: 'ADL', label: 'Odrasli', ageFrom: 18, ageTo: 99 },
                 { code: 'CHD1', label: 'Deca 2-7', ageFrom: 2, ageTo: 7 },
@@ -49,7 +49,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                 validationStatus: 'pending'
             });
         }
-    }, [property.rooms, priceList]);
+    }, [property.roomTypes, priceList]);
 
     // Handle file upload
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -376,7 +376,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                     </label>
                 </div>
 
-                {property.rooms && property.rooms.map(room => {
+                {property.roomTypes && property.roomTypes.map(room => {
                     const roomPricing = priceList.roomTypePricing.find(rtp => rtp.roomTypeId === room.id);
                     const isExpanded = selectedRoomType === room.id;
 
