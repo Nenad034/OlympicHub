@@ -377,11 +377,11 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                 </div>
 
                 {property.roomTypes && property.roomTypes.map(room => {
-                    const roomPricing = priceList.roomTypePricing.find(rtp => rtp.roomTypeId === room.id);
-                    const isExpanded = selectedRoomType === room.id;
+                    const roomPricing = priceList.roomTypePricing.find(rtp => rtp.roomTypeId === room.roomTypeId);
+                    const isExpanded = selectedRoomType === room.roomTypeId;
 
                     return (
-                        <div key={room.id} className="glass-card" style={{ padding: '16px', marginBottom: '12px' }}>
+                        <div key={room.roomTypeId} className="glass-card" style={{ padding: '16px', marginBottom: '12px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
                                     <h4 style={{ fontSize: '16px', fontWeight: 700 }}>{room.nameInternal}</h4>
@@ -405,7 +405,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                     <strong>Generisano {roomPricing.pricingRules.length} pravila</strong>
                                     <button
                                         className="glass-button"
-                                        onClick={() => setSelectedRoomType(isExpanded ? null : room.id || null)}
+                                        onClick={() => setSelectedRoomType(isExpanded ? null : room.roomTypeId || null)}
                                         style={{ marginLeft: '12px', fontSize: '12px', padding: '4px 12px' }}
                                     >
                                         {isExpanded ? 'Sakrij' : 'Prikaži'}
@@ -438,7 +438,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                                                 <input
                                                                     type="checkbox"
                                                                     checked={rule.isActive}
-                                                                    onChange={(e) => handleUpdateRule(room.id || '', rule.id, { isActive: e.target.checked })}
+                                                                    onChange={(e) => handleUpdateRule(room.roomTypeId || '', rule.id, { isActive: e.target.checked })}
                                                                 />
                                                             </td>
                                                             <td style={{ padding: '8px' }}>
@@ -463,7 +463,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                                                 <input
                                                                     type="number"
                                                                     value={rule.basePrice}
-                                                                    onChange={(e) => handleUpdateRule(room.id || '', rule.id, { basePrice: parseFloat(e.target.value) || 0 })}
+                                                                    onChange={(e) => handleUpdateRule(room.roomTypeId || '', rule.id, { basePrice: parseFloat(e.target.value) || 0 })}
                                                                     style={{ width: '80px', textAlign: 'right', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '4px 8px' }}
                                                                 />
                                                             </td>
