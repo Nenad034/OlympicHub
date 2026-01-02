@@ -441,12 +441,63 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                         <div className="glass-card" style={{ padding: '24px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Kategorije Osoba</h3>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                                {priceList.personCategories.map(category => (
-                                    <div key={category.code} className="glass-card" style={{ padding: '12px' }}>
-                                        <div style={{ fontWeight: 700, marginBottom: '4px' }}>{category.label}</div>
-                                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                                            {category.ageFrom} - {category.ageTo} godina
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+                                {priceList.personCategories.map((category, index) => (
+                                    <div key={category.code} className="glass-card" style={{ padding: '16px' }}>
+                                        <div style={{ fontWeight: 700, marginBottom: '12px', color: '#3b82f6' }}>
+                                            {category.code}
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div>
+                                                <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Naziv</label>
+                                                <input
+                                                    className="glass-input"
+                                                    value={category.label}
+                                                    onChange={(e) => {
+                                                        const updated = [...priceList.personCategories];
+                                                        updated[index] = { ...updated[index], label: e.target.value };
+                                                        setPriceList({ ...priceList, personCategories: updated });
+                                                    }}
+                                                    style={{ fontSize: '14px', padding: '8px' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                <div>
+                                                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Od (godina)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="glass-input"
+                                                        value={category.ageFrom}
+                                                        onChange={(e) => {
+                                                            const updated = [...priceList.personCategories];
+                                                            updated[index] = { ...updated[index], ageFrom: parseInt(e.target.value) || 0 };
+                                                            setPriceList({ ...priceList, personCategories: updated });
+                                                        }}
+                                                        style={{ fontSize: '14px', padding: '8px' }}
+                                                        min="0"
+                                                        max="99"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Do (godina)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="glass-input"
+                                                        value={category.ageTo}
+                                                        onChange={(e) => {
+                                                            const updated = [...priceList.personCategories];
+                                                            updated[index] = { ...updated[index], ageTo: parseInt(e.target.value) || 0 };
+                                                            setPriceList({ ...priceList, personCategories: updated });
+                                                        }}
+                                                        style={{ fontSize: '14px', padding: '8px' }}
+                                                        min="0"
+                                                        max="99"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
