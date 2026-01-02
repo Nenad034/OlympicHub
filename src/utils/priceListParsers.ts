@@ -1,6 +1,6 @@
 // Price List Import Parsers
 
-import { ImportPreview, PersonCategory, RoomTypePricing, PricingRule } from '../types/pricing.types';
+import type { ImportPreview, PersonCategory, RoomTypePricing, PricingRule } from '../types/pricing.types';
 
 /**
  * Parse uploaded file and extract pricing data
