@@ -442,65 +442,94 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                             <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Kategorije Osoba</h3>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                                {priceList.personCategories.map((category, index) => (
-                                    <div key={category.code} className="glass-card" style={{ padding: '16px' }}>
-                                        <div style={{ fontWeight: 700, marginBottom: '12px', color: '#3b82f6' }}>
-                                            {category.code}
-                                        </div>
+                                {priceList.personCategories.map((category, index) => {
+                                    // Auto-generate label from code and age range
+                                    const autoLabel = category.code === 'ADL'
+                                        ? `Odrasli (${category.ageFrom}-${category.ageTo})`
+                                        : category.code === 'INF'
+                                            ? `Beba (${category.ageFrom}-${category.ageTo})`
+                                            : `${category.code} (${category.ageFrom}-${category.ageTo})`;
 
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            <div>
-                                                <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Naziv</label>
-                                                <input
-                                                    className="glass-input"
-                                                    value={category.label}
-                                                    onChange={(e) => {
-                                                        const updated = [...priceList.personCategories];
-                                                        updated[index] = { ...updated[index], label: e.target.value };
-                                                        setPriceList({ ...priceList, personCategories: updated });
-                                                    }}
-                                                    style={{ fontSize: '14px', padding: '8px' }}
-                                                />
+                                    return (
+                                        <div key={category.code} className="glass-card" style={{ padding: '16px' }}>
+                                            <div style={{ fontWeight: 700, marginBottom: '12px', color: '#3b82f6' }}>
+                                                {category.code}
                                             </div>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                                 <div>
-                                                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Od (godina)</label>
+                                                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>
+                                                        Naziv (auto-generisan)
+                                                    </label>
                                                     <input
-                                                        type="number"
                                                         className="glass-input"
-                                                        value={category.ageFrom}
-                                                        onChange={(e) => {
-                                                            const updated = [...priceList.personCategories];
-                                                            updated[index] = { ...updated[index], ageFrom: parseInt(e.target.value) || 0 };
-                                                            setPriceList({ ...priceList, personCategories: updated });
-                                                        }}
-                                                        style={{ fontSize: '14px', padding: '8px' }}
-                                                        min="0"
-                                                        max="99"
+                                                        value={autoLabel}
+                                                        disabled
+                                                        style={{ fontSize: '14px', padding: '8px', opacity: 0.7, cursor: 'not-allowed' }}
                                                     />
                                                 </div>
 
-                                                <div>
-                                                    <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Do (godina)</label>
-                                                    <input
-                                                        type="number"
-                                                        className="glass-input"
-                                                        value={category.ageTo}
-                                                        onChange={(e) => {
-                                                            const updated = [...priceList.personCategories];
-                                                            updated[index] = { ...updated[index], ageTo: parseInt(e.target.value) || 0 };
-                                                            setPriceList({ ...priceList, personCategories: updated });
-                                                        }}
-                                                        style={{ fontSize: '14px', padding: '8px' }}
-                                                        min="0"
-                                                        max="99"
-                                                    />
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                    <div>
+                                                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Od (godina)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="glass-input"
+                                                            value={category.ageFrom}
+                                                            onChange={(e) => {
+                                                                const updated = [...priceList.personCategories];
+                                                                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                                                const newCategory = { ...updated[index], ageFrom: value };
+                                                                const newAutoLabel = newCategory.code === 'ADL'
+                                                                    ? `Odrasli (${newCategory.ageFrom}-${newCategory.ageTo})`
+                                                                    : newCategory.code === 'INF'
+                                                                        ? `Beba (${newCategory.ageFrom}-${newCategory.ageTo})`
+                                                                        : `${newCategory.code} (${newCategory.ageFrom}-${newCategory.ageTo})`;
+                                                                updated[index] = {
+                                                                    ...newCategory,
+                                                                    label: newAutoLabel // Update label
+                                                                };
+                                                                setPriceList({ ...priceList, personCategories: updated });
+                                                            }}
+                                                            style={{ fontSize: '14px', padding: '8px' }}
+                                                            min="0"
+                                                            max="99"
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="form-label" style={{ fontSize: '12px', marginBottom: '4px' }}>Do (godina)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="glass-input"
+                                                            value={category.ageTo}
+                                                            onChange={(e) => {
+                                                                const updated = [...priceList.personCategories];
+                                                                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                                                const newCategory = { ...updated[index], ageTo: value };
+                                                                const newAutoLabel = newCategory.code === 'ADL'
+                                                                    ? `Odrasli (${newCategory.ageFrom}-${newCategory.ageTo})`
+                                                                    : newCategory.code === 'INF'
+                                                                        ? `Beba (${newCategory.ageFrom}-${newCategory.ageTo})`
+                                                                        : `${newCategory.code} (${newCategory.ageFrom}-${newCategory.ageTo})`;
+                                                                updated[index] = {
+                                                                    ...newCategory,
+                                                                    label: newAutoLabel // Update label
+                                                                };
+                                                                setPriceList({ ...priceList, personCategories: updated });
+                                                            }}
+                                                            style={{ fontSize: '14px', padding: '8px' }}
+                                                            min="0"
+                                                            max="99"
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </motion.div>
