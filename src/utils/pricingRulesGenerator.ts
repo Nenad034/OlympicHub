@@ -1,7 +1,10 @@
 // Pricing Rules Generator - Kombinatorika
 
-import { PersonCategory, BedOccupant, PricingRule, RoomTypePricing } from '../types/pricing.types';
-import { RoomType } from '../types/property.types';
+import type { PersonCategory, BedOccupant, PricingRule, RoomTypePricing } from '../types/pricing.types';
+import type { RoomType } from '../types/property.types';
+
+// Re-export types for convenience
+export type { PersonCategory, BedOccupant, PricingRule, RoomTypePricing } from '../types/pricing.types';
 
 /**
  * Generates all pricing rules for a room type based on occupancy variants and person categories
