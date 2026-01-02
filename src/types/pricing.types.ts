@@ -56,19 +56,37 @@ export interface RoomTypePricing {
 }
 
 export interface PriceList {
-    id: string;
+    id: string; // Format: {propertyId}_{timestamp}
     name: string;
     propertyId: string;
 
-    // Validity period
-    validFrom: Date;
-    validTo: Date;
+    // Validity periods
+    validFrom: Date; // Za rezervacije od
+    validTo: Date; // Za rezervacije do
+    stayFrom?: Date; // Za boravke od
+    stayTo?: Date; // Za boravke do
+
+    // Supplier info
+    supplierId?: string; // Dobavljač
+    supplierCommission?: number; // Provizija dobavljača (popust koji nam dobavljač odobrava)
+
+    // Service details
+    serviceName?: string; // Naziv usluge
+    paymentModel?: string; // Model plaćanja (npr. "Akontacija 40%, ostatak do 15 dana pre polaska")
+    cancellationPolicy?: string; // Uslovi otkaza
+    currency: string; // Valuta (EUR, USD, RSD...)
+    subagentCommission?: number; // Provizija za Subagenta
 
     // Person categories
     personCategories: PersonCategory[];
 
     // Room type pricing
     roomTypePricing: RoomTypePricing[];
+
+    // Card-based sections (Microsoft ToDo style)
+    priceIncludes: PriceCard[]; // Cena uključuje
+    priceExcludes: PriceCard[]; // Cena ne uključuje
+    notes: PriceCard[]; // Napomene
 
     // AI Assistant metadata
     aiGeneratedRules?: AIGeneratedRule[];
@@ -77,6 +95,17 @@ export interface PriceList {
 
     // Import metadata
     importSource?: ImportSource;
+
+    // Timestamps
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+export interface PriceCard {
+    id: string;
+    text: string;
+    completed?: boolean;
+    order: number;
 }
 
 export interface AIGeneratedRule {
