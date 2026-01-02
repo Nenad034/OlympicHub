@@ -475,10 +475,10 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                                         <input
                                                             type="number"
                                                             className="glass-input"
-                                                            value={category.ageFrom}
+                                                            value={category.ageFrom === 0 ? '' : category.ageFrom}
                                                             onChange={(e) => {
                                                                 const updated = [...priceList.personCategories];
-                                                                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                                                const value = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                                                 const newCategory = { ...updated[index], ageFrom: value };
                                                                 const newAutoLabel = newCategory.code === 'ADL'
                                                                     ? `Odrasli (${newCategory.ageFrom}-${newCategory.ageTo})`
@@ -487,7 +487,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                                                         : `${newCategory.code} (${newCategory.ageFrom}-${newCategory.ageTo})`;
                                                                 updated[index] = {
                                                                     ...newCategory,
-                                                                    label: newAutoLabel // Update label
+                                                                    label: newAutoLabel
                                                                 };
                                                                 setPriceList({ ...priceList, personCategories: updated });
                                                             }}
@@ -503,10 +503,10 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                                         <input
                                                             type="number"
                                                             className="glass-input"
-                                                            value={category.ageTo}
+                                                            value={category.ageTo === 0 ? '' : category.ageTo}
                                                             onChange={(e) => {
                                                                 const updated = [...priceList.personCategories];
-                                                                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                                                const value = e.target.value === '' ? 0 : parseInt(e.target.value) || 0;
                                                                 const newCategory = { ...updated[index], ageTo: value };
                                                                 const newAutoLabel = newCategory.code === 'ADL'
                                                                     ? `Odrasli (${newCategory.ageFrom}-${newCategory.ageTo})`
@@ -515,7 +515,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                                                                         : `${newCategory.code} (${newCategory.ageFrom}-${newCategory.ageTo})`;
                                                                 updated[index] = {
                                                                     ...newCategory,
-                                                                    label: newAutoLabel // Update label
+                                                                    label: newAutoLabel
                                                                 };
                                                                 setPriceList({ ...priceList, personCategories: updated });
                                                             }}
