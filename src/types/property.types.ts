@@ -93,6 +93,7 @@ export interface RoomType {
     isAccessible: boolean; // Pristupačno osobama sa invaliditetom
     petsAllowed: boolean; // Dozvoljeni ljubimci
     allowedOccupancyVariants?: string[]; // e.g., ["2+0", "2+1", "1+1"]
+    childSharingVariants?: string[]; // Variants that allow child sharing bed
     sizeSqm?: number;
     floorNumber?: number;
     totalFloors?: number;

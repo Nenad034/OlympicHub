@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Bed, Trash2, Grid, List } from 'lucide-react';
+import { Plus, Bed, Trash2, Grid, List, X, Save, Copy } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { StepProps } from '../types';
 import type { RoomType, BeddingConfiguration } from '../../../types/property.types';
 
@@ -18,11 +19,22 @@ const RoomsStep: React.FC<StepProps> = ({ data, onChange }) => {
             maxChildren: 0,
             maxOccupancy: 2,
             minOccupancy: 1,
+            osnovniKreveti: 2,
+            pomocniKreveti: 0,
+            allowChildSharingBed: false,
+            childSharingVariants: [],
+            allowAdultsOnExtraBeds: true,
+            allowInfantSharingBed: false,
+            babyCotAvailable: false,
+            isNonSmoking: true,
+            isAccessible: false,
+            petsAllowed: false,
             bathroomCount: 1,
             bathroomType: 'Private',
             beddingConfigurations: [],
             amenities: [],
-            images: []
+            images: [],
+            allowedOccupancyVariants: []
         };
         onChange({ roomTypes: [...(data.roomTypes || []), newRoom] });
         setEditingRoom((data.roomTypes?.length || 0));
@@ -72,55 +84,299 @@ const RoomsStep: React.FC<StepProps> = ({ data, onChange }) => {
         updateRoom(roomIndex, { beddingConfigurations: newBedding });
     };
 
+    const renderOccupancyTable = (room: RoomType, roomIndex: number) => {
+        const osnovni = room.osnovniKreveti || 0;
+        const pomocni = room.pomocniKreveti || 0;
+        const totalBeds = osnovni + pomocni;
+        if (totalBeds === 0) {
+            return (
+                <div style={{ padding: '40px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                    <Bed size={32} style={{ opacity: 0.2, marginBottom: '12px' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Definišite broj osnovnih i pomoćnih ležajeva iznad <br /> kako biste videli tabelu zauzetosti.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="glass-card" style={{ padding: '0', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                            <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 800, color: 'var(--text-secondary)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>ACTIVE</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'center', fontSize: '12px', fontWeight: 800, color: 'var(--text-secondary)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Max osoba</th>
+                            <th style={{ padding: '16px 12px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ display: 'flex', gap: '20px' }}>
+                                    {Array.from({ length: osnovni }).map((_, i) => <span key={`h-o-${i}`} style={{ color: '#3b82f6', fontSize: '14px', fontWeight: 800 }}>Osnovni</span>)}
+                                    {Array.from({ length: pomocni }).map((_, i) => <span key={`h-p-${i}`} style={{ color: '#a78bfa', fontSize: '14px', fontWeight: 800 }}>Pomoćni</span>)}
+                                </div>
+                            </th>
+                            <th style={{ padding: '16px 24px', textAlign: 'center', fontSize: '14px', fontWeight: 800, color: '#ef4444', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Dete Deli Ležaj</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {Array.from({ length: totalBeds || 1 }).map((_, variantIdx) => {
+                            // For N beds, generate N variants with different ADL/CHD combinations
+                            // All variants have the same total occupancy (totalBeds)
+                            const adults = variantIdx + 1; // 1 to totalBeds adults
+                            const children = totalBeds - adults; // Remaining are children
+
+                            // Build bed assignment array
+                            const bedAssignment = [];
+                            let adultsPlaced = 0;
+                            let childrenPlaced = 0;
+
+                            // First fill basic beds
+                            for (let i = 0; i < osnovni; i++) {
+                                if (adultsPlaced < adults) {
+                                    bedAssignment.push({ type: 'osnovni', occupant: 'ADL' });
+                                    adultsPlaced++;
+                                } else if (childrenPlaced < children) {
+                                    bedAssignment.push({ type: 'osnovni', occupant: 'CHD' });
+                                    childrenPlaced++;
+                                } else {
+                                    bedAssignment.push({ type: 'osnovni', occupant: 'EMPTY' }); // Should not happen if logic is correct
+                                }
+                            }
+
+                            // Then fill extra beds
+                            for (let i = 0; i < pomocni; i++) {
+                                if (adultsPlaced < adults) {
+                                    bedAssignment.push({ type: 'pomocni', occupant: 'ADL' });
+                                    adultsPlaced++;
+                                } else if (childrenPlaced < children) {
+                                    bedAssignment.push({ type: 'pomocni', occupant: 'CHD' });
+                                    childrenPlaced++;
+                                } else {
+                                    bedAssignment.push({ type: 'pomocni', occupant: 'EMPTY' }); // Should not happen if logic is correct
+                                }
+                            }
+
+                            const vKey = `${adults}ADL_${children}CHD`;
+                            const isActive = room.allowedOccupancyVariants?.includes(vKey);
+                            const childSharing = room.childSharingVariants?.includes(vKey);
+                            const displayTotal = childSharing ? totalBeds + 1 : totalBeds;
+
+                            return (
+                                <tr key={vKey} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: isActive ? 'rgba(59, 130, 246, 0.02)' : 'transparent' }}>
+                                    <td style={{ padding: '12px 24px', textAlign: 'left' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isActive}
+                                            onChange={(e) => {
+                                                const variants = room.allowedOccupancyVariants || [];
+                                                const newVariants = e.target.checked ? [...variants, vKey] : variants.filter((v: string) => v !== vKey);
+                                                updateRoom(roomIndex, { allowedOccupancyVariants: newVariants });
+                                            }}
+                                        />
+                                    </td>
+                                    <td style={{ padding: '12px 12px', textAlign: 'center' }}>
+                                        <span style={{ fontSize: '16px', fontWeight: 800, color: '#fff' }}>{displayTotal}</span>
+                                    </td>
+                                    <td style={{ padding: '12px 12px' }}>
+                                        <div style={{ display: 'flex', gap: '20px' }}>
+                                            {bedAssignment.map((bed, idx) => (
+                                                <div key={idx} style={{
+                                                    padding: '6px 12px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '12px',
+                                                    fontWeight: 800,
+                                                    background: bed.occupant === 'ADL' ? 'rgba(59, 130, 246, 0.15)' : (bed.occupant === 'CHD' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)'),
+                                                    color: bed.occupant === 'ADL' ? '#3b82f6' : (bed.occupant === 'CHD' ? '#10b981' : 'rgba(255,255,255,0.2)'),
+                                                    border: `1px solid ${bed.occupant === 'ADL' ? 'rgba(59, 130, 246, 0.3)' : (bed.occupant === 'CHD' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)')}`,
+                                                    minWidth: '50px',
+                                                    textAlign: 'center'
+                                                }}>
+                                                    {bed.occupant === 'EMPTY' ? '-' : bed.occupant}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '12px 24px', textAlign: 'center' }}>
+                                        <div
+                                            style={{
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center'
+                                            }}
+                                            onClick={() => {
+                                                const sharing = room.childSharingVariants || [];
+                                                const newSharing = sharing.includes(vKey)
+                                                    ? sharing.filter((v: string) => v !== vKey)
+                                                    : [...sharing, vKey];
+                                                updateRoom(roomIndex, { childSharingVariants: newSharing });
+                                            }}
+                                        >
+                                            <div style={{
+                                                width: '24px',
+                                                height: '24px',
+                                                borderRadius: '6px',
+                                                border: '2px solid rgba(255,255,255,0.1)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'all 0.2s',
+                                                background: childSharing ? 'rgba(236, 72, 153, 0.15)' : 'transparent',
+                                                borderColor: childSharing ? '#ec4899' : 'rgba(255,255,255,0.1)'
+                                            }}>
+                                                {childSharing && (
+                                                    <span style={{ color: '#ec4899', fontSize: '16px', fontWeight: 900 }}>✓</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
+    const renderEditor = () => {
+        if (editingRoom === null) return null;
+        const room = data.roomTypes?.[editingRoom];
+        if (!room) return null;
+
+        return (
+            <div className="wizard-overlay" style={{ backdropFilter: 'blur(10px)', background: 'rgba(11, 15, 26, 0.8)' }}>
+                <div className="wizard-container" style={{ maxWidth: '1400px', margin: 'auto', background: 'transparent', height: '90vh', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+                    <div className="wizard-main-area" style={{ background: '#0f172a' }}>
+                        <div className="wizard-topbar" style={{ background: 'rgba(30, 41, 59, 0.5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="topbar-title">
+                                <span className="topbar-subtitle">MODAL: UREĐIVANJE JEDINICE</span>
+                                <h3>{room.nameInternal || 'Nova Jedinica'}</h3>
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button className="btn-secondary" onClick={() => setEditingRoom(null)}><X size={18} style={{ marginRight: '8px' }} /> Zatvori</button>
+                                <button className="btn-primary" onClick={() => setEditingRoom(null)}><Save size={18} style={{ marginRight: '8px' }} /> Sačuvaj</button>
+                            </div>
+                        </div>
+
+                        <div className="wizard-content-wrapper glass-scroll">
+                            <div className="content-center-limit">
+                                <div className="form-grid" style={{ gap: '24px', marginBottom: '32px' }}>
+                                    {/* Section 1: Basic Info & Bedding */}
+                                    <div className="glass-card" style={{ padding: '24px' }}>
+                                        <h4 className="form-section-title">Osnovne Informacije</h4>
+                                        <div className="form-group" style={{ marginBottom: '16px' }}>
+                                            <label className="form-label">Naziv Sobe</label>
+                                            <input className="glass-input" value={room.nameInternal} onChange={(e) => updateRoom(editingRoom, { nameInternal: e.target.value })} placeholder="Standard Dvokrevetna Soba" />
+                                        </div>
+                                        <div className="form-grid" style={{ marginBottom: '16px' }}>
+                                            <div className="form-group">
+                                                <label className="form-label">Interni Kod</label>
+                                                <input className="glass-input" value={room.code} onChange={(e) => updateRoom(editingRoom, { code: e.target.value })} placeholder="STD" />
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Kategorija</label>
+                                                <select className="glass-select" value={room.category} onChange={(e) => updateRoom(editingRoom, { category: e.target.value as any })}>
+                                                    <option value="Room">Room (Standardna soba)</option>
+                                                    <option value="Suite">Suite (Apartman sa dnevnim boravkom)</option>
+                                                    <option value="Apartment">Apartment (Sa kuhinjom)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="form-grid" style={{ marginBottom: '16px' }}>
+                                            <div className="form-group">
+                                                <label className="form-label">Kvadratura (m²)</label>
+                                                <input type="number" className="glass-input" value={room.sizeSqm ?? ''} onChange={(e) => updateRoom(editingRoom, { sizeSqm: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Pogled</label>
+                                                <select className="glass-select" value={room.viewType || ''} onChange={(e) => updateRoom(editingRoom, { viewType: e.target.value as any })}>
+                                                    <option value="">Bez pogleda</option>
+                                                    <option value="SeaView">Pogled na More</option>
+                                                    <option value="GardenView">Bašta</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="form-grid" style={{ marginBottom: '16px' }}>
+                                            <div className="form-group">
+                                                <label className="form-label">Osnovni Kreveti</label>
+                                                <input type="number" className="glass-input" value={room.osnovniKreveti ?? ''} onChange={(e) => updateRoom(editingRoom, { osnovniKreveti: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })} />
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Pomoćni Kreveti</label>
+                                                <input type="number" className="glass-input" value={room.pomocniKreveti ?? ''} onChange={(e) => updateRoom(editingRoom, { pomocniKreveti: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 2: Rules & Options */}
+                                    <div className="glass-card" style={{ padding: '24px' }}>
+                                        <h4 className="form-section-title">Pravila i Opcije</h4>
+                                        <div className="form-grid">
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input type="checkbox" checked={room.allowAdultsOnExtraBeds} onChange={(e) => updateRoom(editingRoom, { allowAdultsOnExtraBeds: e.target.checked })} />
+                                                    <span>Dozvoli ADL na pomoćnom</span>
+                                                </label>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input type="checkbox" checked={room.allowInfantSharingBed} onChange={(e) => updateRoom(editingRoom, { allowInfantSharingBed: e.target.checked })} />
+                                                    <span>Beba deli ležaj (Free)</span>
+                                                </label>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input type="checkbox" checked={room.babyCotAvailable} onChange={(e) => updateRoom(editingRoom, { babyCotAvailable: e.target.checked })} />
+                                                    <span>Kreveac dostupan</span>
+                                                </label>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input type="checkbox" checked={room.petsAllowed} onChange={(e) => updateRoom(editingRoom, { petsAllowed: e.target.checked })} />
+                                                    <span>Ljubimci dozvoljeni</span>
+                                                </label>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input type="checkbox" checked={room.isNonSmoking} onChange={(e) => updateRoom(editingRoom, { isNonSmoking: e.target.checked })} />
+                                                    <span>Nepušačka soba</span>
+                                                </label>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-checkbox">
+                                                    <input type="checkbox" checked={room.isAccessible} onChange={(e) => updateRoom(editingRoom, { isAccessible: e.target.checked })} />
+                                                    <span>Zasebno kupatilo</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="form-section">
+                                    <h4 className="form-section-title">Konfiguracije Zauzetosti</h4>
+                                    {renderOccupancyTable(room, editingRoom)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div>
-            <div className="form-section">
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div className="form-section" style={{ flex: 1, overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <h3 className="form-section-title" style={{ margin: 0 }}>Smeštajne Jedinice</h3>
+                    <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Bed className="text-blue-500" /> Smeštajne Jedinice
+                    </h2>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-card)', borderRadius: '8px', padding: '4px', border: '1px solid var(--border)' }}>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                style={{
-                                    padding: '8px 12px',
-                                    background: viewMode === 'grid' ? 'var(--accent)' : 'transparent',
-                                    color: viewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    transition: 'all 0.2s'
-                                }}
-                            >
+                        <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px' }}>
+                            <button onClick={() => setViewMode('grid')} style={{ padding: '8px 16px', background: viewMode === 'grid' ? 'var(--accent)' : 'transparent', color: viewMode === 'grid' ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                                 <Grid size={16} /> Grid
                             </button>
-                            <button
-                                onClick={() => setViewMode('list')}
-                                style={{
-                                    padding: '8px 12px',
-                                    background: viewMode === 'list' ? 'var(--accent)' : 'transparent',
-                                    color: viewMode === 'list' ? '#fff' : 'var(--text-secondary)',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    transition: 'all 0.2s'
-                                }}
-                            >
+                            <button onClick={() => setViewMode('list')} style={{ padding: '8px 16px', background: viewMode === 'list' ? 'var(--accent)' : 'transparent', color: viewMode === 'list' ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                                 <List size={16} /> Lista
                             </button>
                         </div>
-                        <button className="btn-primary" onClick={addRoom} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Plus size={18} /> Dodaj Sobu
-                        </button>
+                        <button className="btn-primary" onClick={addRoom} style={{ borderRadius: '12px' }}><Plus size={20} style={{ marginRight: '8px' }} /> Nova Soba</button>
                     </div>
                 </div>
 
@@ -140,346 +396,68 @@ const RoomsStep: React.FC<StepProps> = ({ data, onChange }) => {
 
                 <div style={{
                     display: viewMode === 'grid' ? 'grid' : 'flex',
-                    gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(350px, 1fr))' : undefined,
                     flexDirection: viewMode === 'list' ? 'column' : undefined,
-                    gap: '16px'
+                    gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(350px, 1fr))' : undefined,
+                    gap: '20px'
                 }}>
                     {data.roomTypes?.map((room, roomIndex) => (
-                        <div key={room.roomTypeId} style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border)',
-                            borderRadius: '16px',
-                            padding: '24px',
-                            position: 'relative',
-                            display: viewMode === 'list' ? 'flex' : 'block',
-                            alignItems: viewMode === 'list' ? 'center' : undefined,
-                            gap: viewMode === 'list' ? '20px' : undefined
-                        }}>
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: viewMode === 'grid' ? '20px' : '0',
-                                flex: viewMode === 'list' ? 1 : undefined
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: viewMode === 'list' ? '16px' : '0', flex: 1 }}>
-                                    {viewMode === 'list' && (
-                                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
-                                            <Bed size={24} />
-                                        </div>
-                                    )}
-                                    <div style={{ flex: viewMode === 'list' ? 1 : undefined }}>
-                                        <h4 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>
-                                            {room.nameInternal || `Soba ${roomIndex + 1}`}
-                                        </h4>
-                                        {viewMode === 'list' && (
-                                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                                                #{room.code} • {room.standardOccupancy} osoba
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button
-                                        className="btn-secondary"
-                                        onClick={() => {
-                                            const roomToCopy = data.roomTypes?.[roomIndex];
-                                            if (roomToCopy) {
-                                                const copiedRoom = { ...roomToCopy, roomTypeId: Math.random().toString(36).substr(2, 9), code: `${roomToCopy.code}_COPY`, nameInternal: `${roomToCopy.nameInternal} - Kopija` };
-                                                onChange({ roomTypes: [...(data.roomTypes || []), copiedRoom] });
-                                            }
-                                        }}
-                                        style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                    >
-                                        <Plus size={16} /> Kopiraj
-                                    </button>
-                                    <button
-                                        className="btn-secondary"
-                                        onClick={() => setEditingRoom(editingRoom === roomIndex ? null : roomIndex)}
-                                        style={{ padding: '8px 16px' }}
-                                    >
-                                        {editingRoom === roomIndex ? 'Zatvori' : 'Uredi'}
-                                    </button>
-                                    <button
-                                        onClick={() => deleteRoom(roomIndex)}
-                                        style={{
-                                            padding: '8px',
-                                            background: 'rgba(239, 68, 68, 0.1)',
-                                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                                            borderRadius: '8px',
-                                            color: '#ef4444',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+                        <motion.div
+                            key={room.roomTypeId}
+                            whileHover={{ scale: 1.02 }}
+                            className="glass-card"
+                            style={{
+                                padding: '24px',
+                                cursor: 'pointer',
+                                display: viewMode === 'list' ? 'flex' : 'block',
+                                alignItems: viewMode === 'list' ? 'center' : undefined,
+                                gap: viewMode === 'list' ? '20px' : undefined,
+                                background: 'rgba(15, 23, 42, 0.4)',
+                                border: '1px solid rgba(255,255,255,0.05)'
+                            }}
+                            onClick={() => setEditingRoom(roomIndex)}
+                        >
+                            <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0, marginBottom: viewMode === 'grid' ? '16px' : 0 }}>
+                                <Bed size={28} />
                             </div>
-
-                            {editingRoom === roomIndex && (
-                                <div>
-                                    <div className="form-grid">
-                                        <div className="form-group span-2">
-                                            <label className="form-label required">Naziv Sobe</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                placeholder="Deluxe Dvokrevetna Soba sa Pogledom na More"
-                                                value={room.nameInternal}
-                                                onChange={(e) => updateRoom(roomIndex, { nameInternal: e.target.value })}
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label required">Interni Kod</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                placeholder="DBL_DLX_01"
-                                                value={room.code}
-                                                onChange={(e) => updateRoom(roomIndex, { code: e.target.value })}
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label required">Kategorija</label>
-                                            <select
-                                                className="form-select"
-                                                value={room.category}
-                                                onChange={(e) => updateRoom(roomIndex, { category: e.target.value as any })}
-                                            >
-                                                <option value="Room">Room (Standardna soba)</option>
-                                                <option value="Suite">Suite (Apartman sa dnevnim boravkom)</option>
-                                                <option value="Apartment">Apartment (Sa kuhinjom)</option>
-                                                <option value="Dormitory">Dormitory (Spavaonica)</option>
-                                                <option value="Villa">Villa (Zasebna kuća)</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label">Kvadratura (m²)</label>
-                                            <input
-                                                type="number"
-                                                className="form-input"
-                                                value={room.sizeSqm || ''}
-                                                onChange={(e) => updateRoom(roomIndex, { sizeSqm: Number(e.target.value) })}
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label">Pogled</label>
-                                            <select
-                                                className="form-select"
-                                                value={room.viewType || ''}
-                                                onChange={(e) => updateRoom(roomIndex, { viewType: e.target.value as any || undefined })}
-                                            >
-                                                <option value="">Bez pogleda</option>
-                                                <option value="SeaView">Pogled na More</option>
-                                                <option value="GardenView">Pogled na Baštu</option>
-                                                <option value="CityView">Pogled na Grad</option>
-                                                <option value="PoolView">Pogled na Bazen</option>
-                                                <option value="MountainView">Pogled na Planinu</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ marginTop: '24px' }}>
-                                        <h5 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '16px' }}>Popunjenost (Occupancy)</h5>
-                                        <div className="form-grid">
-                                            <div className="form-group">
-                                                <label className="form-label required">Standardna Popunjenost</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    min="1"
-                                                    value={room.standardOccupancy}
-                                                    onChange={(e) => updateRoom(roomIndex, { standardOccupancy: Number(e.target.value) })}
-                                                />
-                                                <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                                    Broj gostiju uključen u osnovnu cenu
-                                                </small>
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label required">Max Odraslih</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    min="1"
-                                                    value={room.maxAdults}
-                                                    onChange={(e) => updateRoom(roomIndex, { maxAdults: Number(e.target.value) })}
-                                                />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label">Max Dece</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    min="0"
-                                                    value={room.maxChildren}
-                                                    onChange={(e) => updateRoom(roomIndex, { maxChildren: Number(e.target.value) })}
-                                                />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label required">Max Ukupno</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    min="1"
-                                                    value={room.maxOccupancy}
-                                                    onChange={(e) => updateRoom(roomIndex, { maxOccupancy: Number(e.target.value) })}
-                                                />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label">Min Osoba</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    min="1"
-                                                    value={room.minOccupancy}
-                                                    onChange={(e) => updateRoom(roomIndex, { minOccupancy: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ marginTop: '24px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                            <h5 style={{ fontSize: '14px', fontWeight: '700', margin: 0 }}>Konfiguracija Kreveta (OTA Standard)</h5>
-                                            <button
-                                                className="btn-secondary"
-                                                onClick={() => addBedding(roomIndex)}
-                                                style={{ padding: '6px 12px', fontSize: '12px' }}
-                                            >
-                                                <Plus size={14} /> Dodaj Krevet
-                                            </button>
-                                        </div>
-
-                                        {room.beddingConfigurations.map((bedding, beddingIndex) => (
-                                            <div key={beddingIndex} style={{
-                                                background: 'rgba(0,0,0,0.2)',
-                                                padding: '16px',
-                                                borderRadius: '12px',
-                                                marginBottom: '12px',
-                                                display: 'grid',
-                                                gridTemplateColumns: '2fr 1fr 1fr auto',
-                                                gap: '12px',
-                                                alignItems: 'end'
-                                            }}>
-                                                <div className="form-group" style={{ margin: 0 }}>
-                                                    <label className="form-label">Tip Kreveta</label>
-                                                    <select
-                                                        className="form-select"
-                                                        value={bedding.bedTypeCode}
-                                                        onChange={(e) => updateBedding(roomIndex, beddingIndex, { bedTypeCode: e.target.value as any })}
-                                                    >
-                                                        <option value="KING">King (&gt;180cm)</option>
-                                                        <option value="QUEEN">Queen (150-180cm)</option>
-                                                        <option value="DOUBLE">Double (130-150cm)</option>
-                                                        <option value="TWIN">Twin (90-130cm)</option>
-                                                        <option value="SOFA_BED">Sofa Bed</option>
-                                                        <option value="BUNK_BED">Bunk Bed (Krevet na sprat)</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="form-group" style={{ margin: 0 }}>
-                                                    <label className="form-label">Količina</label>
-                                                    <input
-                                                        type="number"
-                                                        className="form-input"
-                                                        min="1"
-                                                        value={bedding.quantity}
-                                                        onChange={(e) => updateBedding(roomIndex, beddingIndex, { quantity: Number(e.target.value) })}
-                                                    />
-                                                </div>
-
-                                                <div className="form-checkbox" style={{ margin: 0, paddingBottom: '12px' }}>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={bedding.isExtraBed}
-                                                        onChange={(e) => updateBedding(roomIndex, beddingIndex, { isExtraBed: e.target.checked })}
-                                                    />
-                                                    <label style={{ fontSize: '13px' }}>Pomoćni</label>
-                                                </div>
-
-                                                <button
-                                                    onClick={() => deleteBedding(roomIndex, beddingIndex)}
-                                                    style={{
-                                                        padding: '8px',
-                                                        background: 'rgba(239, 68, 68, 0.1)',
-                                                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                                                        borderRadius: '8px',
-                                                        color: '#ef4444',
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-
-                                        {room.beddingConfigurations.length === 0 && (
-                                            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                                                Nije definisan nijedan krevet. Kliknite "Dodaj Krevet".
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div style={{ marginTop: '24px' }}>
-                                        <h5 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '16px' }}>Kupatilo</h5>
-                                        <div className="form-grid">
-                                            <div className="form-group">
-                                                <label className="form-label">Broj Kupatila</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    min="1"
-                                                    value={room.bathroomCount}
-                                                    onChange={(e) => updateRoom(roomIndex, { bathroomCount: Number(e.target.value) })}
-                                                />
-                                            </div>
-
-                                            <div className="form-group">
-                                                <label className="form-label">Tip Kupatila</label>
-                                                <select
-                                                    className="form-select"
-                                                    value={room.bathroomType}
-                                                    onChange={(e) => updateRoom(roomIndex, { bathroomType: e.target.value as any })}
-                                                >
-                                                    <option value="Private">Privatno</option>
-                                                    <option value="Shared">Deljeno</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {editingRoom !== roomIndex && (
-                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px' }}>
-                                    <div className="badge" style={{ background: 'var(--accent-glow)', color: 'var(--accent)', position: 'static' }}>
-                                        {room.category}
-                                    </div>
-                                    <div className="badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', position: 'static' }}>
-                                        Max: {room.maxOccupancy} osoba
-                                    </div>
-                                    <div className="badge" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', position: 'static' }}>
-                                        {room.beddingConfigurations.length} kreveta
-                                    </div>
-                                    {room.sizeSqm && (
-                                        <div className="badge" style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', position: 'static' }}>
-                                            {room.sizeSqm}m²
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                            <div style={{ flex: 1 }}>
+                                <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: 0 }}>{room.nameInternal || 'Soba bez naziva'}</h4>
+                                <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>#{room.code} • {room.category}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: viewMode === 'grid' ? '20px' : 0, alignItems: 'center' }}>
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={(e) => { e.stopPropagation(); setEditingRoom(roomIndex); }}
+                                    style={{ width: '32px', height: '32px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 900 }}
+                                >
+                                    +
+                                </motion.button>
+                                <motion.button whileTap={{ scale: 0.95 }} className="btn-secondary" style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)' }} onClick={(e) => {
+                                    e.stopPropagation();
+                                    const copy = { ...room, roomTypeId: Math.random().toString(36).substr(2, 9), code: `${room.code}_COPY` };
+                                    onChange({ roomTypes: [...(data.roomTypes || []), copy] });
+                                }}>
+                                    <Copy size={16} />
+                                </motion.button>
+                                <motion.button whileTap={{ scale: 0.95 }} className="btn-secondary" style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)' }} onClick={(e) => { e.stopPropagation(); setEditingRoom(roomIndex); }}>
+                                    Uredi
+                                </motion.button>
+                                <motion.button whileTap={{ scale: 0.95 }} style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', borderRadius: '10px' }} onClick={(e) => { e.stopPropagation(); deleteRoom(roomIndex); }}>
+                                    <Trash2 size={16} />
+                                </motion.button>
+                            </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
+
+            <AnimatePresence>
+                {editingRoom !== null && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        {renderEditor()}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

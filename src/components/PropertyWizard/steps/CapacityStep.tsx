@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Send, MessageSquare, TrendingUp, Calendar as CalendarIcon, FileText, Bed, X, Save, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, Send, MessageSquare, TrendingUp, Calendar as CalendarIcon, FileText, Bed, X, Save, Plus, ChevronLeft, ChevronRight, Grid, List } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { StepProps, AIPromptHistory } from '../types';
 
@@ -9,6 +9,7 @@ const CapacityStep: React.FC<StepProps> = ({ data, onChange }) => {
     const [capacityRange, setCapacityRange] = useState({ start: '2026-06-15', end: '2026-09-01' });
     const [currentMonth, setCurrentMonth] = useState(new Date(2026, 4, 1)); // May 2026
     const [newCapacity, setNewCapacity] = useState({ assigned: 15, releasePeriod: 0 });
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const updateRoomCapacity = (roomIndex: number, date: string, assigned: number, sold: number = 0) => {
         const room = data.roomTypes?.[roomIndex];
@@ -248,52 +249,73 @@ const CapacityStep: React.FC<StepProps> = ({ data, onChange }) => {
                         style={{ overflowY: 'auto', height: '100%', paddingRight: '12px', maxWidth: '1400px', margin: '0 auto' }}
                         className="glass-scroll"
                     >
-                        <div style={{ padding: '0 8px', marginBottom: '24px' }}>
-                            <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <CalendarIcon className="text-blue-500" />
-                                Upravljanje Kapacitetima
-                            </h2>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Kliknite na sobu da upravljate kapacitetima kroz AI-vođeni sistem.</p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '0 8px' }}>
+                            <div>
+                                <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <CalendarIcon className="text-blue-500" />
+                                    Upravljanje Kapacitetima
+                                </h2>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Kliknite na sobu da upravljate kapacitetima kroz AI-vođeni sistem.</p>
+                            </div>
+                            <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px' }}>
+                                <button onClick={() => setViewMode('grid')} style={{ padding: '8px 16px', background: viewMode === 'grid' ? 'var(--accent)' : 'transparent', color: viewMode === 'grid' ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                                    <Grid size={16} /> Grid
+                                </button>
+                                <button onClick={() => setViewMode('list')} style={{ padding: '8px 16px', background: viewMode === 'list' ? 'var(--accent)' : 'transparent', color: viewMode === 'list' ? '#fff' : '#94a3b8', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                                    <List size={16} /> Lista
+                                </button>
+                            </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+                        <div style={{
+                            display: viewMode === 'grid' ? 'grid' : 'flex',
+                            gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(300px, 1fr))' : 'none',
+                            flexDirection: viewMode === 'list' ? 'column' : 'row',
+                            gap: '20px',
+                            marginBottom: '20px'
+                        }}>
                             {data.roomTypes?.map((r, roomIndex) => (
                                 <motion.div
                                     key={r.roomTypeId}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
+                                    whileHover={{ scale: 1.01 }}
                                     onClick={() => setEditingRoom(roomIndex)}
                                     className="glass-card"
                                     style={{
-                                        padding: '20px',
+                                        padding: viewMode === 'grid' ? '24px' : '16px 24px',
                                         cursor: 'pointer',
                                         border: '1px solid rgba(255,255,255,0.05)',
-                                        position: 'relative'
+                                        position: 'relative',
+                                        display: 'flex',
+                                        flexDirection: viewMode === 'grid' ? 'column' : 'row',
+                                        alignItems: viewMode === 'grid' ? 'flex-start' : 'center',
+                                        gap: '16px'
                                     }}
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--gradient-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                                            <Bed size={20} />
-                                        </div>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontSize: '16px', fontWeight: 800, color: '#fff' }}>{r.nameInternal}</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>#{r.code}</div>
-                                        </div>
+                                    <div style={{
+                                        width: '44px',
+                                        height: '44px',
+                                        borderRadius: '12px',
+                                        background: 'rgba(59, 130, 246, 0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#3b82f6'
+                                    }}>
+                                        <Bed size={24} />
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '11px', color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', padding: '4px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                                            {r.capacity?.type || 'Allotment'}
-                                        </span>
-                                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', margin: 0 }}>{r.nameInternal || 'Soba bez naziva'}</h4>
+                                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>#{r.code} • {r.capacity?.type || 'Allotment'}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '6px', fontWeight: 700 }}>
                                             {r.osnovniKreveti} Osnovna
                                         </span>
-                                    </div>
-                                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
                                         <motion.button
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
                                             onClick={(e) => { e.stopPropagation(); setEditingRoom(roomIndex); }}
-                                            style={{ width: '28px', height: '28px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 900 }}
+                                            style={{ width: '32px', height: '32px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 900 }}
                                         >
                                             +
                                         </motion.button>
