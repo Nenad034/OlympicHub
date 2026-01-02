@@ -27,6 +27,7 @@ import ContentStep from './PropertyWizard/steps/ContentStep';
 import ImagesStep from './PropertyWizard/steps/ImagesStep';
 import RoomsStep from './PropertyWizard/steps/RoomsStep';
 import CapacityStep from './PropertyWizard/steps/CapacityStep';
+import PricingStep from './PropertyWizard/steps/PricingStep';
 import AmenitiesStep from './PropertyWizard/steps/AmenitiesStep';
 import RatesStep from './PropertyWizard/steps/RatesStep';
 import PoliciesStep from './PropertyWizard/steps/PoliciesStep';
@@ -62,6 +63,7 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initia
         { id: 'images', title: 'Slike', icon: <ImageIcon size={20} /> },
         { id: 'rooms', title: 'Sobe', icon: <Bed size={20} /> },
         { id: 'capacity', title: 'Kapaciteti', icon: <Calendar size={20} /> },
+        { id: 'pricing', title: 'Cenovnik', icon: <DollarSign size={20} /> },
         { id: 'amenities', title: 'Sadržaji', icon: <Shield size={20} /> },
         { id: 'rates', title: 'Cene', icon: <DollarSign size={20} /> },
         { id: 'policies', title: 'Pravila', icon: <Key size={20} /> }
@@ -110,6 +112,7 @@ const PropertyWizard: React.FC<PropertyWizardProps> = ({ onClose, onSave, initia
             case 'images': return <ImagesStep {...stepProps} />;
             case 'rooms': return <RoomsStep {...stepProps} />;
             case 'capacity': return <CapacityStep {...stepProps} />;
+            case 'pricing': return <PricingStep property={propertyData as any} onUpdate={updateProperty} />;
             case 'amenities': return <AmenitiesStep {...stepProps} />;
             case 'rates': return <RatesStep {...stepProps} />;
             case 'policies': return <PoliciesStep {...stepProps} />;
