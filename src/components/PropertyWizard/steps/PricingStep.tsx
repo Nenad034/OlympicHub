@@ -29,7 +29,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
 
     // Initialize price list with default categories
     useEffect(() => {
-        if (!priceList && property.roomTypes && property.roomTypes.length > 0) {
+        if (!priceList) {
             const defaultCategories: PersonCategory[] = [
                 { code: 'ADL', label: 'Odrasli', ageFrom: 18, ageTo: 99 },
                 { code: 'CHD1', label: 'Deca 2-7', ageFrom: 2, ageTo: 7 },
@@ -49,7 +49,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
                 validationStatus: 'pending'
             });
         }
-    }, [property.roomTypes, priceList]);
+    }, []); // Run only once on mount
 
     // Handle file upload
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +144,7 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
         const rules = generatePricingRules(roomType, priceList.personCategories, includePermutations);
 
         const roomTypePricing: RoomTypePricing = {
-            roomTypeId: roomType.id || '',
+            roomTypeId: roomType.roomTypeId || '',
             roomTypeName: roomType.nameInternal || '',
             baseOccupancyVariants: roomType.allowedOccupancyVariants || [],
             pricingRules: rules
@@ -153,12 +153,12 @@ export default function PricingStep({ property, onUpdate }: PricingStepProps) {
         setPriceList({
             ...priceList,
             roomTypePricing: [
-                ...priceList.roomTypePricing.filter(rtp => rtp.roomTypeId !== roomType.id),
+                ...priceList.roomTypePricing.filter(rtp => rtp.roomTypeId !== roomType.roomTypeId),
                 roomTypePricing
             ]
         });
 
-        setSelectedRoomType(roomType.id || null);
+        setSelectedRoomType(roomType.roomTypeId || null);
     };
 
     // Update pricing rule
