@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Download, Sparkles, Check, X, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Property, RoomType } from '../../../types/property.types';
-import {
+import type { Property, RoomType } from '../../../types/property.types';
+import type {
     PriceList,
     PersonCategory,
     RoomTypePricing,
